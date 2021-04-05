@@ -1,0 +1,10 @@
+{ 
+	"enforce":[
+		{ 
+			"resource":"Patient",
+			"profiles":[	
+				"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+			]
+		}
+	]
+}

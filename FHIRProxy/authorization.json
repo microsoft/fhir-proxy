@@ -1,0 +1,24 @@
+{
+  "routes": [
+    {
+      "path_prefix": "/fhir/metadata",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/fhir/AadSmartOnFhirProxy/authorize",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/fhir/AadSmartOnFhirProxy/token",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/fhir",
+      "policies": { "unauthenticated_action": "RejectWith401" }
+    },
+    {
+      "path_prefix": "/manage",
+      "policies": { "unauthenticated_action": "RejectWith401" }
+    }
+  ]
+}

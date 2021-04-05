@@ -1,0 +1,38 @@
+{
+	"id": "~guid~",
+	"name": "~envname~",
+	"values": [
+		{
+			"key": "tenantId",
+			"value": "~tenentid~",
+			"enabled": true
+		},
+		{
+			"key": "clientId",
+			"value": "~clientid~",
+			"enabled": true
+		},
+		{
+			"key": "clientSecret",
+			"value": "~clientsecret~",
+			"enabled": true
+		},
+		{
+			"key": "bearerToken",
+			"value": "",
+			"enabled": true
+		},
+		{
+			"key": "fhirurl",
+			"value": "~fhirurl~",
+			"enabled": true
+		},
+		{
+			"key": "resource",
+			"value": "~resource~",
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment",
+	"_postman_exported_using": "Postman/8.0.6"
+}
