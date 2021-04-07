@@ -166,11 +166,14 @@ echo "Checking for keyvault "$kvname"..."
 kvexists=$(az keyvault list --query "[?name == '$kvname'].name" --out tsv)
 if [[ -n "$kvexists" ]]; then
 	echo "Loading FHIR Server Credential/Connection Information from "$kvname"..."
+	set +e
 	fsurl=$(az keyvault secret show --vault-name $kvname --name FS-URL --query "value" --out tsv)
-	fstenant=$(az keyvault secret show --vault-name $kvname --name FS-TENANT-NAME --query "value" --out tsv)
-	fsclientid=$(az keyvault secret show --vault-name $kvname --name FS-CLIENT-ID --query "value" --out tsv)
-	fssecret=$(az keyvault secret show --vault-name $kvname --name FS-SECRET --query "value" --out tsv)
-	fsaud=$(az keyvault secret show --vault-name $kvname --name FS-RESOURCE --query "value" --out tsv)
+	if [ -n "$fsurl" ]; then
+		fstenant=$(az keyvault secret show --vault-name $kvname --name FS-TENANT-NAME --query "value" --out tsv)
+		fsclientid=$(az keyvault secret show --vault-name $kvname --name FS-CLIENT-ID --query "value" --out tsv)
+		fssecret=$(az keyvault secret show --vault-name $kvname --name FS-SECRET --query "value" --out tsv)
+		fsaud=$(az keyvault secret show --vault-name $kvname --name FS-RESOURCE --query "value" --out tsv)
+	fi
 fi
 #Prompt for FHIR Server Parameters
 if [ -z "$fsurl" ]; then
