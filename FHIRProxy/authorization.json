@@ -5,11 +5,11 @@
       "policies": { "unauthenticated_action": "AllowAnonymous" }
     },
     {
-      "path_prefix": "/fhir/AadSmartOnFhirProxy/authorize",
+      "path_prefix": "/AadSmartOnFhirProxy/authorize",
       "policies": { "unauthenticated_action": "AllowAnonymous" }
     },
     {
-      "path_prefix": "/fhir/AadSmartOnFhirProxy/token",
+      "path_prefix": "/AadSmartOnFhirProxy/token",
       "policies": { "unauthenticated_action": "AllowAnonymous" }
     },
     {

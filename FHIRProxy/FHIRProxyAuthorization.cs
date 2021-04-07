@@ -94,12 +94,12 @@ namespace FHIRProxy
                 {
                     bool canread = (s[2].Equals("read", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
                     bool canwrite = (s[2].Equals("write", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
-                    if ((s[1].Equals(res) || s[1].Equals("*")) && req.Method.Equals("GET") && canread && PassedContextScope(s[0],ci.Claims,res,resid,req.Query,log))
+                    if ((s[1].Equals(res) || s[1].Equals("*")) && req.Method.Equals("GET") && canread && PassedContextScope(s[0],ci,res,resid,req.Query,log))
                     {
                         matchedscope = true;
                         break;
                     }
-                    else if ((s[0].Equals(res) || s[0].Equals("*")) && !req.Method.Equals("GET") && canwrite && PassedContextScope(s[0], ci.Claims, res, resid, req.Query, log))
+                    else if ((s[0].Equals(res) || s[0].Equals("*")) && !req.Method.Equals("GET") && canwrite && PassedContextScope(s[0], ci, res, resid, req.Query, log))
                     {
                         matchedscope = true;
                         break;
@@ -110,24 +110,30 @@ namespace FHIRProxy
             return matchedscope;
            
         }
-        private bool PassedContextScope(string scope, IEnumerable<Claim> claims,string res,string id,IQueryCollection querycol, ILogger log)
+        private bool PassedContextScope(string scope, ClaimsIdentity ci,string res,string id,IQueryCollection querycol, ILogger log)
         {
             //For Patient Scope we will see if there is a patient claim with a FHIR Logical Id or External Id
             //and the id matches or the query is scoped down
             if (scope.StartsWith("patient", StringComparison.InvariantCultureIgnoreCase))
             {
+                IEnumerable<Claim> claims = ci.Claims;
                 string fhirid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-ID-CLAIM", "fhirpatientid")).Select(c => c.Value).SingleOrDefault();
                 string fhirextid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-EXTID-CLAIM", "fhirpatientextid")).Select(c => c.Value).SingleOrDefault();
                 if (string.IsNullOrEmpty(fhirid) && string.IsNullOrEmpty(fhirextid))
                 {
-                    log.LogWarning("Scope context is for Patient but no Patient Identity Claims found in Token");
-                    return false;
+                    //See if OID has been linked to a patient if no FHIR ID Claims specified
+                    fhirid = GetFHIRIdFromOID(ci, res, log);
+                    if (string.IsNullOrEmpty(fhirid))
+                    {
+                        log.LogWarning("Scope context is for Patient but no Patient Identity Claim or Link found");
+                        return false;
+                    }
                 }
                 //If Patient resource must have Patient Identity Claim for FHIR Logical Id in Token and must match id parameter
                 if (res.Equals("Patient"))
                 {
                     if (!string.IsNullOrEmpty(id) && fhirid.Equals(id)) return true;
-                    log.LogWarning("For patient resource must have FHIR Id claim and must match the id resource of request");
+                    log.LogWarning($"For patient resource must have FHIR Id claim or link and must match the id resource of request {id}-{fhirid}");
                     return false;
                 } else
                 {
@@ -137,7 +143,7 @@ namespace FHIRProxy
                     string qid = querycol.Get<string>("patient", @default: "");
                     if (string.IsNullOrEmpty(qid)) qid = querycol.Get<string>("subject", @default: "");
                     if (qextid.Contains(fhirextid) || qid.Contains(fhirid)) return true;
-                    log.LogWarning("Could not match internal or external identifier claim in query parms or request is not constrained to patient context...");
+                    log.LogWarning("Could not match internal or external identifier from link/claim in query parms or request is not constrained to patient context...");
                     return false;
                 }
             } else if (scope.StartsWith("user",StringComparison.InvariantCultureIgnoreCase))
@@ -148,7 +154,23 @@ namespace FHIRProxy
 
             return false;
         }
-
+        private string GetFHIRIdFromOID(ClaimsIdentity ci, string res,ILogger log)
+        {
+            string aadten = (string.IsNullOrEmpty(ci.Tenant()) ? "Unknown" : ci.Tenant());
+            string oid = ci.ObjectId();
+            if (string.IsNullOrEmpty(oid))
+            {
+                log.LogWarning("No OID claim found in Claims Identity!");
+                return null;
+            }
+            var table = Utils.getTable();
+            var entity = Utils.getLinkEntity(table, res, aadten + "-" + oid);
+            if (entity != null)
+            {
+                return entity.LinkedResourceId;
+            }
+            return null;
+        }
 
     }
 }

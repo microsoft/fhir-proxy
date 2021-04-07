@@ -153,10 +153,10 @@ if [ -z "$subscriptionId" ] || [ -z "$resourceGroupName" ]; then
 	echo "Either one of subscriptionId, resourceGroupName is empty"
 	usage
 fi
-if [[ -z "$kvname" ]]; then
+if [ -z "$kvname" ]; then
 	echo "Enter a keyvault name to store/retreive FHIR Server configuration ["$deployprefix$keyVaultAccountNameSuffix"]:"
 	read kvname
-	if [-z "$kvname" ] ; then
+	if [ -z "$kvname" ] ; then
 		kvname=$deployprefix$keyVaultAccountNameSuffix
 	fi
 	[[ "${kvname:?}" ]]
@@ -223,9 +223,6 @@ if [ $(az group exists --name $resourceGroupName) = false ]; then
 	)
 	else
 	echo "Using existing resource group..."
-fi
-#Check KV exists
-
 fi
 
 #Set up variables
@@ -301,7 +298,7 @@ echo "Starting Secure FHIR Proxy deployment..."
 		echo "Adding FHIR Custom Roles to Manifest..."
 		stepresult=$(az ad app update --id $spappid --app-roles @fhirroles.json)
 		echo "Enabling AAD Authorization and Securing the FHIR Proxy"
-		stepresult=$(az webapp auth update -g $resourceGroupName -n $faname --enabled true --action LoginWithAzureActiveDirectory --aad-allowed-token-audiences $fahost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss)
+		stepresult=$(az webapp auth update -g $resourceGroupName -n $faname --enabled true --action AllowAnonymous --aad-allowed-token-audiences $fahost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss)
 		echo "Starting fhir proxy function app..."
 		stepresult=$(az functionapp start --name $faname --resource-group $resourceGroupName)
 		echo " "

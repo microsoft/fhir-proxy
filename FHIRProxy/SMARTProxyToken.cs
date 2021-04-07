@@ -16,7 +16,7 @@ namespace FHIRProxy
     {
         [FunctionName("SMARTProxyToken")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "fhir/AadSmartOnFhirProxy/token")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "AadSmartOnFhirProxy/token")] HttpRequest req,
             ILogger log)
         {
             string aadname = Utils.GetEnvironmentVariable("FP-LOGIN-AUTHORITY", "login.microsoftonline.com");

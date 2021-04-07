@@ -114,6 +114,20 @@ namespace FHIRProxy
                            .Select(c => c.Value)
                            .ToList();
         }
+        public static string ObjectId(this ClaimsIdentity identity)
+        {
+            var tid = identity.Claims
+                          .Where(c => c.Type == "oid");
+            if (!tid.Any())
+            {
+                return "";
+            }
+            else
+            {
+                return tid.Single().Value.ToAzureKeyString();
+            }
+
+        }
         public static string Tenant(this ClaimsIdentity identity)
         {
             var tid = identity.Claims

@@ -14,12 +14,13 @@ namespace FHIRProxy
     {
         [FunctionName("SMARTProxyAuthorize")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "fhir/AadSmartOnFhirProxy/authorize")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "AadSmartOnFhirProxy/authorize")] HttpRequest req,
             ILogger log)
         {
             string aadname=Utils.GetEnvironmentVariable("FP-LOGIN-AUTHORITY","login.microsoftonline.com");
             string aadpolicy = Utils.GetEnvironmentVariable("FP-LOGIN-POLICY", "");
             string tenant = Utils.GetEnvironmentVariable("FP-LOGIN-TENANT");
+            string appiduri = Utils.GetEnvironmentVariable("FP-LOGIN-APPIDURI", req.Scheme + "://" + req.Host.Value);
             if (tenant==null)
             {
                 return new ContentResult() { Content = "Login Tenant not Configured...Cannot proxy AD Authorize Request", StatusCode = 500 , ContentType = "text/plain" };
@@ -32,7 +33,7 @@ namespace FHIRProxy
             string scope = req.Query["scope"];
             string state = req.Query["state"];
             string aud = req.Query["aud"];
-            if (string.IsNullOrEmpty(aud)) aud = $"https://{tenant}/{client_id}";
+            if (string.IsNullOrEmpty(aud)) aud = appiduri;
 
             string newQueryString = $"response_type={response_type}&redirect_uri={redirect_uri}&client_id={client_id}";
             
