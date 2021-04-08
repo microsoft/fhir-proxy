@@ -296,6 +296,12 @@ namespace FHIRProxy
             }
             return base.ToString();
         }
+        public JToken toJToken()
+        {
+            if (Content is string) return JObject.Parse((string)Content);
+            if (Content == null) return new JObject();
+            return (JToken)Content;
+        }
 
     }
     public class HeaderParm

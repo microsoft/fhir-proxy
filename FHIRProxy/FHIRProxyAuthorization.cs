@@ -121,7 +121,7 @@ namespace FHIRProxy
                 string fhirextid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-EXTID-CLAIM", "fhirpatientextid")).Select(c => c.Value).SingleOrDefault();
                 if (string.IsNullOrEmpty(fhirid) && string.IsNullOrEmpty(fhirextid))
                 {
-                    //See if OID has been linked to a patient if no FHIR ID Claims specified
+                    //See if OID has been linked to a patient if no persisted FHIR ID Claims specified
                     fhirid = GetFHIRIdFromOID(ci, res, log);
                     if (string.IsNullOrEmpty(fhirid))
                     {
@@ -169,6 +169,7 @@ namespace FHIRProxy
             {
                 return entity.LinkedResourceId;
             }
+            log.LogInformation($"No linked FHIR {res} Resource for oid:{oid}");
             return null;
         }
 
