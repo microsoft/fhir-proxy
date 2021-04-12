@@ -69,7 +69,7 @@ namespace FHIRProxy
             //Since we are proxying with service client need to ensure authenticated proxy principal is audited
             req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.OK).ToString());
             req.Headers.Add(Utils.FHIR_PROXY_ROLES, inroles);
-            req.Headers.Add("X-MS-AZUREFHIR-AUDIT-USERID", principal.Identity.Name);
+            req.Headers.Add("X-MS-AZUREFHIR-AUDIT-USERID", ci.ObjectId());
             req.Headers.Add("X-MS-AZUREFHIR-AUDIT-TENANT", ci.Tenant());
             req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", req.HttpContext.Connection.RemoteIpAddress.ToString());
             req.Headers.Add("X-MS-AZUREFHIR-AUDIT-PROXY", passheader);

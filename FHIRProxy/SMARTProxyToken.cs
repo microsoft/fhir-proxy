@@ -35,17 +35,16 @@ namespace FHIRProxy
             string client_id = col["client_id"];
             string client_secret = col["client_secret"];
             string grant_type = col["grant_type"];
-            if (string.IsNullOrEmpty(client_secret))
-            {
-                client_secret = Utils.GetEnvironmentVariable("FP-RBAC-CLIENT-SECRET");
-            }
             //Create Key Value Pairs List
             var keyValues = new List<KeyValuePair<string, string>>();
             keyValues.Add(new KeyValuePair<string, string>("grant_type", grant_type));
             keyValues.Add(new KeyValuePair<string, string>("code", code));
             keyValues.Add(new KeyValuePair<string, string>("redirect_uri", redirect_uri));
             keyValues.Add(new KeyValuePair<string, string>("client_id", client_id));
-            keyValues.Add(new KeyValuePair<string, string>("client_secret", client_secret));
+            if (!string.IsNullOrEmpty(client_secret))
+            {
+                keyValues.Add(new KeyValuePair<string, string>("client_secret", client_secret));
+            }
             //POST to token endpoint
             var client = new HttpClient();
             client.BaseAddress = new Uri($"https://{aadname}");
