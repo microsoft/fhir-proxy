@@ -47,7 +47,7 @@ namespace FHIRProxy
             {
                 newQueryString += $"&state={HttpUtility.UrlEncode(state)}";
             }
-
+            //Convert SMART on FHIR Scopes to Fully Qualified AAD Scopes
             if (!string.IsNullOrEmpty(scope))
             {
                 string[] scopes = scope.Split(' ');

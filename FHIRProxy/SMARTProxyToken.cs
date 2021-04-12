@@ -79,7 +79,6 @@ namespace FHIRProxy
                 StatusCode = (int)response.StatusCode,
                 ContentType = "application/json"
             };
-            log.LogInformation($"Response:{cr.Content}");
             return cr;
         }
     }
