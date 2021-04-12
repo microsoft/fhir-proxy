@@ -79,7 +79,7 @@ namespace FHIRProxy
             var handler = new JwtSecurityTokenHandler();
             var token = handler.ReadToken(bearerToken) as JwtSecurityToken;
             var tokenExpiryDate = token.ValidTo;
-
+            
             // If there is no valid `exp` claim then `ValidTo` returns DateTime.MinValue
             if (tokenExpiryDate == DateTime.MinValue) return true;
 

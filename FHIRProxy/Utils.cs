@@ -134,6 +134,20 @@ namespace FHIRProxy
             if (defval != null && retVal == null) return defval;
             return retVal;
         }
+        public static bool GetBoolEnvironmentVariable(string varname, bool defval = false)
+        {
+            var s = GetEnvironmentVariable(varname);
+            if (string.IsNullOrEmpty(s)) return defval;
+            if (s.Equals("1") || s.Equals("yes", System.StringComparison.InvariantCultureIgnoreCase) || s.Equals("true", System.StringComparison.InvariantCultureIgnoreCase))
+            { 
+                return true;
+            }
+            if (s.Equals("0") || s.Equals("no", System.StringComparison.InvariantCultureIgnoreCase) || s.Equals("false", System.StringComparison.InvariantCultureIgnoreCase))
+            {
+                return false;
+            }
+            throw new Exception($"GetBoolEnvironmentVariable: Unparsable boolean environment variable for {varname} : {s}");
+        }
         public static int GetIntEnvironmentVariable(string varname,string defval=null)
         {
 

@@ -154,7 +154,7 @@ namespace FHIRProxy
 
             return false;
         }
-        private string GetFHIRIdFromOID(ClaimsIdentity ci, string res,ILogger log)
+        public static string GetFHIRIdFromOID(ClaimsIdentity ci, string res,ILogger log)
         {
             string aadten = (string.IsNullOrEmpty(ci.Tenant()) ? "Unknown" : ci.Tenant());
             string oid = ci.ObjectId();

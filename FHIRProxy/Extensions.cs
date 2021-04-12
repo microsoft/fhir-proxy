@@ -93,6 +93,17 @@ namespace FHIRProxy
             }
             return o;
         }
+        public static bool HasScope(this ClaimsIdentity identity, string scope)
+        {
+            if (string.IsNullOrEmpty(scope)) return false;
+            IEnumerable<Claim> claims = identity.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
+            if (claims==null || claims.Count()==0) claims = identity.Claims.Where(x => x.Type == "scp");
+            foreach (Claim c in claims)
+            {
+                if (c.Value.Contains(scope, StringComparison.InvariantCultureIgnoreCase)) return true;
+            }
+            return false;
+        }
         public static bool IsInFHIRRole(this ClaimsIdentity identity, string rolestring)
         {
             if (string.IsNullOrEmpty(rolestring)) return false;
@@ -134,11 +145,17 @@ namespace FHIRProxy
                            .Where(c => c.Type == "http://schemas.microsoft.com/identity/claims/tenantid");
             if (!tid.Any())
             {
-                return "";
+                tid = identity.Claims
+                           .Where(c => c.Type == "tid");
+               
+            }
+            if (tid.Any())
+            {
+                return tid.Single().Value.ToAzureKeyString();
             }
             else
             {
-                return tid.Single().Value.ToAzureKeyString();
+                return "";
             }
 
 

@@ -32,14 +32,15 @@ namespace FHIRProxy
             string launch = req.Query["launch"];
             string scope = req.Query["scope"];
             string state = req.Query["state"];
-            string aud = req.Query["aud"];
+            string aud = "";
+            if (Utils.GetBoolEnvironmentVariable("FP-LOGIN-USEAUDPARAM",false))
+                aud = req.Query["aud"];
             if (string.IsNullOrEmpty(aud)) aud = appiduri;
-
             string newQueryString = $"response_type={response_type}&redirect_uri={redirect_uri}&client_id={client_id}";
             
             if (!string.IsNullOrEmpty(launch))
             {
-                //TODO: Implement appropriate behavior
+                //TODO: Not sure if there is a use for us to handle launch parameter, for now only the launch/{patient/user} in scope is supported.
             }
 
             if (!string.IsNullOrEmpty(state))
@@ -54,13 +55,13 @@ namespace FHIRProxy
                 foreach (var s in scopes)
                 {
                     if (!string.IsNullOrEmpty(scopeString)) scopeString += " ";
-                    if (s.StartsWith("patient", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user", System.StringComparison.InvariantCultureIgnoreCase))
+                    if (s.StartsWith("launch/",System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("patient/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user/", System.StringComparison.InvariantCultureIgnoreCase))
                     {
                         var newScope = s.Replace("/", ".");
                         scopeString += $"{aud}/{newScope}";
                     } else
                     {
-                        scopeString += s;
+                        scopeString += $"{aud}/{s}";
                     }
                 }
                 newQueryString += $"&scope={HttpUtility.UrlEncode(scopeString)}";

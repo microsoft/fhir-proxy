@@ -9,7 +9,9 @@ using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-
+using Newtonsoft.Json.Linq;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 namespace FHIRProxy
 {
     public static class SMARTProxyToken
@@ -33,6 +35,10 @@ namespace FHIRProxy
             string client_id = col["client_id"];
             string client_secret = col["client_secret"];
             string grant_type = col["grant_type"];
+            if (string.IsNullOrEmpty(client_secret))
+            {
+                client_secret = Utils.GetEnvironmentVariable("FP-RBAC-CLIENT-SECRET");
+            }
             //Create Key Value Pairs List
             var keyValues = new List<KeyValuePair<string, string>>();
             keyValues.Add(new KeyValuePair<string, string>("grant_type", grant_type));
@@ -49,10 +55,27 @@ namespace FHIRProxy
             var request = new HttpRequestMessage(HttpMethod.Post, path);
             request.Content = new FormUrlEncodedContent(keyValues);
             var response = await client.SendAsync(request);
-           
+            string contresp = await response.Content.ReadAsStringAsync();
+            JObject obj = JObject.Parse(contresp);
+            //Load Access Token and check for Context Claims and Set Context if requested or linked
+            if (!obj["access_token"].IsNullOrEmpty())
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var token = handler.ReadToken((string)obj["access_token"]) as JwtSecurityToken;
+                ClaimsIdentity ci = new ClaimsIdentity(token.Claims);
+                if (ci.HasScope("launch.patient"))
+                {
+                    var pt = FHIRProxyAuthorization.GetFHIRIdFromOID(ci, "Patient", log);
+                    if (!string.IsNullOrEmpty(pt))
+                    {
+                        obj["patient"] = pt;
+                    }
+                }
+
+            }
             var cr = new ContentResult()
             {
-                Content = await response.Content.ReadAsStringAsync(),
+                Content = obj.ToString(),
                 StatusCode = (int)response.StatusCode,
                 ContentType = "application/json"
             };
