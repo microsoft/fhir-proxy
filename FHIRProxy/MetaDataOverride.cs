@@ -17,11 +17,11 @@ namespace FHIRProxy
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "fhir/metadata")] HttpRequest req,
             ILogger log)
         {
-           
-            FHIRClient fhirClient = FHIRClientFactory.getClient(log);
-            var nextresult = await fhirClient.LoadResource("metadata");
+            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+            var nextresult = await FHIRClient.CallFHIRServer(req,requestBody,log);
+
             //Reverse proxy content string 
-            nextresult = Utils.reverseProxyResponse(nextresult, req, "metadata");
+            nextresult = Utils.reverseProxyResponse(nextresult, req);
             //Replace SMARTonFHIR Proxy endpoints
             string aauth = req.Scheme + "://" + req.Host.Value + "/AadSmartOnFhirProxy/authorize";
             string atoken = req.Scheme + "://" + req.Host.Value + "/AadSmartOnFhirProxy/token";

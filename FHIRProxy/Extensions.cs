@@ -24,8 +24,34 @@ using Microsoft.AspNetCore.Http;
 
 namespace FHIRProxy
 {
+    public class FHIRParsedPath
+    {
+        public string ResourceType { get; set; }
+        public string ResourceId { get; set; }
+        public string Operation { get; set; }
+        public string VersionId { get; set; }
+        public IEnumerable<string> PathElements { get; set; }
+    }
     public static class Extensions
     {
+        public static FHIRParsedPath parsePath(this HttpRequest req)
+        {
+            var retVal = new FHIRParsedPath();
+            //Remove proxy route
+                      
+            if (req.Path.HasValue)
+            {
+                string path = req.Path.Value;
+                if (path.StartsWith("/fhir/")) path = path.Substring(6);
+                string[] p = path.Split("/");
+                if (p.Count() > 0) retVal.ResourceType = p[0];
+                if (p.Count() > 1) retVal.ResourceId = p[1];
+                if (p.Count() > 2) retVal.Operation = p[2];
+                if (p.Count() > 3) retVal.VersionId = p[3];
+                retVal.PathElements = p;
+            }
+            return retVal;
+        }
         public static bool SafeEquals(this string source, string compare)
         {
             if (compare == null) return false;

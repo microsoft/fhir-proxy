@@ -26,10 +26,12 @@ namespace FHIRProxy.postprocessors
 {
     class ParticipantFilterPostProcess : IProxyPostProcess
     {
-        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
+           
+            if (!req.Method.Equals("GET") || !response.IsSuccess()) return new ProxyProcessResult(true,"","", response);
             FHIRResponse fr = response;
-            if (!req.Method.Equals("GET")) return new ProxyProcessResult(true,"","",fr);
+            FHIRParsedPath pp = req.parsePath();
             JObject result = (fr == null ? null : JObject.Parse(fr.ToString()));
             if (fr == null)
             {
@@ -49,7 +51,6 @@ namespace FHIRProxy.postprocessors
             fhirresourceroles.AddRange(Environment.GetEnvironmentVariable("FP-PARTICIPANT-ACCESS-ROLES").Split(","));
             fhirresourceroles.AddRange(Environment.GetEnvironmentVariable("FP-PATIENT-ACCESS-ROLES").Split(","));
             Dictionary<string, bool> porcache = new Dictionary<string,bool>();
-            FHIRClient fhirClient = FHIRClientFactory.getClient(log);
             var table = Utils.getTable();
             //Load linked Resource Identifiers from linkentities table for each known role the user is in
             foreach (string r in inroles)
@@ -73,7 +74,7 @@ namespace FHIRProxy.postprocessors
             
                         foreach (JToken entry in entries)
                         {
-                            if (!await IsAParticipantOrPatient(entry["resource"], fhirClient, resourceidentities, porcache, req.Headers))
+                            if (!await IsAParticipantOrPatient(entry["resource"], resourceidentities, porcache, req.Headers,log))
                             {
                                 JObject denyObj = new JObject();
                                 denyObj["resourceType"] = entry["resource"].FHIRResourceType();
@@ -89,9 +90,9 @@ namespace FHIRProxy.postprocessors
                 }
                 else if (!((string)result["resourceType"]).Equals("OperationalOutcome"))
                 {
-                    if (!await IsAParticipantOrPatient(result, fhirClient, resourceidentities, porcache, req.Headers))
+                    if (!await IsAParticipantOrPatient(result, resourceidentities, porcache, req.Headers,log))
                     {
-                        fr.Content = Utils.genOOErrResponse("access-denied", $"You are not an authorized Paticipant in care and cannot access this resource: {res + (id == null ? "" : "/" + id)}");
+                        fr.Content = Utils.genOOErrResponse("access-denied", $"You are not an authorized Paticipant in care and cannot access this resource: {pp.ResourceType + (pp.ResourceId == null ? "" : "/" + pp.ResourceId)}");
                         fr.StatusCode = System.Net.HttpStatusCode.Unauthorized;
                         return new ProxyProcessResult(false, "access-denied", "",fr);
                     }
@@ -100,7 +101,7 @@ namespace FHIRProxy.postprocessors
             fr.Content = result.ToString();
             return new ProxyProcessResult(true, "", "",fr);
         }
-        private static async Task<bool> IsAParticipantOrPatient(JToken resource, FHIRClient fhirClient, IEnumerable<string> knownresourceIdentities, Dictionary<string, bool> porcache, IHeaderDictionary auditheaders)
+        private static async Task<bool> IsAParticipantOrPatient(JToken resource, IEnumerable<string> knownresourceIdentities, Dictionary<string, bool> porcache, IHeaderDictionary auditheaders,ILogger log)
         {
 
             string patientId = null;
@@ -140,7 +141,7 @@ namespace FHIRProxy.postprocessors
             {
                 if (!string.IsNullOrEmpty(patientId))
                 {
-                    var pat = await fhirClient.LoadResource(patientId, null, false, auditheaders);
+                    var pat = await FHIRClient.CallFHIRServer(patientId, null, "GET", auditheaders,log);
                     JObject temp = JObject.Parse((string)pat.Content);
                     if (temp != null && ((string)temp["resourceType"]).Equals("Patient"))
                     {
@@ -155,14 +156,14 @@ namespace FHIRProxy.postprocessors
                 }
                 else if (!string.IsNullOrEmpty(encounterId) && patient == null)
                 {
-                    var enc = await fhirClient.LoadResource(encounterId, null, false, auditheaders);
+                    var enc = await FHIRClient.CallFHIRServer(encounterId, null, "GET", auditheaders,log);
                     if (enc != null)
                     {
                         JObject temp = JObject.Parse((string)enc.Content);
                         if (temp != null && ((string)temp["resourceType"]).Equals("Encounter") && (string)temp["subject"]?["reference"] != null)
                         {
                             patientId = (string)temp["subject"]?["reference"];
-                            var pat = await fhirClient.LoadResource(patientId, null, false, auditheaders);
+                            var pat = await FHIRClient.CallFHIRServer(patientId, null, "GET", auditheaders,log);
                             JObject temp1 = JObject.Parse((string)pat.Content);
                             if (temp1 != null && ((string)temp1["resourceType"]).Equals("Patient"))
                             {
@@ -219,7 +220,7 @@ namespace FHIRProxy.postprocessors
                     }
                     string pid = rid.Split("/")[1];
                     string patid = (string)patient["id"];
-                    var porencs = await fhirClient.LoadResource("Encounter", $"patient={patid}&participant={pid}", false, auditheaders);
+                    var porencs = await FHIRClient.CallFHIRServer($"Encounter?patient={patid}&participant={pid}", null,"GET", auditheaders,log);
                     if (porencs != null)
                     {
                         JObject temp2 = JObject.Parse((string)porencs.Content);

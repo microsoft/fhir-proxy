@@ -22,12 +22,6 @@ namespace FHIRProxy
             string cacheConnection = GetEnvironmentVariable("FP-REDISCONNECTION");
             return ConnectionMultiplexer.Connect(cacheConnection);
         });
-        public static bool UnsupportedCommands(string cmd)
-        {
-            if (string.IsNullOrEmpty(cmd)) return false;
-            if (UNSUPPORTED_CMDS.Contains(cmd.ToLower())) return true;
-            return false;
-        }
         public static ConnectionMultiplexer RedisConnection
         {
             get
@@ -35,20 +29,20 @@ namespace FHIRProxy
                 return lazyConnection.Value;
             }
         }
-        public static string genOOErrResponse(string code,string desc)
+        public static string genOOErrResponse(string code, string desc)
         {
 
             return $"{{\"resourceType\": \"OperationOutcome\",\"id\": \"{Guid.NewGuid().ToString()}\",\"issue\": [{{\"severity\": \"error\",\"code\": \"{code ?? ""}\",\"diagnostics\": \"{desc ?? ""}\"}}]}}";
 
         }
         //Server Roles are "A"dmin,"R"eader,"W"riter
-        public static bool inServerAccessRole(HttpRequest req,string role)
+        public static bool inServerAccessRole(HttpRequest req, string role)
         {
             if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FP-AUTHFREEPASS"))) return true;
             string s = req.Headers[Utils.FHIR_PROXY_ROLES];
             if (string.IsNullOrEmpty(s) || string.IsNullOrEmpty(role)) return false;
             return s.Contains(role);
-            
+
         }
         public static bool isServerAccessAuthorized(HttpRequest req)
         {
@@ -66,8 +60,10 @@ namespace FHIRProxy
             return false;
         }
 
-        public static FHIRResponse reverseProxyResponse(FHIRResponse fhirresp, HttpRequest req, string res)
+        public static FHIRResponse reverseProxyResponse(FHIRResponse fhirresp, HttpRequest req)
         {
+
+            string res = req.parsePath().ResourceType;
             if (fhirresp != null)
             {
                 if (fhirresp.Headers.ContainsKey("Location"))
@@ -83,7 +79,7 @@ namespace FHIRProxy
                 str = str.Replace(Environment.GetEnvironmentVariable("FS-URL"), req.Scheme + "://" + req.Host.Value + (res != null ? req.Path.Value.Substring(0, req.Path.Value.IndexOf(res) - 1) : req.Path.Value));
                 foreach (string key in fhirresp.Headers.Keys)
                 {
-                    
+
                     req.HttpContext.Response.Headers[key] = fhirresp.Headers[key].Value;
                 }
                 fhirresp.Content = str;
@@ -127,7 +123,7 @@ namespace FHIRProxy
             table.CreateIfNotExistsAsync().GetAwaiter().GetResult();
             return table;
         }
-        public static string GetEnvironmentVariable(string varname, string defval=null)
+        public static string GetEnvironmentVariable(string varname, string defval = null)
         {
             if (string.IsNullOrEmpty(varname)) return null;
             string retVal = System.Environment.GetEnvironmentVariable(varname);
@@ -139,7 +135,7 @@ namespace FHIRProxy
             var s = GetEnvironmentVariable(varname);
             if (string.IsNullOrEmpty(s)) return defval;
             if (s.Equals("1") || s.Equals("yes", System.StringComparison.InvariantCultureIgnoreCase) || s.Equals("true", System.StringComparison.InvariantCultureIgnoreCase))
-            { 
+            {
                 return true;
             }
             if (s.Equals("0") || s.Equals("no", System.StringComparison.InvariantCultureIgnoreCase) || s.Equals("false", System.StringComparison.InvariantCultureIgnoreCase))
@@ -148,14 +144,15 @@ namespace FHIRProxy
             }
             throw new Exception($"GetBoolEnvironmentVariable: Unparsable boolean environment variable for {varname} : {s}");
         }
-        public static int GetIntEnvironmentVariable(string varname,string defval=null)
+        public static int GetIntEnvironmentVariable(string varname, string defval = null)
         {
 
-            
+
             string retVal = System.Environment.GetEnvironmentVariable(varname);
             if (defval != null && retVal == null) retVal = defval;
             return int.Parse(retVal);
         }
 
     }
+    
 }

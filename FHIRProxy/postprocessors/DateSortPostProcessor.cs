@@ -29,13 +29,14 @@ namespace FHIRProxy.postprocessors
     {
         private static readonly int MAX_ARRAY_SIZE = 5000;
         private static string DATE_SORT_RESOURCES_SUPPORTED = "Observation:DiagnosticReport:Encounter:CarePlan:CareTeam:EpisodeOfCare:Claim";
-        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             if (!req.Method.Equals("GET") || response.StatusCode != HttpStatusCode.OK || response.Content == null) return new ProxyProcessResult(true, "", "", response);
             List<JToken> ss = null;
-            if (DATE_SORT_RESOURCES_SUPPORTED.Contains(res) && req.Query.ContainsKey("_sort") && req.Query["_sort"].First().Contains("date"))
+            FHIRParsedPath pp = req.parsePath();
+            if (DATE_SORT_RESOURCES_SUPPORTED.Contains(pp.ResourceType) && req.Query.ContainsKey("_sort") && req.Query["_sort"].First().Contains("date"))
             {
-                var fhirresp = JObject.Parse(response.Content.ToString());
+                var fhirresp = response.toJToken();
                 if (fhirresp.IsNullOrEmpty() || !((string)fhirresp["resourceType"]).Equals("Bundle") || !((string)fhirresp["type"]).Equals("searchset")) return new ProxyProcessResult(true, "", "", response);
                 ss = new List<JToken>();
                 addEntries((JArray)fhirresp["entry"],ss,log);
@@ -44,9 +45,9 @@ namespace FHIRProxy.postprocessors
                 while (nextlink && ss.Count < MAX_ARRAY_SIZE)
                 {
                     string nextpage = (string)fhirresp["link"].getFirstField()["url"];
-                    FHIRClient fhirClient = FHIRClientFactory.getClient(log);
-                    var nextresult = await fhirClient.LoadResource(nextpage);
-                    fhirresp = JObject.Parse(nextresult.Content.ToString());
+
+                    var nextresult = await FHIRClient.CallFHIRServer(nextpage, "", "GET", log);
+                    fhirresp = nextresult.toJToken();
                     if (fhirresp.IsNullOrEmpty() || !fhirresp.FHIRResourceType().Equals("Bundle") || !((string)fhirresp["type"]).Equals("searchset")) return new ProxyProcessResult(false, "Next Page not Returned or server error", "", nextresult);
                     addEntries((JArray)fhirresp["entry"], ss, log);
                     nextlink = !fhirresp["link"].IsNullOrEmpty() && ((string)fhirresp["link"].getFirstField()["relation"]).Equals("next");

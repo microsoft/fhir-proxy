@@ -25,7 +25,7 @@ namespace FHIRProxy.postprocessors
     class SamplePostProcess : IProxyPostProcess
     {
         //Returns Unmodified Response
-        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             ProxyProcessResult rslt = new ProxyProcessResult();
             /* Use the passed response to modify/filter then return modified results in Response member of ProxyProcessResult Object 

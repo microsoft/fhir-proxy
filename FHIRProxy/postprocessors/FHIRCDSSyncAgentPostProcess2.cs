@@ -75,11 +75,12 @@ namespace FHIRProxy.postprocessors
             
             
         }
-        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             
             try
             {
+                FHIRParsedPath pp = req.parsePath();
                 //Do we need to send on to CDS? Don't send for GET/PATCH, errors, X-MS-FHIRCDSSynAgent Header is present
                 if (req.Method.Equals("GET") || (int)response.StatusCode > 299 ||
                     req.Method.Equals("PATCH") || req.Headers["X-MS-FHIRCDSSynAgent"] == "true")
@@ -98,8 +99,8 @@ namespace FHIRProxy.postprocessors
                 JArray entries = null;
                 if (response.StatusCode == HttpStatusCode.OK || response.StatusCode == HttpStatusCode.Created)
                 {
-                    var fhirresp = JObject.Parse(response.Content.ToString());
-                    if (!fhirresp.IsNullOrEmpty() && ((string)fhirresp["resourceType"]).Equals("Bundle") && ((string)fhirresp["type"]).EndsWith("-response"))
+                    var fhirresp = response.toJToken();
+                    if (!fhirresp.IsNullOrEmpty() && (fhirresp.FHIRResourceType().Equals("Bundle") && ((string)fhirresp["type"]).EndsWith("-response")))
                     {
 
                         entries = (JArray)fhirresp["entry"];
@@ -121,8 +122,8 @@ namespace FHIRProxy.postprocessors
                     stub["response"] = new JObject();
                     stub["response"]["status"] = req.Method;
                     stub["resource"] = new JObject();
-                    stub["resource"]["id"] = id;
-                    stub["resource"]["resourceType"] = res;
+                    stub["resource"]["id"] = pp.ResourceId;
+                    stub["resource"]["resourceType"] = pp.ResourceType;
                     stub["resource"]["meta"] = new JObject();
                     stub["resource"]["meta"]["versionId"] = "1";
                     entries.Add(stub);

@@ -33,8 +33,9 @@ namespace FHIRProxy
         public override Task OnExecutingAsync(FunctionExecutingContext executingContext, CancellationToken cancellationToken)
         {
             var req = executingContext.Arguments.First().Value as HttpRequest;
-            string id =  executingContext.Arguments["id"] as String;
-            string res = executingContext.Arguments["res"] as String;
+            FHIRParsedPath pp = req.parsePath();
+            string id = pp.ResourceId;
+            string res = pp.ResourceType;
             ILogger log = executingContext.Arguments["log"] as ILogger;
             if (id == null) id = "";
             ClaimsPrincipal principal = executingContext.Arguments["principal"] as ClaimsPrincipal;

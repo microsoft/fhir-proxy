@@ -27,9 +27,10 @@ namespace FHIRProxy.preprocessors
      * Caution: assumes UUID are assigned per spec.*/
     class TransformBundlePreProcess : IProxyPreProcess
     {
-        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
-            if (string.IsNullOrEmpty(requestBody) || !req.Method.Equals("POST") || !string.IsNullOrEmpty(res)) return new ProxyProcessResult(true, "", requestBody, null);
+            FHIRParsedPath pp = req.parsePath();
+            if (string.IsNullOrEmpty(requestBody) || !req.Method.Equals("POST") || !string.IsNullOrEmpty(pp.ResourceType)) return new ProxyProcessResult(true, "", requestBody, null);
             JObject result = null;
             try
             {
@@ -56,7 +57,7 @@ namespace FHIRProxy.preprocessors
                         string resource = (string)tok["request"]["url"];
                         string query = (string)tok["request"]["ifNoneExist"];
                         log.LogInformation($"TransformBundleProcess:Loading Resource {resource} with query {query}");
-                        var r = await FHIRClientFactory.getClient(log).LoadResource(resource, query);
+                        var r = await FHIRClient.CallFHIRServer($"{resource}?{query}",null,"GET",req.Headers,log);
                         if (r.StatusCode == System.Net.HttpStatusCode.OK)
                         {
                             var rs = (JObject)r.Content;

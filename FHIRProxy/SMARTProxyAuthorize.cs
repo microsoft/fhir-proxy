@@ -55,13 +55,13 @@ namespace FHIRProxy
                 foreach (var s in scopes)
                 {
                     if (!string.IsNullOrEmpty(scopeString)) scopeString += " ";
-                    if (s.StartsWith("launch/",System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("patient/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user/", System.StringComparison.InvariantCultureIgnoreCase))
+                    if (s.StartsWith("launch",System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("patient/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user/", System.StringComparison.InvariantCultureIgnoreCase))
                     {
                         var newScope = s.Replace("/", ".");
                         scopeString += $"{aud}/{newScope}";
                     } else
                     {
-                        scopeString += $"{aud}/{s}";
+                        scopeString += s;
                     }
                 }
                 newQueryString += $"&scope={HttpUtility.UrlEncode(scopeString)}";

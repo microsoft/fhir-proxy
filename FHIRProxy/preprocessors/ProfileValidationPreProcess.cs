@@ -35,8 +35,9 @@ namespace FHIRProxy.preprocessors
         private JObject enforcement = null;
         private object lockObj = new object();
         private HttpClient _client = new HttpClient();
-        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
+            FHIRParsedPath pp = req.parsePath();
             string url = Environment.GetEnvironmentVariable("FP-MOD-FHIRVALIDATION-URL");
             if (string.IsNullOrEmpty(url))
             {
@@ -44,7 +45,7 @@ namespace FHIRProxy.preprocessors
                 return new ProxyProcessResult(true, "", requestBody, null);
             }
             /*Call Resource and Profile Validation server*/
-            if (string.IsNullOrEmpty(requestBody) || req.Method.Equals("GET") || req.Method.Equals("DELETE") || string.IsNullOrEmpty(res)) return new ProxyProcessResult(true, "", requestBody, null);
+            if (string.IsNullOrEmpty(requestBody) || req.Method.Equals("GET") || req.Method.Equals("DELETE") || string.IsNullOrEmpty(pp.ResourceType)) return new ProxyProcessResult(true, "", requestBody, null);
             try
             {
                 var test = JObject.Parse(requestBody);
@@ -93,7 +94,7 @@ namespace FHIRProxy.preprocessors
             if (enforcement != null)
             {
                 var enforce = enforcement["enforce"];
-                var tok = enforce.SelectToken($"[?(@.resource=='{res}')]");
+                var tok = enforce.SelectToken($"[?(@.resource=='{pp.ResourceType}')]");
                 if (!tok.IsNullOrEmpty())
                 {
                     JArray arr = (JArray)tok["profiles"];

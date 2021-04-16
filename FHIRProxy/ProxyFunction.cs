@@ -48,24 +48,21 @@ namespace FHIRProxy
         [FHIRProxyAuthorization]
         [FunctionName("ProxyFunction")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{res?}/{id?}/{hist?}/{vid?}")] HttpRequest req,
-                         ILogger log, ClaimsPrincipal principal, string res, string id,string hist,string vid)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{*restOfPath}")] HttpRequest req, string restOfPath,
+                         ILogger log, ClaimsPrincipal principal)
         {
+           
             if (!Utils.isServerAccessAuthorized(req))
             {
                 return new ContentResult() { Content = Utils.genOOErrResponse("auth-access", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
             }
-            if (Utils.UnsupportedCommands(res))
-            {
-                return new ContentResult() { Content = Utils.genOOErrResponse("unsupported-cmd", $"The command {res} is not supported via the proxy."), StatusCode = (int)System.Net.HttpStatusCode.BadRequest, ContentType = "application/json" };
-
-            }
+          
             //Load Request Body
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             //Initialize Response 
             FHIRResponse serverresponse = null;
            //Call Configured Pre-Processor Modules
-           ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody,req, log, principal, res, id,hist,vid);
+           ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody,req, log, principal);
             
             if (!prerslt.Continue)
             {
@@ -87,11 +84,11 @@ namespace FHIRProxy
             log.LogInformation("Calling FHIR Server...");
             
             //Proxy the call to the FHIR Server
-            serverresponse = await FHIRClientFactory.callFHIRServer(prerslt.Request,req, log,res, id,hist,vid);
+            serverresponse = await FHIRClient.CallFHIRServer(req,prerslt.Request, log);
 
 PostProcessing:
             //Call Configured Post-Processor Modules
-            ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal, res, id,hist,vid);
+            ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal);
                        
 
             if (postrslt.Response == null)
@@ -104,7 +101,7 @@ PostProcessing:
                 
             }
             //Reverse Proxy Response
-            postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req, res);
+            postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req);
             //return ActionResult
             if (postrslt.Response.StatusCode==HttpStatusCode.NoContent)
             {

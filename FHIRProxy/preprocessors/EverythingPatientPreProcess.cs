@@ -31,17 +31,17 @@ namespace FHIRProxy.preprocessors
     class EverythingPatientPreProcess : IProxyPreProcess
     {
         private static int MAX_ARRAY_SIZE = 5000;
-        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
-            if (req.Method.Equals("GET") && res.SafeEquals("Patient") && !string.IsNullOrEmpty(id) && hist.SafeEquals("$everything"))
+            FHIRParsedPath pp = req.parsePath();
+            if (req.Method.Equals("GET") && pp.ResourceType.SafeEquals("Patient") && !string.IsNullOrEmpty(pp.ResourceId) && pp.Operation.SafeEquals("$everything"))
             {
                 ConcurrentBag<JToken> ss = new ConcurrentBag<JToken>();
-                FHIRClient fhirClient = FHIRClientFactory.getClient(log);
-                var nextresult = await fhirClient.LoadResource("Patient", "_id=" + id);
-                var fhirresp = JObject.Parse(nextresult.Content.ToString());
+                var nextresult = await FHIRClient.CallFHIRServer($"Patient?_id={pp.ResourceId}",null,"GET",req.Headers,log);
+                var fhirresp = nextresult.toJToken();
                 if (fhirresp.IsNullOrEmpty() || fhirresp["entry"].IsNullOrEmpty()) return new ProxyProcessResult(false, "Patient not found or server error", "", null);
                 addEntries((JArray)fhirresp["entry"], ss, log);
-                nextresult = await fhirClient.LoadResource($"Patient/{id}/*","_count=100");
+                nextresult = await FHIRClient.CallFHIRServer($"Patient/{pp.ResourceId}/*?_count=1000",null,"GET",req.Headers,log);
                 fhirresp = JObject.Parse(nextresult.Content.ToString());
 
                 if (!fhirresp.IsNullOrEmpty() && !fhirresp["entry"].IsNullOrEmpty())
@@ -51,8 +51,7 @@ namespace FHIRProxy.preprocessors
                     while (nextlink && ss.Count < MAX_ARRAY_SIZE)
                     {
                         string nextpage = (string)fhirresp["link"].getFirstField()["url"];
-                        FHIRClient fhirClient1 = FHIRClientFactory.getClient(log);
-                        nextresult = await fhirClient1.LoadResource(nextpage);
+                        nextresult = await FHIRClient.CallFHIRServer(nextpage,null,"GET",log);
                         fhirresp = JObject.Parse(nextresult.Content.ToString());
                         if (fhirresp.IsNullOrEmpty() || !fhirresp.FHIRResourceType().Equals("Bundle") || !((string)fhirresp["type"]).Equals("searchset")) return new ProxyProcessResult(false, "Next Page not Returned or server error", "", null);
                         addEntries((JArray)fhirresp["entry"], ss, log);

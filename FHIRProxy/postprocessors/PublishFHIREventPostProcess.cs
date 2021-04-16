@@ -29,11 +29,12 @@ namespace FHIRProxy.postprocessors
     /* Proxy Post Process to publish events for CUD events to FHIR Server */
     class PublishFHIREventPostProcess : IProxyPostProcess
     {
-        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             
             try
             {
+                FHIRParsedPath pp = req.parsePath();
                 if (req.Method.Equals("GET") || (int)response.StatusCode > 299) return new ProxyProcessResult(true, "", "", response);
 
                 string ecs = Environment.GetEnvironmentVariable("FP-MOD-EVENTHUB-CONNECTION");
@@ -69,8 +70,8 @@ namespace FHIRProxy.postprocessors
                     stub["response"] = new JObject();
                     stub["response"]["status"] = req.Method;
                     stub["resource"] = new JObject();
-                    stub["resource"]["id"] = id;
-                    stub["resource"]["resourceType"] = res;
+                    stub["resource"]["id"] = pp.ResourceId;
+                    stub["resource"]["resourceType"] = pp.ResourceType;
                     entries.Add(stub);
                 }
                 await publishBatchEvent(ecs, enm, entries,log);

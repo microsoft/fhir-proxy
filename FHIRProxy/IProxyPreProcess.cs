@@ -31,11 +31,7 @@ namespace FHIRProxy
         /// <param name="req">The HttpRequest instance from the Function Invocation</param>
         /// <param name="log">The ILogger instance from the function invocation</param>
         /// <param name="principal">The current ClaimsPrinicipal from the function invocation</param>
-        /// <param name="res">The current FHIR ResourceType from the function invocation</param>
-        /// <param name="id">The current FHIR Resource Id from the function invocation</param>
-        /// <param name="hist">The current FHIR Resource _history path from the function invocation</param>
-        /// <param name="vid">The current FHIR Resource version id from the function invocation</param>
         /// <returns>ProxyProcessResult - The result of this Pre Process Function</returns>
-        public Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id,string hist,string vid);
+        public Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal);
     }
 }

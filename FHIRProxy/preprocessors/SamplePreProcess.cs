@@ -26,7 +26,7 @@ namespace FHIRProxy.preprocessors
     class SamplePreProcess : IProxyPreProcess
     {
         //Returns unmodified request body
-        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal, string res, string id, string hist, string vid)
+        public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             /* Do your Pre-Processing with provided inputs you can adjust req body contents 
              * To abort further processing and return an OperationOutcome Response set the Continue member to False, and 
