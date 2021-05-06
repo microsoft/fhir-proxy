@@ -17,14 +17,8 @@ namespace FHIRProxy
         private static object lockobj = new object();
         private static string _bearerToken = null;
         private static HttpClient _fhirClient = new HttpClient();
-        public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(HttpRequest req, string body, ILogger log)
+        public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(HttpRequest req, string path, string body, ILogger log)
         {
-            string path = string.Empty;
-            if (req.Path.HasValue)
-            {
-                path = req.Path;
-                if (path.StartsWith("/fhir/")) path = path.Substring(6);
-            }
             path += (req.QueryString.HasValue ? req.QueryString.Value : "");
             return await FHIRClient.CallFHIRServer(path, body, req.Method, req.Headers, log);
         }

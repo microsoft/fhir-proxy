@@ -18,7 +18,7 @@ namespace FHIRProxy
             ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            var nextresult = await FHIRClient.CallFHIRServer(req,requestBody,log);
+            var nextresult = await FHIRClient.CallFHIRServer("metadata",requestBody,req.Method,log);
 
             //Reverse proxy content string 
             nextresult = Utils.reverseProxyResponse(nextresult, req);

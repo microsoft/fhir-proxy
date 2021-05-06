@@ -43,6 +43,7 @@ namespace FHIRProxy
             {
                 string path = req.Path.Value;
                 if (path.StartsWith("/fhir/")) path = path.Substring(6);
+                if (path.StartsWith("/fhir")) path = path.Substring(5);
                 string[] p = path.Split("/");
                 if (p.Count() > 0) retVal.ResourceType = p[0];
                 if (p.Count() > 1) retVal.ResourceId = p[1];

@@ -62,21 +62,21 @@ namespace FHIRProxy
 
         public static FHIRResponse reverseProxyResponse(FHIRResponse fhirresp, HttpRequest req)
         {
-
-            string res = req.parsePath().ResourceType;
+            string fsurl = Utils.GetEnvironmentVariable("FS-URL");
+            string pxyurl = req.Scheme + "://" + req.Host.Value + "/fhir";
             if (fhirresp != null)
             {
                 if (fhirresp.Headers.ContainsKey("Location"))
                 {
-                    fhirresp.Headers["Location"].Value = fhirresp.Headers["Location"].Value.Replace(Environment.GetEnvironmentVariable("FS-URL"), req.Scheme + "://" + req.Host.Value + req.Path.Value.Substring(0, req.Path.Value.IndexOf(res) - 1));
+                    fhirresp.Headers["Location"].Value = fhirresp.Headers["Location"].Value.Replace(fsurl,pxyurl);
                 }
                 if (fhirresp.Headers.ContainsKey("Content-Location"))
                 {
-                    fhirresp.Headers["Content-Location"].Value = fhirresp.Headers["Content-Location"].Value.Replace(Environment.GetEnvironmentVariable("FS-URL"), req.Scheme + "://" + req.Host.Value + req.Path.Value.Substring(0, req.Path.Value.IndexOf(res) - 1));
+                    fhirresp.Headers["Content-Location"].Value = fhirresp.Headers["Content-Location"].Value.Replace(fsurl, pxyurl);
                 }
                 var str = fhirresp.Content == null ? "" : fhirresp.Content.ToString();
                 /* Fix server locations to proxy address */
-                str = str.Replace(Environment.GetEnvironmentVariable("FS-URL"), req.Scheme + "://" + req.Host.Value + (res != null ? req.Path.Value.Substring(0, req.Path.Value.IndexOf(res) - 1) : req.Path.Value));
+                str = str.Replace(fsurl, pxyurl);
                 foreach (string key in fhirresp.Headers.Keys)
                 {
 

@@ -81,10 +81,10 @@ namespace FHIRProxy
                 goto PostProcessing;
             }
 
-            log.LogInformation("Calling FHIR Server...");
+            log.LogInformation($"Calling FHIR Server...Path {restOfPath}");
             
             //Proxy the call to the FHIR Server
-            serverresponse = await FHIRClient.CallFHIRServer(req,prerslt.Request, log);
+            serverresponse = await FHIRClient.CallFHIRServer(req, restOfPath, prerslt.Request, log);
 
 PostProcessing:
             //Call Configured Post-Processor Modules
