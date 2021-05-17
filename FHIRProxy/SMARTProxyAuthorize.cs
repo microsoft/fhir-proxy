@@ -20,22 +20,27 @@ namespace FHIRProxy
             string aadname=Utils.GetEnvironmentVariable("FP-LOGIN-AUTHORITY","login.microsoftonline.com");
             string aadpolicy = Utils.GetEnvironmentVariable("FP-LOGIN-POLICY", "");
             string tenant = Utils.GetEnvironmentVariable("FP-LOGIN-TENANT");
-            string appiduri = Utils.GetEnvironmentVariable("FP-LOGIN-APPIDURI", req.Scheme + "://" + req.Host.Value);
+            string appiduri = req.Scheme + "://" + req.Host.Value;
             if (tenant==null)
             {
                 return new ContentResult() { Content = "Login Tenant not Configured...Cannot proxy AD Authorize Request", StatusCode = 500 , ContentType = "text/plain" };
             }
-            
             string response_type = req.Query["response_type"];
             string client_id = req.Query["client_id"];
             string redirect_uri = req.Query["redirect_uri"];
             string launch = req.Query["launch"];
             string scope = req.Query["scope"];
             string state = req.Query["state"];
-            string aud = "";
-            if (Utils.GetBoolEnvironmentVariable("FP-LOGIN-USEAUDPARAM",false))
-                aud = req.Query["aud"];
-            if (string.IsNullOrEmpty(aud)) aud = appiduri;
+            //To fully qualify SMART scopes to be compatible with AD Scopes we'll need and audience/application URI for the registered application
+            //Check for Application Audience on request
+            string aud = req.Query["aud"];
+            if (string.IsNullOrEmpty(aud))
+            {
+                //If no Audience on request lookup in configuration, audience should be Application ID Uri for registered app
+                aud = Utils.GetEnvironmentVariable($"FP-LOGIN-AUD-{client_id}");
+                //default Audience to api://client_id
+                if (string.IsNullOrEmpty(aud)) aud = appiduri;
+            }
             string newQueryString = $"response_type={response_type}&redirect_uri={redirect_uri}&client_id={client_id}";
             
             if (!string.IsNullOrEmpty(launch))

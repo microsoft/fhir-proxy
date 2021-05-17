@@ -77,6 +77,8 @@ namespace FHIRProxy
                 if (headers.TryGetValue("Content-Type", out Microsoft.Extensions.Primitives.StringValues ctvalues))
                 {
                     ct = ctvalues.First();
+                    if (!string.IsNullOrEmpty(ct)) ct = ct.Split(";")[0];
+                    log.LogInformation($"Derived content type is {ct}");
                 }
                 foreach (string headerKey in headers.Keys)
                 {

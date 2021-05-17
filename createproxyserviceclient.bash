@@ -69,8 +69,7 @@ while getopts ":k:n:sp" arg; do
 done
 shift $((OPTIND-1))
 echo "Executing "$0"..."
-echo "Note: You must be authenticated to the same tenant as the proxy server and be able to grant admin consent"
-echo "for application API Access Roles or this setup will fail"
+echo "Note: You must be authenticated to the same tenant as the proxy server"
 echo "Checking Azure Authentication..."
 #login to azure using your credentials
 az account show 1> /dev/null
@@ -133,9 +132,10 @@ echo "Creating Service Client Principal "$spname"..."
 		fi
 		if [ -n "$genpostman" ]; then
 			echo "Generating Postman environment for proxy access..."
+			rm $spname".postman_environment.json" 2>/dev/null
 			pmuuid=$(cat /proc/sys/kernel/random/uuid)
 			pmenv=$(<postmantemplate.json)
-			pmfhirurl="https://"$fphost"/api/fhirproxy"
+			pmfhirurl="https://"$fphost"/fhir"
 			pmenv=${pmenv/~guid~/$pmuuid}
 			pmenv=${pmenv/~envname~/$spname}
 			pmenv=${pmenv/~tenentid~/$sptenant}
@@ -166,6 +166,8 @@ echo "Creating Service Client Principal "$spname"..."
 			echo "For Postman Importing help please reference the following URL:"
 			echo "https://learning.postman.com/docs/getting-started/importing-and-exporting-data/#importing-postman-data"
 		fi
+		echo "You will need to access Azure portal and grant admin consent to "$spname" API Permissions"
+		echo "For more information see https://docs.microsoft.com/en-us/azure/active-directory/manage-apps/grant-admin-consent#grant-admin-consent-in-app-registrations"
 		echo "************************************************************************************************************"
 		echo " "
 		echo "Note: The display output and files created by this script can contain sensitive information please protect it!"
