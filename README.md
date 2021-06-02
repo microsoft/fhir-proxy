@@ -37,7 +37,7 @@ FHIR Proxy’s SMART scoping has many benefits for FHIR Server – the major one
 FHIR Proxy also extends FHIR Server functionality with triggers that can be set to listen for Create, Update, and Delete (CUD) actions performed on FHIR Data. Administrators can set these triggers in the FHIR Proxy to automatically publish to Azure Event Hub when a CUD action occurs in the FHIR Server. This functionality is important for enabling near-real-time Clinical Decision Support (CDS) via [HL7 CDS Hooks](https://cds-hooks.hl7.org/) across Care Teams. The recipient(s) could be anyone among the FHIR Participants permitted to subscribe to the alerts, including the Patient.
 
 # Architecture <a name="architecture"></a>
-![FHIR Proxy Architecture](fhirproxy_arch_v2.png)
+![FHIR Proxy Architecture](fhirproxy_arch_v3.png)
 
 # Installation <a name="installation"></a>
 Please see the [installation guide](https://github.com/microsoft/fhir-proxy/INSTALL.md) for instructions on how to install FHIR Proxy.
