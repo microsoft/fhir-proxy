@@ -55,7 +55,8 @@ namespace FHIRProxy
         }
         public static bool SafeEquals(this string source, string compare)
         {
-            if (compare == null) return false;
+            
+            if (compare == null || source==null) return false;
             return source.Equals(compare);
         }
         public static string SerializeList<T>(this List<T> thelist)

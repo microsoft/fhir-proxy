@@ -16,7 +16,15 @@ namespace FHIRProxy
     {
         private static object lockobj = new object();
         private static string _bearerToken = null;
-        private static HttpClient _fhirClient = new HttpClient();
+        private static SocketsHttpHandler socketsHandler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME","5")),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO","2")),
+            MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS","10")
+        };
+
+        private static HttpClient _fhirClient = new HttpClient(socketsHandler);
+       
         public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(HttpRequest req, string path, string body, ILogger log)
         {
             path += (req.QueryString.HasValue ? req.QueryString.Value : "");
@@ -104,8 +112,9 @@ namespace FHIRProxy
                 }
                 if (!string.IsNullOrEmpty(body))
                 {
-                    _fhirRequest.Content = new StringContent(body, Encoding.UTF8, ct);
-                    _fhirRequest.Content.Headers.ContentType = new MediaTypeHeaderValue(ct);
+                    _fhirRequest.Content = new StringContent(body, Encoding.UTF8);
+                    _fhirRequest.Content.Headers.Remove("Content-Type");
+                    _fhirRequest.Content.Headers.Add("Content-Type", ct);
                 }
                 _fhirResponse = await _fhirClient.SendAsync(_fhirRequest);
                 // Read Response Content (this will usually be JSON content)
