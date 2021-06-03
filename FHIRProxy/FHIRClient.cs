@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 using System.Net;
+using Polly;
 
 namespace FHIRProxy
 {
@@ -16,15 +17,21 @@ namespace FHIRProxy
     {
         private static object lockobj = new object();
         private static string _bearerToken = null;
-        private static SocketsHttpHandler socketsHandler = new SocketsHttpHandler
+        private static HttpClient _fhirClient =null;
+        private static void InititalizeHttpClient(ILogger log)
         {
-            PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME","5")),
-            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO","2")),
-            MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS","10")
-        };
-
-        private static HttpClient _fhirClient = new HttpClient(socketsHandler);
-       
+            if (_fhirClient == null)
+            {
+                log.LogInformation("Initializing FHIR Client...");
+                SocketsHttpHandler socketsHandler = new SocketsHttpHandler
+                {
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME", "5")),
+                    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO", "2")),
+                    MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "10")
+                };
+                _fhirClient = new HttpClient(socketsHandler);
+            }
+        }
         public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(HttpRequest req, string path, string body, ILogger log)
         {
             path += (req.QueryString.HasValue ? req.QueryString.Value : "");
@@ -48,6 +55,7 @@ namespace FHIRProxy
                         log.LogInformation("Token is expired...Obtaining new bearer token...");
                         _bearerToken = ADUtils.GetOAUTH2BearerToken(System.Environment.GetEnvironmentVariable("FS-RESOURCE"), System.Environment.GetEnvironmentVariable("FS-TENANT-NAME"),
                                         System.Environment.GetEnvironmentVariable("FS-CLIENT-ID"), System.Environment.GetEnvironmentVariable("FS-SECRET")).GetAwaiter().GetResult();
+                        InititalizeHttpClient(log);
                         _fhirClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _bearerToken);
  
                     }
@@ -75,9 +83,16 @@ namespace FHIRProxy
                     throw new Exception($"{method} is not supported");
 
             }
-           
+            var retryPolicy = Policy
+           .Handle<HttpRequestException>()
+           .WaitAndRetryAsync(Utils.GetIntEnvironmentVariable("FP-POLLY-MAXRETRIES", "3"), retryAttempt =>
+                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+           );
+            HttpResponseMessage _fhirResponse = null;
+            await retryPolicy.ExecuteAsync(async () =>
+            {
                 HttpRequestMessage _fhirRequest;
-                HttpResponseMessage _fhirResponse;
+                _fhirResponse = null;
                 string fsurl = Utils.GetEnvironmentVariable("FS-URL", "");
                 if (!path.StartsWith(fsurl, StringComparison.InvariantCultureIgnoreCase)) path = fsurl + "/" + path;
                 _fhirRequest = new HttpRequestMessage(rm, path);
@@ -117,9 +132,10 @@ namespace FHIRProxy
                     _fhirRequest.Content.Headers.Add("Content-Type", ct);
                 }
                 _fhirResponse = await _fhirClient.SendAsync(_fhirRequest);
-                // Read Response Content (this will usually be JSON content)
-                var content = await _fhirResponse.Content.ReadAsStringAsync();
-                return new FHIRResponse(content, _fhirResponse.Headers, _fhirResponse.StatusCode);
+            });
+            // Read Response Content (this will usually be JSON content)
+            var content = await _fhirResponse.Content.ReadAsStringAsync();
+            return new FHIRResponse(content, _fhirResponse.Headers, _fhirResponse.StatusCode);
             
 
         }
