@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.AspNetCore.Http;
 using System.Net;
+using Polly;
 
 namespace FHIRProxy
 {
@@ -16,7 +17,29 @@ namespace FHIRProxy
     {
         private static object lockobj = new object();
         private static string _bearerToken = null;
-        private static HttpClient _fhirClient = new HttpClient();
+        private static HttpClient _fhirClient =null;
+        private static readonly HttpStatusCode[] httpStatusCodesWorthRetrying = {
+            HttpStatusCode.RequestTimeout, // 408
+            HttpStatusCode.InternalServerError, // 500
+            HttpStatusCode.BadGateway, // 502
+            HttpStatusCode.ServiceUnavailable, // 503
+            HttpStatusCode.GatewayTimeout, // 504
+            HttpStatusCode.TooManyRequests //429
+        };
+        private static void InititalizeHttpClient(ILogger log)
+        {
+            if (_fhirClient == null)
+            {
+                log.LogInformation("Initializing FHIR Client...");
+                SocketsHttpHandler socketsHandler = new SocketsHttpHandler
+                {
+                    PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME", "5")),
+                    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO", "2")),
+                    MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "10")
+                };
+                _fhirClient = new HttpClient(socketsHandler);
+            }
+        }
         public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(HttpRequest req, string path, string body, ILogger log)
         {
             path += (req.QueryString.HasValue ? req.QueryString.Value : "");
@@ -40,6 +63,7 @@ namespace FHIRProxy
                         log.LogInformation("Token is expired...Obtaining new bearer token...");
                         _bearerToken = ADUtils.GetOAUTH2BearerToken(System.Environment.GetEnvironmentVariable("FS-RESOURCE"), System.Environment.GetEnvironmentVariable("FS-TENANT-NAME"),
                                         System.Environment.GetEnvironmentVariable("FS-CLIENT-ID"), System.Environment.GetEnvironmentVariable("FS-SECRET")).GetAwaiter().GetResult();
+                        InititalizeHttpClient(log);
                         _fhirClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _bearerToken);
  
                     }
@@ -67,50 +91,62 @@ namespace FHIRProxy
                     throw new Exception($"{method} is not supported");
 
             }
-           
-                HttpRequestMessage _fhirRequest;
-                HttpResponseMessage _fhirResponse;
-                string fsurl = Utils.GetEnvironmentVariable("FS-URL", "");
-                if (!path.StartsWith(fsurl, StringComparison.InvariantCultureIgnoreCase)) path = fsurl + "/" + path;
-                _fhirRequest = new HttpRequestMessage(rm, path);
-                string ct = "application/json";
-                if (headers.TryGetValue("Content-Type", out Microsoft.Extensions.Primitives.StringValues ctvalues))
+            var retryPolicy = Policy
+           .Handle<HttpRequestException>()
+           .OrResult<HttpResponseMessage>(r => httpStatusCodesWorthRetrying.Contains(r.StatusCode))
+           .WaitAndRetryAsync(Utils.GetIntEnvironmentVariable("FP-POLLY-MAXRETRIES", "3"), retryAttempt =>
+                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (result, timeSpan, retryCount, context) =>
                 {
-                    ct = ctvalues.First();
-                    if (!string.IsNullOrEmpty(ct)) ct = ct.Split(";")[0];
-                    log.LogInformation($"Derived content type is {ct}");
+                    log.LogWarning($"FHIR Request failed. Waiting {timeSpan} before next retry. Retry attempt {retryCount}");
                 }
-                foreach (string headerKey in headers.Keys)
+           );
+            HttpResponseMessage _fhirResponse = 
+                await retryPolicy.ExecuteAsync(async () =>
                 {
-                    try
+                    HttpRequestMessage _fhirRequest;
+                    string fsurl = Utils.GetEnvironmentVariable("FS-URL", "");
+                    if (!path.StartsWith(fsurl, StringComparison.InvariantCultureIgnoreCase)) path = fsurl + "/" + path;
+                    _fhirRequest = new HttpRequestMessage(rm, path);
+                    string ct = "application/json";
+                    if (headers.TryGetValue("Content-Type", out Microsoft.Extensions.Primitives.StringValues ctvalues))
                     {
-                        if (headerKey.StartsWith("x-ms", StringComparison.InvariantCultureIgnoreCase) ||
-                            headerKey.StartsWith("prefer", StringComparison.InvariantCultureIgnoreCase) ||
-                            headerKey.StartsWith("etag", StringComparison.InvariantCultureIgnoreCase) ||
-                            headerKey.StartsWith("If-", StringComparison.InvariantCultureIgnoreCase) ||
-                            headerKey.StartsWith("Accept",StringComparison.InvariantCultureIgnoreCase))
+                        ct = ctvalues.First();
+                        if (!string.IsNullOrEmpty(ct)) ct = ct.Split(";")[0];
+                        log.LogInformation($"Derived content type is {ct}");
+                    }
+                    foreach (string headerKey in headers.Keys)
+                    {
+                        try
                         {
-                            _fhirRequest.Headers.Add(headerKey, headers[headerKey].FirstOrDefault());
+                            if (headerKey.StartsWith("x-ms", StringComparison.InvariantCultureIgnoreCase) ||
+                                headerKey.StartsWith("prefer", StringComparison.InvariantCultureIgnoreCase) ||
+                                headerKey.StartsWith("etag", StringComparison.InvariantCultureIgnoreCase) ||
+                                headerKey.StartsWith("If-", StringComparison.InvariantCultureIgnoreCase) ||
+                                headerKey.StartsWith("Accept",StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                _fhirRequest.Headers.Add(headerKey, headers[headerKey].FirstOrDefault());
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            log.LogError($"Error Adding Headers to FHIR Request {headerKey}:{ex.Message}");
                         }
                     }
-                    catch (Exception ex)
+                    if (!headers.TryGetValue("Accept", out Microsoft.Extensions.Primitives.StringValues acvalue))
                     {
-                        log.LogError($"Error Adding Headers to FHIR Request {headerKey}:{ex.Message}");
+                        _fhirRequest.Headers.Add("Accept", "application/json");
                     }
-                }
-                if (!headers.TryGetValue("Accept", out Microsoft.Extensions.Primitives.StringValues acvalue))
-                {
-                    _fhirRequest.Headers.Add("Accept", "application/json");
-                }
-                if (!string.IsNullOrEmpty(body))
-                {
-                    _fhirRequest.Content = new StringContent(body, Encoding.UTF8, ct);
-                    _fhirRequest.Content.Headers.ContentType = new MediaTypeHeaderValue(ct);
-                }
-                _fhirResponse = await _fhirClient.SendAsync(_fhirRequest);
-                // Read Response Content (this will usually be JSON content)
-                var content = await _fhirResponse.Content.ReadAsStringAsync();
-                return new FHIRResponse(content, _fhirResponse.Headers, _fhirResponse.StatusCode);
+                    if (!string.IsNullOrEmpty(body))
+                    {
+                        _fhirRequest.Content = new StringContent(body, Encoding.UTF8);
+                        _fhirRequest.Content.Headers.Remove("Content-Type");
+                        _fhirRequest.Content.Headers.Add("Content-Type", ct);
+                    }
+                    return await _fhirClient.SendAsync(_fhirRequest);
+                });
+            // Read Response Content (this will usually be JSON content)
+            var content = await _fhirResponse.Content.ReadAsStringAsync();
+            return new FHIRResponse(content, _fhirResponse.Headers, _fhirResponse.StatusCode);
             
 
         }
