@@ -169,7 +169,7 @@ namespace FHIRProxy.postprocessors
         {
             if (resource.IsNullOrEmpty()) return null;
             string action = "Unknown";
-            if (status.StartsWith("200")) action = "Update";
+            if (status.StartsWith("200")) action = Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION","Update");
             if (status.StartsWith("201")) action = "Create";
             if (status.Contains("DELETE")) action = "Delete";
             string _msgBody = resource.FHIRResourceType() + "/" + resource.FHIRResourceId() + "," + action + ",";
