@@ -33,9 +33,10 @@ namespace FHIRProxy
                 log.LogInformation("Initializing FHIR Client...");
                 SocketsHttpHandler socketsHandler = new SocketsHttpHandler
                 {
+                    ResponseDrainTimeout = TimeSpan.FromSeconds(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-RESPONSEDRAINSECS", "30")),
                     PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME", "5")),
                     PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO", "2")),
-                    MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "10")
+                    MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "20")
                 };
                 _fhirClient = new HttpClient(socketsHandler);
             }
@@ -95,7 +96,7 @@ namespace FHIRProxy
            .Handle<HttpRequestException>()
            .OrResult<HttpResponseMessage>(r => httpStatusCodesWorthRetrying.Contains(r.StatusCode))
            .WaitAndRetryAsync(Utils.GetIntEnvironmentVariable("FP-POLLY-MAXRETRIES", "3"), retryAttempt =>
-                TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (result, timeSpan, retryCount, context) =>
+                TimeSpan.FromMilliseconds(Utils.GetIntEnvironmentVariable("FP-POLLY-RETRYMS","500")), (result, timeSpan, retryCount, context) =>
                 {
                     log.LogWarning($"FHIR Request failed. Waiting {timeSpan} before next retry. Retry attempt {retryCount}");
                 }
