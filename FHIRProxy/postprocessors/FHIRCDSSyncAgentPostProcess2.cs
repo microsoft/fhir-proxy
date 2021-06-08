@@ -13,8 +13,6 @@
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 using Microsoft.AspNetCore.Http;
-using Azure.Messaging.EventHubs;
-using Azure.Messaging.EventHubs.Producer;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System;
@@ -23,7 +21,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
+using Azure.Messaging.ServiceBus;
 using System.Linq;
 
 namespace FHIRProxy.postprocessors
@@ -31,7 +29,8 @@ namespace FHIRProxy.postprocessors
     /* Proxy Post Process to publish events for CUD events to FHIR Server */
     class FHIRCDSSyncAgentPostProcess2 : IProxyPostProcess
     {
-        private IQueueClient _queueClient = null;
+        private ServiceBusClient _queueClient = null;
+        private string _qname = null;
         private Object lockobj = new object();
         private string[] _fhirSupportedResources = null;
         private bool initializationfailed = false;
@@ -50,7 +49,7 @@ namespace FHIRProxy.postprocessors
                     try
                     {
                         string _sbcfhirupdates = Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES");
-                        string _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
+                        _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
                         string fsr = Utils.GetEnvironmentVariable("SA-FHIRMAPPEDRESOURCES");
                         if (!string.IsNullOrEmpty(fsr)) _fhirSupportedResources=fsr.Split(",");
                         if (string.IsNullOrEmpty(_sbcfhirupdates) || string.IsNullOrEmpty(_qname))
@@ -59,15 +58,12 @@ namespace FHIRProxy.postprocessors
                             initializationfailed = true;
                             return;
                         }
-                        
-                        ServiceBusConnectionStringBuilder sbc = new ServiceBusConnectionStringBuilder(_sbcfhirupdates);
-                        sbc.EntityPath = _qname;
-                        _queueClient = new QueueClient(sbc);
+                        _queueClient = new ServiceBusClient(Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES"));
                        
                     }
                     catch (Exception e)
                     {
-                        log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize queue client:{e.Message}->{e.StackTrace}");
+                        log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize ServiceBusClient:{e.Message}->{e.StackTrace}");
                         initializationfailed = true;
                     }
                 } 
@@ -148,24 +144,28 @@ namespace FHIRProxy.postprocessors
          
                 if (!entries.IsNullOrEmpty())
                 {
+                    ServiceBusSender sender = _queueClient.CreateSender(_qname);
+                    using ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync();
                     foreach (JToken tok in entries)
                     {
-                        //Don't queue if no supported
-                        if (!Array.Exists(_fhirSupportedResources, element => element == tok["resource"].FHIRResourceType()))
-                            continue;
+                            //Don't queue if no supported
+                            if (!Array.Exists(_fhirSupportedResources, element => element == tok["resource"].FHIRResourceType()))
+                                continue;
 
-                        string entrystatus = (string)tok["response"]["status"];
-                        Message dta = createMsg(entrystatus, tok["resource"]);
-                        
-                        // Send the message to the queue.
-                        await _queueClient.SendAsync(dta);
-
+                            string entrystatus = (string)tok["response"]["status"];
+                            ServiceBusMessage dta = createMsg(entrystatus, tok["resource"]);
+                            if (!messageBatch.TryAddMessage(dta))
+                            {
+                                throw new Exception("FHIRCDSSyncAgentPostProcess2:Message Batch is too large");
+                            }
+                           
                     }
-
+                    // Send the message batch to the queue.
+                    await sender.SendMessagesAsync(messageBatch);
                 }
             
         }
-        private Message createMsg(string status,JToken resource)
+        private ServiceBusMessage createMsg(string status,JToken resource)
         {
             if (resource.IsNullOrEmpty()) return null;
             string action = "Unknown";
@@ -180,7 +180,7 @@ namespace FHIRProxy.postprocessors
                 if (_srchToken != null)
                     _msgBody += _srchToken["value"].ToString();
             }
-            Message dta = new Message(Encoding.UTF8.GetBytes(_msgBody));
+            ServiceBusMessage dta = new ServiceBusMessage(Encoding.UTF8.GetBytes(_msgBody));
             //For duplicate message sending hash together 
             dta.MessageId = hashMessage(resource.FHIRResourceType() + "/" + resource.FHIRReferenceId() + "/" + resource.FHIRVersionId() + "/" + action);
             //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference

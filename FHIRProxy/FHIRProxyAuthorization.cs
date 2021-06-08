@@ -56,7 +56,7 @@ namespace FHIRProxy
             if (!principal.Identity.IsAuthenticated)
             {
                 req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
-                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "User is not Authenticated");
+                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not Authenticated");
                 goto leave;
             }
             //Claims Trump Role Access if claims are present then request must pass scope check
