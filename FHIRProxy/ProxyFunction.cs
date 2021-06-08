@@ -51,63 +51,71 @@ namespace FHIRProxy
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{*restOfPath}")] HttpRequest req, string restOfPath,
                          ILogger log, ClaimsPrincipal principal)
         {
-           
-            if (!Utils.isServerAccessAuthorized(req))
+            string coid = null;
+            if (req.Headers.ContainsKey("x-ms-service-request-id"))
             {
-                return new ContentResult() { Content = Utils.genOOErrResponse("auth-access", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
+                coid = req.Headers["x-ms-service-request-id"].First();
             }
-          
-            //Load Request Body
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            //Initialize Response 
-            FHIRResponse serverresponse = null;
-           //Call Configured Pre-Processor Modules
-           ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody,req, log, principal);
-            
-            if (!prerslt.Continue)
+            using (log.BeginScope(
+                    new Dictionary<string, object> { { "CorrelationId", coid } }))
             {
-                //Pre-Processor didn't like something or exception was called so return 
-                FHIRResponse preresp = prerslt.Response;
-                if(preresp==null)
+                if (!Utils.isServerAccessAuthorized(req))
                 {
-                    string errmsg = (string.IsNullOrEmpty(prerslt.ErrorMsg) ? "No message" : prerslt.ErrorMsg);
-                    FHIRResponse fer = new FHIRResponse();
-                    fer.StatusCode = System.Net.HttpStatusCode.InternalServerError;
-                    fer.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Pre-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
-                    return genContentResult(fer, log);
+                    return new ContentResult() { Content = Utils.genOOErrResponse("auth-access", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
                 }
-                //Do not continue, so no call to the fhir server go directly to post processing with the response from the pre-preprocessor
-                serverresponse = preresp;
-                goto PostProcessing;
-            }
 
-            log.LogInformation($"Calling FHIR Server...Path {restOfPath}");
-            
-            //Proxy the call to the FHIR Server
-            serverresponse = await FHIRClient.CallFHIRServer(req, restOfPath, prerslt.Request, log);
+                //Load Request Body
+                string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                //Initialize Response 
+                FHIRResponse serverresponse = null;
+                //Call Configured Pre-Processor Modules
+                ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody, req, log, principal);
 
-PostProcessing:
-            //Call Configured Post-Processor Modules
-            ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal);
-                       
+                if (!prerslt.Continue)
+                {
+                    //Pre-Processor didn't like something or exception was called so return 
+                    FHIRResponse preresp = prerslt.Response;
+                    if (preresp == null)
+                    {
+                        string errmsg = (string.IsNullOrEmpty(prerslt.ErrorMsg) ? "No message" : prerslt.ErrorMsg);
+                        FHIRResponse fer = new FHIRResponse();
+                        fer.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+                        fer.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Pre-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
+                        return genContentResult(fer, log);
+                    }
+                    //Do not continue, so no call to the fhir server go directly to post processing with the response from the pre-preprocessor
+                    serverresponse = preresp;
+                    goto PostProcessing;
+                }
 
-            if (postrslt.Response == null)
-            {
-                
-                string errmsg = (string.IsNullOrEmpty(postrslt.ErrorMsg) ? "No message" : postrslt.ErrorMsg);
-                postrslt.Response = new FHIRResponse();
-                postrslt.Response.StatusCode = System.Net.HttpStatusCode.InternalServerError;
-                postrslt.Response.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Post-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
-                
+                log.LogInformation($"Calling FHIR Server...Path {restOfPath}");
+
+                //Proxy the call to the FHIR Server
+                serverresponse = await FHIRClient.CallFHIRServer(req, restOfPath, prerslt.Request, log);
+
+            PostProcessing:
+                //Call Configured Post-Processor Modules
+                ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal);
+
+
+                if (postrslt.Response == null)
+                {
+
+                    string errmsg = (string.IsNullOrEmpty(postrslt.ErrorMsg) ? "No message" : postrslt.ErrorMsg);
+                    postrslt.Response = new FHIRResponse();
+                    postrslt.Response.StatusCode = System.Net.HttpStatusCode.InternalServerError;
+                    postrslt.Response.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Post-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
+
+                }
+                //Reverse Proxy Response
+                postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req);
+                //return ActionResult
+                if (postrslt.Response.StatusCode == HttpStatusCode.NoContent)
+                {
+                    return null;
+                }
+                return genContentResult(postrslt.Response, log);
             }
-            //Reverse Proxy Response
-            postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req);
-            //return ActionResult
-            if (postrslt.Response.StatusCode==HttpStatusCode.NoContent)
-            {
-                return null;
-            }
-            return genContentResult(postrslt.Response, log);
         }
         public static ContentResult genContentResult(FHIRResponse resp,ILogger log)
         {
