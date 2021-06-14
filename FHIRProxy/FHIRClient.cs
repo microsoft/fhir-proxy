@@ -113,7 +113,6 @@ namespace FHIRProxy
                     {
                         ct = ctvalues.First();
                         if (!string.IsNullOrEmpty(ct)) ct = ct.Split(";")[0];
-                        log.LogInformation($"Derived content type is {ct}");
                     }
                     foreach (string headerKey in headers.Keys)
                     {

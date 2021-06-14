@@ -105,6 +105,7 @@ namespace FHIRProxy
             //Check for SMART Scopes (e.g. <patient/user>.<resource>|*.Read|Write|*)
             bool matchedscope = false;
             IEnumerable<Claim> claims = ci.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
+            if (claims == null || claims.Count() == 0) claims = ci.Claims.Where(x => x.Type == "scp");
             if (claims==null || claims.Count()==0)
             {
                 log.LogWarning($"FHIRProxyAuthorization:Claims check. There are no claims in the access token. Security enforced by role only!");
