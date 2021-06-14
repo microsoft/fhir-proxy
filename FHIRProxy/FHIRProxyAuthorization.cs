@@ -98,6 +98,7 @@ namespace FHIRProxy
         private bool hasClaims(ClaimsIdentity ci)
         {
             IEnumerable<Claim> claims = ci.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
+            if (claims == null || claims.Count() == 0) claims = ci.Claims.Where(x => x.Type == "scp");
             return (claims != null && claims.Count() > 0);
         }
         private bool PassedScopeCheck(HttpRequest req, ClaimsIdentity ci,string res,string resid, ILogger log)
