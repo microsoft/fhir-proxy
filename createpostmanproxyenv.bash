@@ -52,7 +52,7 @@ declare pmenv=""
 declare pmuuid=""
 declare pmfhirurl=""
 declare pmstsurl=""
-declate pmscope=""
+declare pmscope=""
 # Initialize parameters specified from command line
 while getopts ":k:n:sp" arg; do
         case "${arg}" in
