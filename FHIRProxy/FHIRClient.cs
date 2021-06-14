@@ -18,14 +18,25 @@ namespace FHIRProxy
         private static object lockobj = new object();
         private static string _bearerToken = null;
         private static HttpClient _fhirClient =null;
-        private static readonly HttpStatusCode[] httpStatusCodesWorthRetrying = {
-            HttpStatusCode.RequestTimeout, // 408
-            HttpStatusCode.InternalServerError, // 500
-            HttpStatusCode.BadGateway, // 502
-            HttpStatusCode.ServiceUnavailable, // 503
-            HttpStatusCode.GatewayTimeout, // 504
-            HttpStatusCode.TooManyRequests //429
-        };
+        
+        private static TimeSpan GetServerRetryAfter(HttpResponseMessage resp, ILogger log)
+        {
+            TimeSpan? retryafter = null;
+            try
+            {
+                retryafter = resp.Headers.RetryAfter?.Delta;
+                if (retryafter.HasValue)
+                {
+                    return retryafter.Value;
+                }
+            }
+            catch (Exception e)
+            {
+                log.LogWarning($"GetServerRetryAfter: Exception getting header {e.Message}....");
+            }
+            return TimeSpan.FromMilliseconds(Utils.GetIntEnvironmentVariable("FP-POLLY-RETRYMS", "200"));
+
+        }
         private static void InititalizeHttpClient(ILogger log)
         {
             if (_fhirClient == null)
@@ -93,14 +104,17 @@ namespace FHIRProxy
 
             }
             var retryPolicy = Policy
-           .Handle<HttpRequestException>()
-           .OrResult<HttpResponseMessage>(r => httpStatusCodesWorthRetrying.Contains(r.StatusCode))
-           .WaitAndRetryAsync(Utils.GetIntEnvironmentVariable("FP-POLLY-MAXRETRIES", "3"), retryAttempt =>
-                TimeSpan.FromMilliseconds(Utils.GetIntEnvironmentVariable("FP-POLLY-RETRYMS","500")), (result, timeSpan, retryCount, context) =>
-                {
-                    log.LogWarning($"FHIR Request failed. Waiting {timeSpan} before next retry. Retry attempt {retryCount}");
-                }
-           );
+                    .Handle<HttpRequestException>()
+                    .OrResult<HttpResponseMessage>(r => ServiceCommunicationException.httpStatusCodesWorthRetrying.Contains(r.StatusCode))
+                    .WaitAndRetryAsync(retryCount: Utils.GetIntEnvironmentVariable("FP-POLLY-MAXRETRIES", "3"),
+                                         sleepDurationProvider: (retryCount, response, context) =>
+                                         {
+                                             return GetServerRetryAfter(response.Result, log);
+                                         },
+                                         onRetryAsync: async (response, timespan, retryCount, context) => {
+                                             log.LogWarning($"CDS Request failed. Waiting {timespan} before next retry. Retry attempt {retryCount}");
+                                         }
+                   );
             HttpResponseMessage _fhirResponse = 
                 await retryPolicy.ExecuteAsync(async () =>
                 {
@@ -160,7 +174,7 @@ namespace FHIRProxy
         }
         public FHIRResponse(string content, HttpResponseHeaders respheaders, HttpStatusCode status, bool parse = false) : this()
         {
-            string[] filterheaders = Utils.GetEnvironmentVariable("FS-RESPONSE-HEADER-NAME", "x-ms-retry-after-ms,x-ms-session-token,x-ms-request-charge,Date,Last-Modified,ETag,Location,Content-Location").Split(",");
+            string[] filterheaders = Utils.GetEnvironmentVariable("FS-RESPONSE-HEADER-NAME", "x-ms-retry-after-ms,x-ms-session-token,x-ms-request-charge,Retry-After,Date,Last-Modified,ETag,Location,Content-Location").Split(",");
             if (parse) this.Content = JObject.Parse(content);
             else this.Content = content;
             foreach (string head in filterheaders)
