@@ -111,7 +111,7 @@ echo "Creating Postman environment for FHIR Proxy..."
                         pmenv=$(<postmantemplateauth.json)
 						pmscope="https://"$fphost"/.default"
                         pmfhirurl="https://"$fphost"/fhir"
-                        pmstsurl="https://stosmtfhirpxy.azurewebsites.net/AadSmartOnFhirProxy"
+                        pmstsurl="https://"$fphost"/AadSmartOnFhirProxy"
                         pmenv=${pmenv/~guid~/$pmuuid}
                         pmenv=${pmenv/~envname~/$fphost}
                         pmenv=${pmenv/~tenentid~/$fptenant}
