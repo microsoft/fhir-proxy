@@ -277,10 +277,10 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
     For example: ```somedoctor@sometenant.onmicrosoft.com```
  4. Now you can link the FHIR Resource to the user principal name by entering the following URL in your browser:
  
-    ```https://<your fhir proxy url>/fhir/manage/link/<ResourceName>/<ResourceID>?name=<user principal name>``` 
+    ```https://<your fhir proxy url>/manage/link/<ResourceName>/<ResourceID>?name=<user principal name>``` 
 
     For example to connect Dr. Mickey in my AAD tenant principal who’s user name is mickey@myaad.onmicrosoft.com to the FHIR Practitioner Resource Id 3bdaac8f-5c8e-499d-b906-aab31633337d you would enter the following URL:
-    ```https://<your fhir proxy url>/fhir/manage/link/Practitioner/3bdaac8f-5c8e-499d-b906-aab31633337d?name=mickey@myaad.onmicrosoft.com```
+    ```https://<your fhir proxy url>/manage/link/Practitioner/3bdaac8f-5c8e-499d-b906-aab31633337d?name=mickey@myaad.onmicrosoft.com```
      
     _Note: You will need to login as a user in a FHIR Administrative role to perform the assignment_
 
