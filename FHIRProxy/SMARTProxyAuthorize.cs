@@ -19,10 +19,11 @@ namespace FHIRProxy
         {
             string aadname=Utils.GetEnvironmentVariable("FP-LOGIN-AUTHORITY","login.microsoftonline.com");
             string aadpolicy = Utils.GetEnvironmentVariable("FP-LOGIN-POLICY", "");
-            string tenant = Utils.GetEnvironmentVariable("FP-LOGIN-TENANT");
+            string tenant = Utils.GetEnvironmentVariable("FP-LOGIN-TENANT",Utils.GetEnvironmentVariable("FP-RBAC-TENANT-NAME",""));
             string appiduri = req.Scheme + "://" + req.Host.Value;
-            if (tenant==null)
+            if (string.IsNullOrEmpty(tenant))
             {
+                
                 return new ContentResult() { Content = "Login Tenant not Configured...Cannot proxy AD Authorize Request", StatusCode = 500 , ContentType = "text/plain" };
             }
             string response_type = req.Query["response_type"];
