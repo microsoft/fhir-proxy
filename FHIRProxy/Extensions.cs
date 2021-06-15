@@ -156,14 +156,20 @@ namespace FHIRProxy
         public static string ObjectId(this ClaimsIdentity identity)
         {
             var tid = identity.Claims
-                          .Where(c => c.Type == "oid");
+                          .Where(c => c.Type == "http://schemas.microsoft.com/identity/claims/objectidentifier");
+                        
             if (!tid.Any())
             {
-                return "";
+                tid = identity.Claims
+                          .Where(c => c.Type == "oid");
+            }
+            if (tid.Any())
+            {
+                return tid.Single().Value.ToAzureKeyString();
             }
             else
             {
-                return tid.Single().Value.ToAzureKeyString();
+                return "";
             }
 
         }

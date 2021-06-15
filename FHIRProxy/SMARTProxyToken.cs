@@ -64,9 +64,11 @@ namespace FHIRProxy
                 ClaimsIdentity ci = new ClaimsIdentity(token.Claims);
                 if (ci.HasScope("launch.patient"))
                 {
+                    
                     var pt = FHIRProxyAuthorization.GetFHIRIdFromOID(ci, "Patient", log);
                     if (!string.IsNullOrEmpty(pt))
                     {
+                        log.LogInformation($"Launch Scope for patient...{pt}");
                         obj["patient"] = pt;
                     }
                 }

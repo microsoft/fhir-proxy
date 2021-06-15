@@ -59,8 +59,8 @@ namespace FHIRProxy
                 req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not Authenticated");
                 goto leave;
             }
-            //Claims Trump Role Access if claims are present then request must pass scope check
-            if (hasClaims(ci))
+            //Claims Trump Role Access if scope claims are present then request must pass scope check
+            if (hasScopeClaim(ci))
             {
                 if (!PassedScopeCheck(req, ci, res, id, log))
                 {
@@ -95,7 +95,7 @@ namespace FHIRProxy
             if (!req.Method.Equals("GET") && !admin && !writer && !ispostcommand) return false;
             return true;
         }
-        private bool hasClaims(ClaimsIdentity ci)
+        private bool hasScopeClaim(ClaimsIdentity ci)
         {
             IEnumerable<Claim> claims = ci.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
             if (claims == null || claims.Count() == 0) claims = ci.Claims.Where(x => x.Type == "scp");
@@ -104,44 +104,48 @@ namespace FHIRProxy
         private bool PassedScopeCheck(HttpRequest req, ClaimsIdentity ci,string res,string resid, ILogger log)
         {
             //Check for SMART Scopes (e.g. <patient/user>.<resource>|*.Read|Write|*)
-            bool matchedscope = false;
             IEnumerable<Claim> claims = ci.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
             if (claims == null || claims.Count() == 0) claims = ci.Claims.Where(x => x.Type == "scp");
             if (claims==null || claims.Count()==0)
             {
-                log.LogWarning($"FHIRProxyAuthorization:Claims check. There are no claims in the access token. Security enforced by role only!");
+                log.LogWarning($"FHIRProxyAuthorization:Claims check. There are no scope claims in the access token.!");
                 return false;
             }
-            log.LogInformation($"FHIRProxyAuthorization:Begin Claims check. There are {claims.Count()} claims");
+            log.LogInformation($"FHIRProxyAuthorization:Begin Claims check. There are {claims.Count()} scope claims entries");
             foreach (Claim c in claims)
             {
-
-                string[] s = c.Value.Split(".");
-                if (s.Length > 2 && !string.IsNullOrEmpty(s[0]) && !string.IsNullOrEmpty(s[1]) && !string.IsNullOrEmpty(s[2]))
+                string[] claimsinentry = c.Value.Split(" ");
+                foreach (string claim in claimsinentry)
                 {
-                    bool canread = (s[2].Equals("read", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
-                    bool canwrite = (s[2].Equals("write", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
-                    if ((s[1].Equals(res) || s[1].Equals("*")) && req.Method.Equals("GET") && canread && PassedContextScope(s[0],ci,res,resid,req.Query,log))
+                    string[] s = claim.Split(".");
+                    log.LogInformation($"FHIRProxyAuthorization: Checking claim: {claim}");
+                    if (s.Length > 2 && !string.IsNullOrEmpty(s[0]) && !string.IsNullOrEmpty(s[1]) && !string.IsNullOrEmpty(s[2]))
                     {
-                        matchedscope = true;
-                        break;
+                        if (s[0].StartsWith("launch")) continue; //Getting to access claims
+                        bool canread = (s[2].Equals("read", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
+                        bool canwrite = (s[2].Equals("write", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
+                        log.LogInformation($"FHIRProxyAuthorization: Checking request {res} against claim scope {s[1]} CanRead:{canread} CanWrite{canwrite}");
+                        if ((s[1].Equals(res) || s[1].Equals("*")) && req.Method.Equals("GET") && canread && PassedContextScope(s[0], ci, res, resid, req, log))
+                        {
+                            return true;
+                        }
+                        else if ((s[1].Equals(res) || s[1].Equals("*")) && !req.Method.Equals("GET") && canwrite && PassedContextScope(s[0], ci, res, resid, req, log))
+                        {
+                            return true;
+                        }
                     }
-                    else if ((s[0].Equals(res) || s[0].Equals("*")) && !req.Method.Equals("GET") && canwrite && PassedContextScope(s[0], ci, res, resid, req.Query, log))
+                    else
                     {
-                        matchedscope = true;
-                        break;
+                        log.LogWarning($"FHIRProxyAuthorization:Claim {claim} is not a SMART claim. Will not match a scope. Expected format is [patient|user].[resourceType|*].[read|write|*]");
                     }
-                } else
-                {
-                    log.LogWarning($"FHIRProxyAuthorization:Claim {c.Value} is not a SMART claim. Will not match a scope. Expected format is [patient|user].[resourceType|*].[read|write|*]");
                 }
             }
 
             
-            return matchedscope;
+            return false;
            
         }
-        private bool PassedContextScope(string scope, ClaimsIdentity ci,string res,string id,IQueryCollection querycol, ILogger log)
+        private bool PassedContextScope(string scope, ClaimsIdentity ci,string res,string id,HttpRequest req, ILogger log)
         {
             //For Patient Scope we will see if there is a patient claim with a FHIR Logical Id or External Id
             //and the id matches or the query is scoped down
@@ -153,7 +157,7 @@ namespace FHIRProxy
                 if (string.IsNullOrEmpty(fhirid) && string.IsNullOrEmpty(fhirextid))
                 {
                     //See if OID has been linked to a patient if no persisted FHIR ID Claims specified
-                    fhirid = GetFHIRIdFromOID(ci, res, log);
+                    fhirid = GetFHIRIdFromOID(ci, "Patient", log);
                     if (string.IsNullOrEmpty(fhirid))
                     {
                         log.LogWarning("Scope context is for Patient but no Patient Identity Claim or Link found");
@@ -163,17 +167,29 @@ namespace FHIRProxy
                 //If Patient resource must have Patient Identity Claim for FHIR Logical Id in Token and must match id parameter
                 if (res.Equals("Patient"))
                 {
-                    if (!string.IsNullOrEmpty(id) && fhirid.Equals(id)) return true;
+                    if (!string.IsNullOrEmpty(id))
+                    {
+                        log.LogInformation($"PassedContextScope: Checking {id} and {fhirid}");
+                        if (!string.IsNullOrEmpty(fhirid) && fhirid.Equals(id)) return true;
+                    } else { 
+                        if (!string.IsNullOrEmpty(fhirid)) {
+                            log.LogInformation($"PassedContextScope: Checking _id={fhirid} in {req.QueryString.Value}");
+                            return req.QueryString.Value.Contains($"_id={fhirid}");
+                        }
+                    }
                     log.LogWarning($"For patient resource must have FHIR Id claim or link and must match the id resource of request {id}-{fhirid}");
                     return false;
                 } else
                 {
+                    log.LogInformation($"FHIRProxyAuthorization: Looking for Patient scope in query string {req.QueryString.Value}");
+                    IQueryCollection querycol = req.Query;
                     //See if this resource query is constrained by Patient in Subject or Patient parameters
                     string qextid = querycol.Get<string>("patient:Patient.Identifier", @default: "");
                     if (string.IsNullOrEmpty(qextid)) querycol.Get<string>("subject:Patient.Identifier", @default: "");
                     string qid = querycol.Get<string>("patient", @default: "");
                     if (string.IsNullOrEmpty(qid)) qid = querycol.Get<string>("subject", @default: "");
-                    if (qextid.Contains(fhirextid) || qid.Contains(fhirid)) return true;
+                    if (!string.IsNullOrEmpty(qextid) && !string.IsNullOrEmpty(fhirextid) && qextid.Contains(fhirextid)) return true;
+                    if (!string.IsNullOrEmpty(qid) && !string.IsNullOrEmpty(fhirid) && qid.Contains(fhirid)) return true;
                     log.LogWarning("Could not match internal or external identifier from link/claim in query parms or request is not constrained to patient context...");
                     return false;
                 }

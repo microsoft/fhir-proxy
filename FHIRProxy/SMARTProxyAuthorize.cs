@@ -35,6 +35,8 @@ namespace FHIRProxy
             //To fully qualify SMART scopes to be compatible with AD Scopes we'll need and audience/application URI for the registered application
             //Check for Application Audience on request
             string aud = req.Query["aud"];
+            if (!string.IsNullOrEmpty(aud) && aud.EndsWith("/fhir")) aud = appiduri;
+          
             if (string.IsNullOrEmpty(aud))
             {
                 //If no Audience on request lookup in configuration, audience should be Application ID Uri for registered app
