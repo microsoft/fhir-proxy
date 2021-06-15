@@ -29,7 +29,7 @@ See [Proxy Configuration](##configuration) section below for full descriptions a
 All FHIR Server responses are re-written to include the proxy address as the appropriate endpoint so the FHIR Server URL is never directly exposed.
 
 ## Architecture Overview
-![Fhirproxy Arch](/images/architecture/fhirproxy_arch.png)
+![Fhirproxy Arch](/docs/images/architecture/fhirproxy_arch.png)
 
 
 ## Deploying your own FHIR Proxy
@@ -232,7 +232,7 @@ This module will filter returned resources linked to a patient to only include p
 
 
 ## How the Participant Post Processor works
-![F H I R Proxy Seq](/images/architecture/FHIRProxy_Seq.png)
+![F H I R Proxy Seq](/docs/images/architecture/FHIRProxy_Seq.png)
 
 ## Configuring Participant Authorization Roles for Users
 At a minimum users must be placed in one or more FHIR Participant roles in order to appropriately filter results from the FHIR Server. The Access roles are Patient, Practitioner and RelatedPerson. _Note:The user must also be in an appropriate Access role defined above_
