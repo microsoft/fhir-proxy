@@ -33,6 +33,11 @@ namespace FHIRProxy
             JArray arr2 = new JArray();
             arr2.Add("system/*.read");
             obj["scopes_supported"] = arr2;
+            JArray arr3 = new JArray();
+            arr3.Add("launch-ehr");
+            arr3.Add("launch-standalone");
+            arr3.Add("client-public");
+            obj["capabilities"] = arr3;
             return new JsonResult(obj);
         }
     }
