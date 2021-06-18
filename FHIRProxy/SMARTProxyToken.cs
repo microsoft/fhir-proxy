@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 namespace FHIRProxy
 {
     public static class SMARTProxyToken
@@ -28,13 +29,27 @@ namespace FHIRProxy
             {
                 return new ContentResult() { Content = "Login Tenant not Configured...Cannot proxy AD Token Request", StatusCode = 500, ContentType = "text/plain" };
             }
+            string ct = req.Headers["Content-Type"].FirstOrDefault();
+            if (string.IsNullOrEmpty(ct) || !ct.Contains("application/x-www-form-urlencoded"))
+            {
+                return new ContentResult() { Content = "Content-Type invalid must be application/x-www-form-urlencoded", StatusCode = 400, ContentType = "text/plain" };
+
+            }
+            string code = null;
+            string redirect_uri = null;
+            string client_id = null;
+            string client_secret = null;
+            string grant_type = null;
             //Read in Form Collection
             IFormCollection col = req.Form;
-            string code = col["code"];
-            string redirect_uri = col["redirect_uri"];
-            string client_id = col["client_id"];
-            string client_secret = col["client_secret"];
-            string grant_type = col["grant_type"];
+            if (col != null)
+            {
+                code = col["code"];
+                redirect_uri = col["redirect_uri"];
+                client_id = col["client_id"];
+                client_secret = col["client_secret"];
+                grant_type = col["grant_type"];
+            }
             //Create Key Value Pairs List
             var keyValues = new List<KeyValuePair<string, string>>();
             if (!string.IsNullOrEmpty(grant_type))
