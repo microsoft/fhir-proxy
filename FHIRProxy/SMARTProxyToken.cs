@@ -86,6 +86,8 @@ namespace FHIRProxy
                 }
 
             }
+            req.HttpContext.Response.Headers.Add("Cache-Control","no-store");
+            req.HttpContext.Response.Headers.Add("Pragma", "no-cache");
             var cr = new ContentResult()
             {
                 Content = obj.ToString(),
