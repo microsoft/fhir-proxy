@@ -53,6 +53,7 @@ namespace FHIRProxy
             req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
             req.Headers.Remove(Utils.FHIR_PROXY_ROLES);
             req.Headers.Remove(Utils.FHIR_PROXY_SMART_SCOPE);
+            req.Headers.Remove(Utils.PATIENT_CONTEXT_FHIRID);
             if (!principal.Identity.IsAuthenticated)
             {
                 req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
@@ -147,22 +148,37 @@ namespace FHIRProxy
         }
         private bool PassedContextScope(string scope, ClaimsIdentity ci,string res,string id,HttpRequest req, ILogger log)
         {
+            //Load Patient Compartment Resources 
+            PatientCompartment comp = PatientCompartment.Instance();
             //For Patient Scope we will see if there is a patient claim in the token with a FHIR Logical Id or External Id
             //and the id matches and the query is scoped down to the matching patient.
             if (scope.StartsWith("patient", StringComparison.InvariantCultureIgnoreCase))
             {
-                IEnumerable<Claim> claims = ci.Claims;
-                string fhirid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-ID-CLAIM", "fhirpatientid")).Select(c => c.Value).SingleOrDefault();
-                string fhirextid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-EXTID-CLAIM", "fhirpatientextid")).Select(c => c.Value).SingleOrDefault();
-                if (string.IsNullOrEmpty(fhirid) && string.IsNullOrEmpty(fhirextid))
+                //See if resource is patient compartment to check for query scope no access for non-patient compartment resources...
+                if (!comp.isPatientCompartmentResource(res)) return false;
+                
+                //Check if patient is in context already
+                string fhirid = null;
+                if (req.Headers.ContainsKey(Utils.PATIENT_CONTEXT_FHIRID))
                 {
-                    //See if OID has been linked to a patient if no persisted FHIR ID claim specified
-                    fhirid = GetFHIRIdFromOID(ci, "Patient", log);
+                    fhirid = req.Headers[Utils.PATIENT_CONTEXT_FHIRID].FirstOrDefault();
+                }
+                else
+                {
+                    IEnumerable<Claim> claims = ci.Claims;
+                    fhirid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-ID-CLAIM", "fhirpatientid")).Select(c => c.Value).SingleOrDefault();
                     if (string.IsNullOrEmpty(fhirid))
                     {
-                        log.LogWarning("FHIRProxyAuthorization: Scope context is for Patient but no Patient Identity Claim or Link found");
-                        return false;
+                        //See if OID has been linked to a patient if no persisted FHIR ID claim specified
+                        fhirid = GetFHIRIdFromOID(ci, "Patient", log);
+                        if (string.IsNullOrEmpty(fhirid))
+                        {
+                            log.LogWarning("FHIRProxyAuthorization: Scope context is for Patient but no Patient Identity Claim or Link found");
+                            return false;
+                        }
                     }
+                    //Set fhirid in context for post filtering
+                    req.Headers.Add(Utils.PATIENT_CONTEXT_FHIRID, fhirid);
                 }
                 //If Patient resource must have Patient Identity Claim for FHIR Logical Id in Token and must match id parameter
                 if (res.Equals("Patient"))
@@ -171,25 +187,34 @@ namespace FHIRProxy
                     {
                         log.LogInformation($"FHIRProxyAuthorization: PassedContextScope: Checking {id} and {fhirid}");
                         if (!string.IsNullOrEmpty(fhirid) && fhirid.Equals(id)) return true;
-                    } else { 
+                    } else {
                         if (!string.IsNullOrEmpty(fhirid)) {
-                            log.LogInformation($"FHIRProxyAuthorization: PassedContextScope: Checking _id={fhirid} in {req.QueryString.Value}");
-                            return req.QueryString.Value.Contains($"_id={fhirid}");
+                            log.LogInformation($"FHIRProxyAuthorization: PassedContextScope: Checking for {fhirid} in {req.QueryString.Value}");
+                            return (req.QueryString.Value.Contains($"_id={fhirid}") || req.QueryString.Value.Contains($"link=Patient/{fhirid}"));
                         }
                     }
                     log.LogWarning($"FHIRProxyAuthorization: PassedContextScope: For patient resource must have FHIR Id claim or link and must match the id resource of request {id}-{fhirid}");
                     return false;
                 } else
                 {
-                    log.LogInformation($"FHIRProxyAuthorization: PassedContextScope: Looking for Patient scope in query string {req.QueryString.Value}");
-                    IQueryCollection querycol = req.Query;
-                    //See if this resource query is constrained by Patient in Subject or Patient parameters
-                    string qextid = querycol.Get<string>("patient:Patient.Identifier", @default: "");
-                    if (string.IsNullOrEmpty(qextid)) querycol.Get<string>("subject:Patient.Identifier", @default: "");
-                    string qid = querycol.Get<string>("patient", @default: "");
-                    if (string.IsNullOrEmpty(qid)) qid = querycol.Get<string>("subject", @default: "");
-                    if (!string.IsNullOrEmpty(qextid) && !string.IsNullOrEmpty(fhirextid) && qextid.Contains(fhirextid)) return true;
-                    if (!string.IsNullOrEmpty(qid) && !string.IsNullOrEmpty(fhirid) && qid.Contains(fhirid)) return true;
+                    //Check queries if id is not specified
+                    if (string.IsNullOrEmpty(id))
+                    {
+                        log.LogInformation($"FHIRProxyAuthorization: PassedContextScope: Looking for Patient scope in query string {req.QueryString.Value}");
+                        IQueryCollection querycol = req.Query;
+                        //Get the list of parms to check for patient scope
+                        string[] parms = comp.GetPatientParametersForResourceType(res);
+                        //See if this resource query has expected parm that is constrained by Patient
+                        foreach (string p in parms)
+                        {
+                            string qid = querycol.Get<string>($"{p}", @default: "");
+                            if (!string.IsNullOrEmpty(qid) && !string.IsNullOrEmpty(fhirid) && qid.Contains(fhirid)) return true;
+                        }
+                    } else
+                    {
+                        //Allow individual retrieve will be checked against patient context on response
+                        return true;
+                    }
                     log.LogWarning("FHIRProxyAuthorization: PassedContextScope not match internal or external identifier from link/claim in query parms or request is not constrained to patient context...");
                     return false;
                 }
@@ -197,8 +222,11 @@ namespace FHIRProxy
             {
                 //Will pass on user context scope but will need to be filtered by Pre/Post Module Logic
                 return true;
+            } else if (scope.StartsWith("system", StringComparison.InvariantCultureIgnoreCase))
+            {
+                //Will pass on system scope but will need to be filtered by Pre/Post Module Logic
+                return true;
             }
-
             return false;
         }
         public static string GetFHIRIdFromOID(ClaimsIdentity ci, string res,ILogger log)

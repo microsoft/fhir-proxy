@@ -37,10 +37,22 @@ namespace FHIRProxy
             string grant_type = col["grant_type"];
             //Create Key Value Pairs List
             var keyValues = new List<KeyValuePair<string, string>>();
-            keyValues.Add(new KeyValuePair<string, string>("grant_type", grant_type));
-            keyValues.Add(new KeyValuePair<string, string>("code", code));
-            keyValues.Add(new KeyValuePair<string, string>("redirect_uri", redirect_uri));
-            keyValues.Add(new KeyValuePair<string, string>("client_id", client_id));
+            if (!string.IsNullOrEmpty(grant_type))
+            {
+                keyValues.Add(new KeyValuePair<string, string>("grant_type", grant_type));
+            }
+            if (!string.IsNullOrEmpty(code))
+            {
+                keyValues.Add(new KeyValuePair<string, string>("code", code));
+            }
+            if (!string.IsNullOrEmpty(redirect_uri))
+            {
+                keyValues.Add(new KeyValuePair<string, string>("redirect_uri", redirect_uri));
+            }
+            if (!string.IsNullOrEmpty(client_id))
+            {
+                keyValues.Add(new KeyValuePair<string, string>("client_id", client_id));
+            }
             if (!string.IsNullOrEmpty(client_secret))
             {
                 keyValues.Add(new KeyValuePair<string, string>("client_secret", client_secret));
