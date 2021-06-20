@@ -51,6 +51,8 @@ namespace FHIRProxy
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{*restOfPath}")] HttpRequest req, string restOfPath,
                          ILogger log, ClaimsPrincipal principal)
         {
+            //Parse Path
+            FHIRParsedPath parsedPath = req.parsePath();
             string coid = null;
             if (req.Headers.ContainsKey("x-ms-service-request-id"))
             {
@@ -66,6 +68,7 @@ namespace FHIRProxy
 
                 //Load Request Body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+              
                 //Initialize Response 
                 FHIRResponse serverresponse = null;
                 //Call Configured Pre-Processor Modules
@@ -106,6 +109,13 @@ namespace FHIRProxy
                     postrslt.Response.StatusCode = System.Net.HttpStatusCode.InternalServerError;
                     postrslt.Response.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Post-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
 
+                }
+                //Check for Patient Context for single object requests and Filter single resources not restricted by query
+                if (!string.IsNullOrEmpty(parsedPath.ResourceId) && !PatientCompartment.Instance().ResourceIsAllowedForPatientContext(req, postrslt.Response.toJToken(),log))
+                {
+                    postrslt.Response = new FHIRResponse();
+                    postrslt.Response.StatusCode = System.Net.HttpStatusCode.Unauthorized;
+                    postrslt.Response.Content = Utils.genOOErrResponse("authorization-denied", $"Resource {parsedPath.ResourceType}/{parsedPath.ResourceId} does not belong to patient in context.");
                 }
                 //Reverse Proxy Response
                 postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req);

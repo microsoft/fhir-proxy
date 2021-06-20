@@ -12,6 +12,14 @@
     <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="patient_comp.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="patient_comp.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Azure.Messaging.EventHubs" Version="5.2.0" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.1.2" />
     <PackageReference Include="Hl7.Fhir.Specification.R4" Version="2.0.3" />
