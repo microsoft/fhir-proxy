@@ -24,12 +24,12 @@
 
 ## Testing
 The new endpoint for your FHIR Server should now be: ```https://<secure proxy url from above>/fhir```. You can use any supported FHIR HTTP verb and any FHIR compliant request/query
-For example to see conformance statement for the FHIR Server, use your browser and access the following endpoint:</br>
+For example to see conformance statement for the FHIR Server, use your browser and access the proxy endpoint:</br>
 ```https://<secure proxy url from above>/fhir/metadata```
 
-The endpoint will authenticate/authorize your access to the FHIR server will execute configured pre-processing routines, pass the modified request on to the FHIR Server via the configured service client, execute configured post-processing routines on the result and rewrite the server response to the client. 
+Proxy endpoints will authenticate/authorize your access to the FHIR server will execute configured pre-processing routines, pass the modified request on to the FHIR Server via the configured service client, execute configured post-processing routines on the result and rewrite the server response to the client. 
 The original user principal name and tenant are passed in custom headers to the FHIR server for accurate security and compliance auditing.  
-_Note: You will need to login as a user/principal in a FHIR Reader and/or FHIR Administrative role to view. All proxy calls are auth secured including conformance_
+
 
 ## Adding Users/Groups to the FHIR Server Proxy
 At a minimum users must be placed in one or more FHIR server roles in order to access the FHIR Server via the Proxy. The Access roles are Administrator, Resource Reader and Resource Writer 
@@ -79,6 +79,14 @@ Note: You can authenticate using client_credentials flow to your new application
 
 ---
 
-### Support/Contact
+### How to file issues and get help  
 
-For more information on {Title}, email us **@ <a href="mailto:HealthArchitectures@microsoft.com">HealthArchitectures</a>**.
+This project uses GitHub Issues to track bugs and feature requests. Please search the existing 
+issues before filing new issues to avoid duplicates.  For new issues, file your bug or 
+feature request as a new Issue.
+
+For help and questions about using this project, please open an [issue](https://github.com/microsoft/fhir-proxy/issues) against the Github repository. We actively triage these and will work on this as best effort.
+
+### Microsoft Support Policy  
+
+Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
