@@ -1,20 +1,20 @@
-# **Smart on FHIR Oauth Scope Configuration for Registered Applications**
+# **Smart on FHIR OAuth Scope Configuration for Registered Applications**
 
 If you have not already created a service principal for your FHIR Proxy, check out this link for instructions on how to do so.
 
-In this guide you will learn how to configure scopes for your Smart on FHIR applications to utilize the oauth permissions exposed in your FHIR Proxy Application.
+In this guide you will learn how to configure scopes for your Smart on FHIR applications to utilize the oauth permissions exposed in your FHIR Proxy Service Principal.
 
-Detailed information about FHIR launch contexts and scope can be found [here](http://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context/).
+Detailed information about FHIR launch contexts and scopes can be found [here](http://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context/).
 
-Scopes are used to limit the resources a SMART on FHIR app can access within a launch context. It is best practice to grant the minimum scopes necessary for an application. A scope is made up of the context, the FHIR resource and the type of action that can be taken.
+Scopes are used to limit the resources a SMART on FHIR app can access within a launch context. It is best practice to grant the minimum scopes necessary for an application. A scope is made up of the context, the FHIR resource, and the type of action that can be taken.
 
 ![](images/smart_on_fhir_1.png)
 
-When using the configuring the FHIR Proxy for a SMART on FHIR application follow these steps:
+When configuring a registered application for a Smart on FHIR application follow these steps:
 
 _These can be done through the Azure portal or though the Azure CLI. Here will cover the Azure Portal workflow_
 
-* **Create a registered application service principal in Azure AD for the Smart on FHIR application**
+* **Create a registered application in Azure AD for the Smart on FHIR application**
 
   - For more information on the designed interaction between the Smart on FHIR app, the service principal and the authentication on the FHIR proxy check out this [Application  Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model)
 
