@@ -49,12 +49,19 @@ namespace FHIRProxy.postprocessors
                     try
                     {
                         string _sbcfhirupdates = Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES");
-                        _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
+                        if (Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD"))
+                        {
+                            _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRBULK");
+                        }
+                        else
+                        {
+                            _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
+                        }
                         string fsr = Utils.GetEnvironmentVariable("SA-FHIRMAPPEDRESOURCES");
                         if (!string.IsNullOrEmpty(fsr)) _fhirSupportedResources=fsr.Split(",");
                         if (string.IsNullOrEmpty(_sbcfhirupdates) || string.IsNullOrEmpty(_qname))
                         {
-                            log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize SA-SERVICEBUSNAMESPACEFHIRUPDATES and/or SA-SERVICEBUSQUEUENAMEFHIRUPDATES are not defined...Check Configuration");
+                            log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize SA-SERVICEBUSNAMESPACEFHIRUPDATES and/or Queue name is/are not defined...Check Configuration");
                             initializationfailed = true;
                             return;
                         }
@@ -184,7 +191,7 @@ namespace FHIRProxy.postprocessors
             ServiceBusMessage dta = new ServiceBusMessage(Encoding.UTF8.GetBytes(_msgBody));
             //For duplicate message sending hash together 
             dta.MessageId = hashMessage(resource.FHIRResourceType() + "/" + resource.FHIRReferenceId() + "/" + resource.FHIRVersionId() + "/" + action);
-            if (Utils.GetBoolEnvironmentVariable("FP-SA-USERSESSSION", true))
+            if (!Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD"))
             {
                 //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
                 string partitionkey = resource.FHIRResourceType();
