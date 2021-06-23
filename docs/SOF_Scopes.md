@@ -30,7 +30,7 @@ This tutorial provides a step by step for **creating a registered application in
 
 [Register a service app in Azure AD - Azure API for FHIR | Microsoft Docs](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)
 
-1. To **create context, resource, and action type specific scopes** open the Expose an API blade in the registered application
+2. To **create context, resource, and action type specific scopes** open the Expose an API blade in the registered application
 
 ![](images/smart_on_fhir_3.png)
 
@@ -38,25 +38,24 @@ Click + Add Scope and name the scope according to the context.resource.action na
 
 ![](images/smart_on_fhir_4.png)
 
-You will now have a scope defined that can be delegated to the Smart on FHIR app API ![](RackMultipart20210623-4-2pa71h_html_f670d17e80e983e6.png)
+You will now have a scope defined that can be delegated to the Smart on FHIR app API ![]
+![](images/smart_on_fhir_5.png)
 
 For more information on creating scopes, check out this [quickstart](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-configure-app-expose-web-apis#:~:text=Sign%20in%20to%20the%20Azure%20portal.%20If%20you,Select%20Expose%20an%20API%20%3E%20Add%20a%20scope.)
 
-1. Determine the minimal set of scope your Smart on FHIR application needs and **add designated scopes to the API for the Smart on FHIR registered application service client**
+3. Determine the minimal set of scope your Smart on FHIR application needs and **add designated scopes to the API for the Smart on FHIR registered application service client**
 
 Open the API permissions blade on the registered application and Click + Add a permission. The scopes you created in step 2 should be available to add to your application.
 
-![](images/smart_on_fhir_5.png)
+![](images/smart_on_fhir_6.png)
 
-1. To enable the authentication flow outlined below **configure the redirect URL for the Smart on FHIR application in the service client**
+4. To enable the authentication flow outlined below **configure the redirect URL for the Smart on FHIR application in the service client**
 
 To do this, open the Authentication blade on the registered application. click + Add a platform, select Web and enter the redirect URL from your Smart on FHIR app.
 
-![](images/smart_on_fhir_6.png)
+![](images/smart_on_fhir_7.png)
 
 You have now configured Azure AD to facilitate the authorization workflow below for you Smart on FHIR app and the FHIR Proxy service principal.
-
-![](images/smart_on_fhir_7.png)
 
 ![](images/smart_on_fhir_8.gif)
 
