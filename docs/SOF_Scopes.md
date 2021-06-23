@@ -1,4 +1,4 @@
-# **Smart on FHIR Scope Configuration for Registered Applications**
+# **Smart on FHIR Oauth Scope Configuration for Registered Applications**
 
 If you have not already created a service principal for your FHIR Proxy, check out this link for instructions on how to do so.
 
