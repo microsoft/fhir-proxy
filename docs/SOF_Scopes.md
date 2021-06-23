@@ -14,7 +14,7 @@ When using the configuring the FHIR Proxy for a SMART on FHIR application follow
 
 _These can be done through the Azure portal or though the Azure CLI. Here will cover the Azure Portal workflow_
 
-* **Create a registered application service principle in Azure AD for the Smart on FHIR application**
+* **Create a registered application service principal in Azure AD for the Smart on FHIR application**
 
   - For more information on the designed interaction between the Smart on FHIR app, the service principal and the authentication on the FHIR proxy check out this [Application  Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model)
 
