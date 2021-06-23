@@ -1,10 +1,10 @@
-# Quickstart: Deploy FHIR Proxy via ARM Template
+# Quickstart: Use an ARM template to deploy FHIR Proxy
 ### **Table of Contents**
 
 1. [**Introduction**](#introduction)
 2. [**General Considerations**](#general_considerations)
 3. [**Prerequisites**](#prerequisites)
-4. [**Install FHIR Proxy via ARM Template**](#install)
+4. [**Deploy FHIR Proxy via ARM Template**](#deploy)
     + [**Using Azure Portal**](#azure_portal)
         + [Step 1](#azure_portal_step_1)
         + [Step 2](#azure_portal_step_2)
@@ -68,7 +68,7 @@ Any of these AAD roles would have the permissions required for Steps 2 and 3:
 For more information, see [Quickstart: Register an application with the Microsoft identity platform](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app).
 
 #
-## **Install FHIR Proxy via Azure Resource Manager (ARM) Template** <a name="install"></a> <a name="azure_portal"></a>
+## **Deploy FHIR Proxy via Azure Resource Manager (ARM) Template** <a name="deploy"></a> <a name="azure_portal"></a>
 ## **Step 1 Deployment (Azure Portal)** <a name="azure_portal_step_1"></a>
 #### In Step 1, you will be filling out information in an ARM template that will let you automatically deploy the basic infrastructure components for FHIR Proxy. These components are FHIR Proxy's Application Service Plan, Storage Account, Function App, Key Vault, Application Insights, Log Analytics Workspace, and Redis Cache.
 
@@ -235,7 +235,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 48. You are now done with your initial deployment of FHIR Proxy. Please see the [**After the install**](#after_the_install) section to confirm that the deployment was successful.
 
 #
-## **Install FHIR Proxy via Azure Resource Manager (ARM) Template** <a name="cli"></a>
+## **Deploy FHIR Proxy via Azure Resource Manager (ARM) Template** <a name="cli"></a>
 ## **Step 1 Deployment (CLI)** <a name="cli_step_1"></a>
 #### In Step 1, you will be filling out information in an ARM template that will let you automatically deploy the basic infrastructure components for FHIR Proxy. These components are FHIR Proxy's Application Service Plan, Storage Account, Function App, Key Vault, Application Insights, Log Analytics Workspace, and Redis Cache.
 #####   For CLI deployment, you will need access to a Bash environment set up with the following:
