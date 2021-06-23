@@ -347,7 +347,7 @@ For more information, see [Quickstart: Register an application with the Microsof
         Application Secret = ''
         Token Issuer URL   = ''
 
-*Some of this information is needed for **Step 3**. Please be careful handling the ```Application Secret``` and make sure that it remains hidden when not in use. For your security, the ```Application Secret``` is automatically saved in the Key Vault in FHIR Proxy's resource group.
+*Some of this information is needed for **Step 3**. Please make a copy of the ```Application Secret``` and store it in a safe place. For your security, the ```Application Secret``` is automatically saved in the Key Vault in FHIR Proxy's resource group.
 
 ## **Step 3 Deployment (CLI)** <a name="cli_step_3"></a>
 #### In Step 3, you will be updating the Function App configuration to enable an AAD authentication flow for client apps that interact with FHIR Proxy.
