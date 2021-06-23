@@ -1,6 +1,6 @@
 # **Smart on FHIR Scope Configuration for Registered Applications**
 
-If you have not already created a service principle for your FHIR Proxy, check out this \&lt;\&lt;link\&gt;\&gt; for instructions on how to do so.
+If you have not already created a service principal for your FHIR Proxy, check out this \&lt;\&lt;link\&gt;\&gt; for instructions on how to do so.
 
 In this guide you will learn how to configure scopes for your Smart on FHIR applications to utilize the oauth permissions exposed in your FHIR Proxy Application.
 
@@ -16,7 +16,7 @@ _These can be done through the Azure portal or though the Azure CLI. Here will c
 
 1. **Create a registered application service principle in Azure AD for the Smart on FHIR application**
 
-For more information on the designed interaction between the Smart on FHIR app, the service principle and the authentication on the FHIR proxy check out this [Application Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model)
+For more information on the designed interaction between the Smart on FHIR app, the service principal and the authentication on the FHIR proxy check out this [Application Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model)
 
 ![](images/smart_on_fhir_2.png)
 
@@ -54,13 +54,12 @@ To do this, open the Authentication blade on the registered application. click +
 
 ![](images/smart_on_fhir_6.png)
 
-You have now configured Azure AD to facilitate the authorization workflow below for you Smart on FHIR app and the FHIR Proxy service principle.
+You have now configured Azure AD to facilitate the authorization workflow below for you Smart on FHIR app and the FHIR Proxy service principal.
 
 ![](images/smart_on_fhir_7.png)
 
 ![](images/smart_on_fhir_8.gif)
 
-FHIR Proxy
 
 _ **User to Patient Mapping to utilize the Patient Context** _
 
