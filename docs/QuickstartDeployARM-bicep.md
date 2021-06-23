@@ -10,10 +10,9 @@
 5. [**After the install**](#after_the_install)
 6. [**Troubleshooting**](#troubleshooting)
 7. [**FAQ**](#faq)
-8. [**Next steps**](#next_steps)
 
 ### **Introduction** <a name="introduction"></a>
-In this guide, you’ll learn how to deploy [FHIR Proxy](https://github.com/microsoft/fhir-proxy) as a gateway server application in support of [Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/overview)/[FHIR Server for Azure](https://github.com/microsoft/fhir-server) (FHIR Server). For general information about FHIR Proxy, please see the [FHIR Proxy README](https://github.com/microsoft/fhir-proxy#readme). For a detailed look at FHIR Proxy configuration, please see the FHIR Proxy Configuration Guide (TBD).
+In this guide, you’ll learn how to deploy [FHIR Proxy](https://github.com/microsoft/fhir-proxy) as a gateway server application in support of [Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/overview)/[FHIR Server for Azure](https://github.com/microsoft/fhir-server) (FHIR Server). For general information about FHIR Proxy, please see the [FHIR Proxy README](https://github.com/microsoft/fhir-proxy#readme).
 
 ### **General Considerations** <a name="general_considerations"></a>
 + FHIR Proxy works in tandem with FHIR Server, and for the two to operate together, they must be installed in the same Azure Active Directory (AAD) tenant.
@@ -408,7 +407,3 @@ For more information, see [Quickstart: Register an application with the Microsof
 **Q:** What if I don't have all of the required parameters for Step 1 readily available? Can I perform Step 1 deployment using the ARM template without those parameters?
  
 **A:** Even if you are missing some required parameter values, it is still possible to carry out a Step 1 deployment for the FHIR Proxy basic infrastructure components. If you need to, you can input an arbitrary "placehoder" value (such as "...") for any required parameters that are missing and then just proceed with Step 1 as normal. Later when you gain access to the missing parameter values, you can point the ARM template at the same resource group and run the Step 1 deployment again with the parameter values filled in. Doing so will cause the ARM template to automatically update your FHIR Proxy installation without having to redeploy the basic infrastructure components.
-
-## Next steps <a name="next_steps"></a>
-
-Once you are finished with your initial deployment of FHIR Proxy, please see the FHIR Proxy Configuration Guide (TBD) for information on setting up FHIR Proxy for use in a production environment.
