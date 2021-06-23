@@ -7,7 +7,6 @@ namespace FHIRProxy
 {
     public class ServiceCommunicationException : Exception
     {
-        private HttpStatusCode _code = HttpStatusCode.InternalServerError;
         public static readonly HttpStatusCode[] httpStatusCodesWorthRetrying = {
             HttpStatusCode.RequestTimeout, // 408
             HttpStatusCode.InternalServerError, // 500
@@ -16,17 +15,20 @@ namespace FHIRProxy
             HttpStatusCode.GatewayTimeout, // 504
             HttpStatusCode.TooManyRequests //429
         };
-        public ServiceCommunicationException(HttpStatusCode status)
+        public ServiceCommunicationException(HttpStatusCode status, string responsecontent = null, string requestcontent = null, string requesturl = null)
         {
-            _code = status;
+            this.Status = status;
+            this.ResponseBody = responsecontent;
+            this.RequestUrl = requesturl;
+            this.RequestBody = requestcontent;
         }
-        public HttpStatusCode getStatus()
-        {
-            return _code;
-        }
+        public string RequestUrl { get; set; }
+        public string RequestBody { get; set; }
+        public string ResponseBody { get; set; }
+        public HttpStatusCode Status { get; set; }
         public bool isRetryable()
         {
-            return httpStatusCodesWorthRetrying.Contains(_code);
+            return httpStatusCodesWorthRetrying.Contains(Status);
         }
     }
 }

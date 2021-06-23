@@ -82,23 +82,35 @@ namespace FHIRProxy.preprocessors
                     if (!string.IsNullOrEmpty(urn) && urn.StartsWith("urn:uuid:") && !tok["resource"].IsNullOrEmpty())
                     {
                         string rt = (string)tok["resource"]["resourceType"];
-                        string rid = urn.Replace("urn:uuid:", "");
-                        tok["resource"]["id"] = rid;
-                        convert.Add(rid, rt);
+                        string rid = (string)tok["resource"]["id"];
+                        if (string.IsNullOrEmpty(rid))
+                        {
+                            rid = urn.Replace("urn:uuid:", "");
+                            tok["resource"]["id"] = rid;
+                        }
+                        if (!convert.TryAdd(rid, rt))
+                        {
+                            Console.WriteLine($"**** Duplicate GUID Detected {rid} already assigned to a resource type");
+                        }
                         tok["request"]["method"] = "PUT";
                         tok["request"]["url"] = $"{rt}?_id={rid}";
                     }
 
                 }
                 log.LogInformation($"TransformBundleProcess: Phase 2 Localizing {convert.Count} resource entries...");
-                string str = result.ToString();
-                foreach (string id1 in convert.Keys)
+                IEnumerable<JToken> refs = result.SelectTokens("$..reference");
+                foreach (JToken item in refs)
                 {
-                    string r1 = convert[id1] + "/" + id1;
-                    string f = "urn:uuid:" + id1;
-                    str = str.Replace(f, r1);
+                    string s = item.ToString();
+                    string t = "";
+                    s = s.Replace("urn:uuid:", "");
+
+                    if (convert.TryGetValue(s, out t))
+                    {
+                        item.Replace(t + "/" + s);
+                    }
                 }
-                return new ProxyProcessResult(true, "", str, null);
+                return new ProxyProcessResult(true, "", result.ToString(), null);
             }
             return new ProxyProcessResult(true, "", requestBody, null);
         }

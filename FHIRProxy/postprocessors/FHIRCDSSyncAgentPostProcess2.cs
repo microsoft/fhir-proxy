@@ -60,6 +60,7 @@ namespace FHIRProxy.postprocessors
                         }
                         _queueClient = new ServiceBusClient(Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES"));
                        
+                       
                     }
                     catch (Exception e)
                     {
@@ -183,24 +184,27 @@ namespace FHIRProxy.postprocessors
             ServiceBusMessage dta = new ServiceBusMessage(Encoding.UTF8.GetBytes(_msgBody));
             //For duplicate message sending hash together 
             dta.MessageId = hashMessage(resource.FHIRResourceType() + "/" + resource.FHIRReferenceId() + "/" + resource.FHIRVersionId() + "/" + action);
-            //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
-            string partitionkey =resource.FHIRResourceType();
-            if (resource.FHIRResourceType().Equals("Patient"))
+            if (Utils.GetBoolEnvironmentVariable("FP-SA-USERSESSSION", true))
             {
-                partitionkey += "/" + resource.FHIRReferenceId();
-            }
-            else if (!resource["patient"].IsNullOrEmpty() && !resource["patient"]["reference"].IsNullOrEmpty())
-            {
-                partitionkey = (string)resource["patient"]["reference"];
+                //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
+                string partitionkey = resource.FHIRResourceType();
+                if (resource.FHIRResourceType().Equals("Patient"))
+                {
+                    partitionkey += "/" + resource.FHIRReferenceId();
+                }
+                else if (!resource["patient"].IsNullOrEmpty() && !resource["patient"]["reference"].IsNullOrEmpty())
+                {
+                    partitionkey = (string)resource["patient"]["reference"];
 
+                }
+                else if (!resource["subject"].IsNullOrEmpty() && !resource["subject"]["reference"].IsNullOrEmpty())
+                {
+                    partitionkey = (string)resource["subject"]["reference"];
+                }
+                dta.PartitionKey = partitionkey;
+                //Set session to be the same as partition key
+                dta.SessionId = partitionkey;
             }
-            else if (!resource["subject"].IsNullOrEmpty() && !resource["subject"]["reference"].IsNullOrEmpty())
-            {
-                partitionkey = (string)resource["subject"]["reference"];
-            }
-            dta.PartitionKey = partitionkey;
-            //Set session to be the same as partition key
-            dta.SessionId = partitionkey;
             return dta;
         }
         public string hashMessage(string s)
