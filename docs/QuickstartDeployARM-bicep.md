@@ -1,5 +1,4 @@
-# FHIR Proxy
-## **Deployment Guide**
+# Quickstart: Deploy FHIR Proxy via ARM Template
 ### **Table of Contents**
 
 1. [**Introduction**](#introduction)
