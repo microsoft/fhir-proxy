@@ -195,7 +195,7 @@ namespace FHIRProxy.postprocessors
             }
             ServiceBusMessage dta = new ServiceBusMessage(Encoding.UTF8.GetBytes(_msgBody));
             //For duplicate message sending hash together 
-            dta.MessageId = hashMessage(resource.FHIRResourceType() + "/" + resource.FHIRReferenceId() + "/" + resource.FHIRVersionId() + "/" + action);
+            dta.MessageId = Guid.NewGuid().ToString();
             if (!_bulkLoadMode)
             {
                 //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
