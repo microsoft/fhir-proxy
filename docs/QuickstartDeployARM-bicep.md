@@ -201,7 +201,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 42. Repeat #39-41 for "FP-RBAC-TENANT-NAME" as shown below. The **Directory (tenant) ID** can be obtained from *Portal - Azure Active Directory - Overview*.
 <img src="images/Azure_Portal_Screenshot_19_resize.png" width="460" height="390">
 
-43. Lastly, repeat #39-41 for "FP-RBAC-CLIENT-SECRET" as shown below. Paste the client secret string from #28 into the **Value** field. Select the **Set expiration date** parameter as desired and fill in your preferred expiration date (if needed).
+43. Lastly, repeat #39-41 for "FP-RBAC-CLIENT-SECRET" as shown below. Paste the client secret string from #28-29 into the **Value** field. Select the **Set expiration date** parameter as desired and fill in your preferred expiration date (if needed).
 <img src="images/Azure_Portal_Screenshot_20_resize.png" width="460" height="390">
 
 
