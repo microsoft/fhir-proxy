@@ -79,11 +79,12 @@ Entering a mapping in the Identitylinks table can easily be done through the **A
 
 ![](images/smart_on_fhir_11.png)
 
-4. Once you&#39;ve connected to the storage account you can open the Identitylinks table an add an entry using the + Add button.
+4. Once you&#39;ve connected to the storage account you can open the Identitylinks table an add an entry using the + Add button.  
+The **RowKey** is the Azure AD Object Id for the user logging in and the **LinkedResourceId** is the FHIR Patient Id.  
 
 ![](images/smart_on_fhir_12.png)
 
-The **RowKey** is the Azure AD Object Id for the user logging in and the **LinkedResourceId** is the FHIR Patient Id.
+
+The Azure AD Object Id can be found in Azure AD -> Users -> the selected user on the Profile blade.
 
 ![](images/smart_on_fhir_3.png) 
-The Azure AD Object Id can be found in Azure AD -\&gt; Users -\&gt; the selected user on the Profile blade.
