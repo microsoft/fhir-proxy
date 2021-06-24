@@ -16,7 +16,7 @@ _These can be done through the Azure portal or though the Azure CLI. Here will c
 
 * **Create a registered application in Azure AD for the Smart on FHIR application**
 
-  - For more information on the designed interaction between the Smart on FHIR app, the service principal and the authentication on the FHIR proxy check out this [Application  Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model)
+  - For more information on the designed interaction between the Smart on FHIR app and the authentication on the FHIR proxy check out this [Application  Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model)
 
 ![](images/smart_on_fhir_2.png)
 
