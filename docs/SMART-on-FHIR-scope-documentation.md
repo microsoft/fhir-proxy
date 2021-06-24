@@ -21,7 +21,7 @@ _These can be done through the Azure portal or though the Azure CLI. Here will c
 ![](images/smart_on_fhir_2.png)
 
 2. **Create context, resource, and action type specific scopes**  
-3. **Add designated scopes to the API for the Smart on FHIR registered application service client**  
+3. **Add designated scopes to the API for the Smart on FHIR registered application**  
 4. **Configure the redirect URL for the Smart on FHIR application in the registered application**    
   
 
