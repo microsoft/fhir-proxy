@@ -34,6 +34,9 @@ namespace FHIRProxy.postprocessors
         private Object lockobj = new object();
         private string[] _fhirSupportedResources = null;
         private bool initializationfailed = false;
+        private string _updateAction = null;
+        private bool _bulkLoadMode = false; 
+
         public FHIRCDSSyncAgentPostProcess2()
         {
            
@@ -48,8 +51,10 @@ namespace FHIRProxy.postprocessors
                 {
                     try
                     {
+                        _updateAction=Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION", "Update");
+                        _bulkLoadMode = Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD");
                         string _sbcfhirupdates = Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES");
-                        if (Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD"))
+                        if (_bulkLoadMode)
                         {
                             _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRBULK");
                         }
@@ -177,7 +182,7 @@ namespace FHIRProxy.postprocessors
         {
             if (resource.IsNullOrEmpty()) return null;
             string action = "Unknown";
-            if (status.StartsWith("200")) action = Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION","Update");
+            if (status.StartsWith("200")) action = _updateAction;
             if (status.StartsWith("201")) action = "Create";
             if (status.Contains("DELETE")) action = "Delete";
             string _msgBody = resource.FHIRResourceType() + "/" + resource.FHIRResourceId() + "," + action + ",";
@@ -191,7 +196,7 @@ namespace FHIRProxy.postprocessors
             ServiceBusMessage dta = new ServiceBusMessage(Encoding.UTF8.GetBytes(_msgBody));
             //For duplicate message sending hash together 
             dta.MessageId = hashMessage(resource.FHIRResourceType() + "/" + resource.FHIRReferenceId() + "/" + resource.FHIRVersionId() + "/" + action);
-            if (!Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD"))
+            if (!_bulkLoadMode)
             {
                 //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
                 string partitionkey = resource.FHIRResourceType();
