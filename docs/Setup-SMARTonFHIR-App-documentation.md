@@ -1,6 +1,6 @@
 # **Smart on FHIR OAuth Scope Configuration for Registered Applications**
 
-If you have not already created a service principal for your FHIR Proxy, check out this link for instructions on how to do so.
+If you have not already created a service principal for your FHIR Proxy, check out this [link] (https://github.com/corygstevenson/fhir-proxy/blob/SMART-on-FHIR-Scope-Documentation/docs/Configuration-of-SMARTonFHIR-auth.md#secure-fhir-gateway-and-proxy---oauth-20-scopes-guide) for instructions on how to do so.
 
 In this guide you will learn how to configure scopes for your Smart on FHIR applications to utilize the oauth permissions exposed in your FHIR Proxy Service Principal.
 
