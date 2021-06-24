@@ -193,7 +193,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 39. Click on "Generate/Import".
 
-40. Under **Create a secret** in the **Name** field, enter "FP-RBAC-CLIENT-ID" as shown and then copy and paste your FHIR Proxy's **Application (client) ID** from *Portal - Azure Active Directory - Overview*.
+40. Under **Create a secret** in the **Name** field, enter "FP-RBAC-CLIENT-ID" as shown and then copy your FHIR Proxy's **Application (client) ID** from *Portal - Azure Active Directory - Overview* and paste it into the **Value** field (as shown).
 <img src="images/Azure_Portal_Screenshot_18_resize.png" width="440" height="390">
 
 41. Click the blue "Create" button.
