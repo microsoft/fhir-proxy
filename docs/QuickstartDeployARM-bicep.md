@@ -62,7 +62,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 #
 ## **Deploy FHIR Proxy via Azure Resource Manager (ARM) Template** <a name="deploy"></a> <a name="azure_portal"></a>
-## **Step 1 Deployment (Azure Portal)**
+## **Step 1 Deployment (Azure Portal)** <a name="azure_portal_step_1"></a>
 #### In Step 1, you will be filling out information in an ARM template that will let you automatically deploy the basic infrastructure components for FHIR Proxy. These components are FHIR Proxy's Application Service Plan, Storage Account, Function App, Key Vault, Application Insights, Log Analytics Workspace, and Redis Cache.
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FToddM2%2Ffhir-proxy-deploy%2Fmain%2Fazuredeploy.json)
@@ -122,7 +122,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 11. When **Step 1** deployment is complete, you will receive a message like shown below.  
 <img src="images/Azure_Portal_Screenshot_5_resize.png" width="493" height="327">
 
-## **Step 2 Deployment (Azure Portal)**
+## **Step 2 Deployment (Azure Portal)** <a name="azure_portal_step_2"></a>
 #### For Step 2*, you will be registering FHIR Proxy as an application in the AAD tenant and storing some of the credentials that FHIR Proxy needs to operate with FHIR Server. General information about these topics can be found here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals).
 
 *If you would prefer to perform Step 2 without having to go through the process manually, use the [CLI Step 2](#cli_step_2) deployment option instead of Azure Portal. 
@@ -205,7 +205,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 <img src="images/Azure_Portal_Screenshot_20_resize.png" width="460" height="390">
 
 
-## **Step 3 Deployment (Azure Portal)**
+## **Step 3 Deployment (Azure Portal)** <a name="azure_portal_step_3"></a>
 #### In Step 3, you will be updating the Function App configuration to enable an AAD authentication flow for client apps that interact with FHIR Proxy.
 ### **Instructions**
 
@@ -229,7 +229,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 #
 ## **Deploy FHIR Proxy via Azure Resource Manager (ARM) Template** <a name="cli"></a>
-## **Step 1 Deployment (CLI)**
+## **Step 1 Deployment (CLI)** <a name="cli_step_1"></a>
 #### In Step 1, you will be filling out information in an ARM template that will let you automatically deploy the basic infrastructure components for FHIR Proxy. These components are FHIR Proxy's Application Service Plan, Storage Account, Function App, Key Vault, Application Insights, Log Analytics Workspace, and Redis Cache.
 #####   For CLI deployment, you will need access to a Bash environment set up with the following:
 
@@ -316,7 +316,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 11. Once **Step 1** deployment is complete, you will receive a JSON bundle with a ```"provisioningState": "Succeeded"``` key/value pair.
 
 
-## **Step 2 Deployment (CLI)**
+## **Step 2 Deployment (CLI)** <a name="cli_step_2"></a>
 #### For Step 2, you will be registering FHIR Proxy as an application in the AAD tenant and storing some of the credentials that FHIR Proxy needs to operate with FHIR Server. General information about these topics can be found here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals). Please see [Step 1 Deployment (CLI)](#cli_step_1) #1-4 for information on cloning the [fhir-proxy-deploy](https://github.com/ToddM2/fhir-proxy-deploy) repository (if needed).
 
 ### **Instructions**
@@ -342,7 +342,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 *Some of this information is needed for **Step 3**. Please make a copy of the ```Application Secret``` and store it in a safe place. For your security, the ```Application Secret``` is automatically saved in the Key Vault in FHIR Proxy's resource group.
 
-## **Step 3 Deployment (CLI)**
+## **Step 3 Deployment (CLI)** <a name="cli_step_3"></a>
 #### In Step 3, you will be updating the Function App configuration to enable an AAD authentication flow for client apps that interact with FHIR Proxy.
 ### **Instructions**
 
