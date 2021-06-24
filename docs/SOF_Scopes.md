@@ -43,7 +43,7 @@ You will now have a scope defined that can be delegated to the Smart on FHIR app
 
 For more information on creating scopes, check out this [quickstart](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-configure-app-expose-web-apis#:~:text=Sign%20in%20to%20the%20Azure%20portal.%20If%20you,Select%20Expose%20an%20API%20%3E%20Add%20a%20scope.)
 
-## 3. Determine the minimal set of scope your Smart on FHIR application needs and **add designated scopes to the API for the Smart on FHIR registered application service client**
+## 3. Determine the minimal set of scopes your Smart on FHIR application needs and **add designated scopes to the API for the Smart on FHIR registered application**
 
 Open the API permissions blade on the registered application and Click + Add a permission. The scopes you created in step 2 should be available to add to your application.
 
