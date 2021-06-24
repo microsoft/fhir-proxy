@@ -64,7 +64,7 @@ You have now configured Azure AD to facilitate the authorization workflow below 
 
 To launch an app in the patient context, an Azure AD Identifier will need to be mapped to a FHIR Patient resource Id. This can be done in multiple ways: as part of the authentication process of the Smart on FHIR app, using a third-party to authorize on the user&#39;s behalf by sending a custom claim, or by entering a mapping into the Identitylinks table in the FHIR Proxy storage account.
 
-Mapping an Azure AD Identifier to a FHIR Patient resource Id allows the person logging in with the patient context to access data for their patient Id only.
+Mapping an Azure AD Identifier to a FHIR Patient resource Id permits the person logging in with the patient context to access data for their patient Id only.
 
 Entering a mapping in the Identitylinks table can easily be done through the **Azure Storage Account Explorer**.
 
