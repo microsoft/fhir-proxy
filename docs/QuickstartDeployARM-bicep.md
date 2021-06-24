@@ -242,32 +242,24 @@ For more information, see [Quickstart: Register an application with the Microsof
 1. Open Bash locally or go to [Azure Cloud Shell](https://shell.azure.com/).
 
 2. Make a clone of this GitHub repository:
- <https://github.com/corygstevenson/fhir-proxy>.
+ <https://github.com/microsoft/fhir-proxy>.
 
-        $ git clone https://github.com/corygstevenson/fhir-proxy.git
+        $ git clone https://github.com/microsoft/fhir-proxy.git
 
-3. Change the current working directory to the new ```./fhir-proxy``` directory.
+3. Change the current working directory to ```./fhir-proxy/azure-quickstart```.
 
-        $ cd fhir-proxy
+        $ cd fhir-proxy/azure-quickstart
 
-4. Switch to the ```azure-quickstart``` branch in the ```fhir-proxy``` repo.
-
-        $ git checkout azure-quickstart
-
-5. Change the current working directory to the ```./azure-quickstart``` directory.
-
-        $ cd azure-quickstart
-
-6. Log in to your Azure account (if not already logged in).
+4. Log in to your Azure account (if not already logged in).
     
         $ az login --tenant $tenantId
         $ az account set --subscription $subscriptionId
 
-7. Create an Azure resource group (if necessary).
+5. Create an Azure resource group (if necessary).
 
         $ az group create --name <resource_group_name> --location $locationName
 
-8. Inside the ```azure-quickstart``` directory, open the ```azuredeploy.parameters.json``` file in a text editor. Find the ```"resourceTags"``` parameter and fill in the values (as needed).
+6. Inside the ```azure-quickstart``` directory, open the ```azuredeploy.parameters.json``` file in a text editor. Find the ```"resourceTags"``` parameter and fill in the values (as needed).
 
         {"costCenter": "XXXXX",
         "customerName": "XXXXX",
@@ -275,7 +267,7 @@ For more information, see [Quickstart: Register an application with the Microsof
         "environment": "XXXXX",
         "fhirProxyVersion": "v1.0"}
 
-9. With the ```azuredeploy.parameters.json``` file still open, populate the ```"value": ""``` for each FHIR Server parameter (please see the [**Prerequisites**](#prerequisites) section for information on where to find these parameters in Azure Portal).
+7. With the ```azuredeploy.parameters.json``` file still open, populate the ```"value": ""``` for each FHIR Server parameter (please see the [**Prerequisites**](#prerequisites) section for information on where to find these parameters in Azure Portal).
 
         "fhirServerResource": {
             "value": ""
@@ -292,7 +284,7 @@ For more information, see [Quickstart: Register an application with the Microsof
         "fhirServerSecret": {
             "value": ""
 
-10. In the ```azuredeploy.parameters.json``` file, select the values from below that you wish to include for the ```fhirProxyPreProcess``` and ```fhirProxyPostProcess``` parameters*. Once you have chosen which plugin modules to install, fill them in as comma-separated lists (as shown).
+8. In the ```azuredeploy.parameters.json``` file, select the values from below that you wish to include for the ```fhirProxyPreProcess``` and ```fhirProxyPostProcess``` parameters*. Once you have chosen which plugin modules to install, fill them in as comma-separated lists (as shown).
 
     + FHIR Proxy Pre-Process Plugin Modules (```fhirProxyPreProcess```)
 
@@ -313,24 +305,24 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 *The ```FHIRProxy.preprocessors.TransformBundlePreProcess``` is installed by default.
 
-11. Lastly, in the ```azuredeploy.parameters.json``` file, leave all pre-filled parameters as they are. It is also recommended to leave the remaining blank parameters unfilled – the ARM template will automatically generate values for these. Alternatively, you can assign custom values to the unfilled Name parameters (if needed).  When finished, save changes made to the ```azuredeploy.parameters.json``` file. 
+9. Lastly, in the ```azuredeploy.parameters.json``` file, leave all pre-filled parameters as they are. It is also recommended to leave the remaining blank parameters unfilled – the ARM template will automatically generate values for these. Alternatively, you can assign custom values to the unfilled Name parameters (if needed).  When finished, save changes made to the ```azuredeploy.parameters.json``` file. 
 
-12. Deploy FHIR Proxy with this command.
+10. Deploy FHIR Proxy with this command.
 
         $ az deployment group create --name <deployment_name> --resource-group <resource_group_name> --template-file azuredeploy.bicep --parameters @azuredeploy.parameters.json
 
 ##### **FHIR Proxy deployment typically takes between 15 - 25 minutes.*
 
-13. Once **Step 1** deployment is complete, you will receive a JSON bundle with a ```"provisioningState": "Succeeded"``` key/value pair.
+11. Once **Step 1** deployment is complete, you will receive a JSON bundle with a ```"provisioningState": "Succeeded"``` key/value pair.
 
 
 ## **Step 2 Deployment (CLI)** <a name="cli_step_2"></a>
 ##### For Step 2, you will be registering FHIR Proxy as an application in the AAD tenant and storing credentials that FHIR Proxy needs to operate with FHIR Server. General information about these topics is available here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals). 
-##### Please see [Step 1 Deployment (CLI)](#cli_step_1) #1-5 for information on cloning the [fhir-proxy](https://github.com/corygstevenson/fhir-proxy) repository (if needed).
+##### Please see [Step 1 Deployment (CLI)](#cli_step_1) #1-5 for information on cloning the [fhir-proxy](https://github.com/microsoft/fhir-proxy) repository (if needed).
 
 ### **Instructions**
 
-14. Inside the ```azure-quickstart``` directory, you will see a file named ```registerproxy.bash```.
+12. Inside the ```azure-quickstart``` directory, you will see a file named ```registerproxy.bash```.
 
     → This is an Azure CLI-based utility that creates an application registration for FHIR Proxy in the AAD tenant.  
     → The following ```[options]``` are available:
@@ -338,11 +330,11 @@ For more information, see [Quickstart: Register an application with the Microsof
     + ```-k``` to specify the name of the Key Vault that the credentials will be written to
     + ```-p``` the hostname of the FHIR Proxy instance (```<fhir_proxy_service_name>.azurewebsites.net```)
 
-15.  Enter the following command:
+13.  Enter the following command:
 <!-- -->
         $ ./registerproxy.bash -p <fhir_proxy_service_name>.azurewebsites.net -s -k <key_vault_name> 
 
-16. When **Step 2** deployment is complete, you will receive a list in the output with the following information*:
+14. When **Step 2** deployment is complete, you will receive a list in the output with the following information*:
 
         Application ID     = ''
         Tenant ID          = ''
@@ -355,7 +347,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 ##### In Step 3, you will be updating the **Function App** configuration to enable an AAD authentication flow for client apps that interact with FHIR Proxy.
 ### **Instructions**
 
-17. Enter the command below to update the Function App configuration for AAD authentication. The parameters are listed with explanations.
+15. Enter the command below to update the Function App configuration for AAD authentication. The parameters are listed with explanations.
 
     ```$resourceGroupName``` → Name of resource group where FHIR Proxy is installed.  
     ```$faname``` → Name of the Function App in FHIR Proxy's resource group.  
@@ -366,9 +358,9 @@ For more information, see [Quickstart: Register an application with the Microsof
 
         $ az webapp auth update -g $resourceGroupName -n $faname --enabled true --action AllowAnonymous --aad-allowed-token-audiences $fahost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss
 
-18. After entering the command above you should receive a JSON bundle response with information about FHIR Proxy's authentication settings.
+16. After entering the command above you should receive a JSON bundle response with information about FHIR Proxy's authentication settings.
 
-19. You are now done with your initial deployment of FHIR Proxy. Please see the [**After the install**](#after_the_install) section to confirm that the deployment was successful.
+17. You are now done with your initial deployment of FHIR Proxy. Please see the [**After the install**](#after_the_install) section to confirm that the deployment was successful.
 
 ## After the install <a name="after_the_install"></a>
 
