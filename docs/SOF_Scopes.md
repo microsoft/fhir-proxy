@@ -55,7 +55,7 @@ To do this, open the Authentication blade on the registered application. click +
 
 ![](images/smart_on_fhir_7.png)
 
-You have now configured Azure AD to facilitate the authorization workflow below for your Smart on FHIR app and the FHIR Proxy service principal.  
+You have now configured Azure AD to facilitate the authorization workflow below for your Smart on FHIR app and the FHIR Proxy.  
 
 ![](images/smart_on_fhir_8.png)
 
@@ -71,15 +71,15 @@ Entering a mapping in the Identitylinks table can easily be done through the **A
 1. Connect Azure Storage Account Explorer to your Storage Account
 ![](images/smart_on_fhir_9.png) 
 
-Select storage account or service
+2. Select storage account or service
 
 ![](images/smart_on_fhir_10.png)
 
-Select connection string. You can find the connection string on Access keys blade for the Storage Account in the Azure Portal
+3. Select connection string. You can find the connection string on Access keys blade for the Storage Account in the Azure Portal
 
 ![](images/smart_on_fhir_11.png)
 
-Once you&#39;ve connected to the storage account you can open the Identitylinks table and add and entry using the + Add button.
+4. Once you&#39;ve connected to the storage account you can open the Identitylinks table an add and entry using the + Add button.
 
 ![](images/smart_on_fhir_12.png)
 
