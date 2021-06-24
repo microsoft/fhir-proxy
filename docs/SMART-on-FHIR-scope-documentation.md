@@ -30,7 +30,7 @@ _These can be done through the Azure portal or though the Azure CLI. Here will c
 
 - [Register a service app in Azure AD - Azure API for FHIR | Microsoft Docs](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)
 
-## 2. To **create context, resource, and action type specific scopes** open the Expose an API blade in the registered application
+## 2. To **create context, FHIR Resource, and action type specific scopes** open the Expose an API blade in the registered application
 
 ![](images/smart_on_fhir_3.png)
 
