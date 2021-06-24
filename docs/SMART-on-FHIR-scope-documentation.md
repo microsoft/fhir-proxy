@@ -6,7 +6,7 @@ In this guide you will learn how to configure scopes for your Smart on FHIR appl
 
 Detailed information about FHIR launch contexts and scopes can be found [here](http://www.hl7.org/fhir/smart-app-launch/scopes-and-launch-context/).
 
-Scopes are used to limit the resources a SMART on FHIR app can access within a launch context. It is best practice to grant the minimum scopes necessary for an application. A scope is made up of the context, the FHIR resource, and the type of action that can be taken.
+Scopes are used to limit the resources a Smart on FHIR app can access within a launch context. It is best practice to grant the minimum scopes necessary for an application. A scope is made up of the context, the FHIR Resource, and the type of action that can be taken.
 
 ![](images/smart_on_fhir_1.png)
 
