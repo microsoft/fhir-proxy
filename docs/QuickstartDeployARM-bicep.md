@@ -382,26 +382,27 @@ For more information, see [Quickstart: Register an application with the Microsof
 ## Troubleshooting <a name="troubleshooting"></a>
 
 ### For Deployment using Azure Portal:
-+ **Resource Tags** in Step 1 #3 aren't passing validation in Step 1 #8.
++ **Resource Tags** in **Step 1 #3** aren't passing validation in **Step 1 #8**.
     + See if there are any spaces that can be removed from the comma-separated list and try again.
 
-+ Can't locate the **FHIR Server Secret** parameter value needed in Step 1 #4.
++ **FHIR Server Secret** parameter value needed in **Step 1 #4** is nowhere to be found.
     + It's possible that you haven't registered FHIR Server as an application in the AAD tenant yet. More information about this can be found here:  
 
     [Register a service client application in Azure Active Directory](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)  
     [Register the Azure Active Directory apps for Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/fhir-app-registration?WT.mc_id=Portal-Microsoft_Healthcare_APIs)
 
-+ Issues setting up access policy in Step 2 #35.
-    + Make sure to click "Save" in the upper left before leaving the page.
++ **Key Vault Access Policy** is not retained after **Step 2 #35**.
+    + Make sure to click "Save" in the upper left before leaving the *Portal - FHIR Proxy resource group - Key Vault - Access Policies* blade.
 
 ### For Deployment using CLI:
-+ Can't locate the **FHIR Server Secret** parameter value needed in Step 1 #7.
++ **FHIR Server Secret** parameter value needed in **Step 1 #7** is nowhere to be found.
     + It's possible that you haven't registered FHIR Server as an application in the AAD tenant yet. More information about this can be found here:  
 
     [Register a service client application in Azure Active Directory](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)  
     [Register the Azure Active Directory apps for Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/fhir-app-registration?WT.mc_id=Portal-Microsoft_Healthcare_APIs)
 
-+         Adding Sign-in User Read Permission on Graph API...WARNING: Invoking "az ad app permission grant --id 69b87909-2774-47c0-9e71-eabb63617862 --api 00000002-0000-0000-c000-000000000000" is needed to make the change effective  
++ **An error** appears in the response after **Step 2**:
+        Adding Sign-in User Read Permission on Graph API...WARNING: Invoking "az ad app permission grant --id 69b87909-2774-47c0-9e71-eabb63617862 --api 00000002-0000-0000-c000-000000000000" is needed to make the change effective  
 
     + This error indicates that you don't have the admin privileges required to assign user permissions in the AAD tenant. You will still be able to deploy FHIR Proxy without these privileges, but you will need to seek a system administrator's help in configuring FHIR Proxy's role-based access control (RBAC) and SMART Scopes.
 
