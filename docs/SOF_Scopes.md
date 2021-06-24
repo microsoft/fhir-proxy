@@ -38,7 +38,7 @@ Click + Add Scope and name the scope according to the context.resource.action na
 
 ![](images/smart_on_fhir_4.png)
 
-You will now have a scope defined that can be delegated to the Smart on FHIR app API
+You will now have a scope defined that can be delegated to the Smart on FHIR app API  
 ![](images/smart_on_fhir_5.png)
 
 For more information on creating scopes, check out this [quickstart](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-configure-app-expose-web-apis#:~:text=Sign%20in%20to%20the%20Azure%20portal.%20If%20you,Select%20Expose%20an%20API%20%3E%20Add%20a%20scope.)
