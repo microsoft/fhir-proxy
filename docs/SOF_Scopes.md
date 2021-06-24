@@ -79,7 +79,7 @@ Entering a mapping in the Identitylinks table can easily be done through the **A
 
 ![](images/smart_on_fhir_11.png)
 
-4. Once you&#39;ve connected to the storage account you can open the Identitylinks table an add and entry using the + Add button.
+4. Once you&#39;ve connected to the storage account you can open the Identitylinks table an add an entry using the + Add button.
 
 ![](images/smart_on_fhir_12.png)
 
