@@ -401,7 +401,8 @@ For more information, see [Quickstart: Register an application with the Microsof
     [Register a service client application in Azure Active Directory](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)  
     [Register the Azure Active Directory apps for Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/fhir-app-registration?WT.mc_id=Portal-Microsoft_Healthcare_APIs)
 
-+ **An error** appears in the response after **Step 2**:
++ **An error** appears in the response after **Step 2**:  
+
         Adding Sign-in User Read Permission on Graph API...WARNING: Invoking "az ad app permission grant --id 69b87909-2774-47c0-9e71-eabb63617862 --api 00000002-0000-0000-c000-000000000000" is needed to make the change effective  
 
     + This error indicates that you don't have the admin privileges required to assign user permissions in the AAD tenant. You will still be able to deploy FHIR Proxy without these privileges, but you will need to seek a system administrator's help in configuring FHIR Proxy's role-based access control (RBAC) and SMART Scopes.
