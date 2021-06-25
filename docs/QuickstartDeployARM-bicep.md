@@ -65,7 +65,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 ## **Step 1 Deployment (Azure Portal)** <a name="azure_portal_step_1"></a>
 ##### In Step 1, you will be filling out information in an ARM template that will let you automatically deploy the basic infrastructure components for FHIR Proxy. These components are FHIR Proxy's **Application Service Plan**, **Storage Account**, **Function App**, **Key Vault**, **Application Insights**, **Log Analytics Workspace**, and **Redis Cache**.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https://raw.githubusercontent.com/microsoft/fhir-proxy/main/azure-quickstart/azuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmicrosoft%2Ffhir-proxy%2Fmain%2Fazure-quickstart%2Fazuredeploy.json)
 
 ### **Instructions**
 
