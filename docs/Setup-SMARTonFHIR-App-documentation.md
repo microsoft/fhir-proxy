@@ -1,6 +1,6 @@
 # **SMART on FHIR OAuth 2.0 Scope Configuration for Registered Applications**
 
-If you have not already created a service principal for your FHIR Proxy, check out this [link](https://github.com/corygstevenson/fhir-proxy/blob/azure-quickstart/docs/QuickstartDeployARM-bicep.md#step-2-deployment-cli-) for instructions on how to do so.
+If you have not already created a service principal for your FHIR Proxy, check out this [link](https://github.com/microsoft/fhir-proxy/blob/main/docs/QuickstartDeployARM-bicep.md) for instructions on how to do so.
 
 In this guide you will learn how to configure scopes for your SMART on FHIR applications to utilize the OAuth 2.0 permissions exposed in your FHIR Proxy Service Principal.
 
