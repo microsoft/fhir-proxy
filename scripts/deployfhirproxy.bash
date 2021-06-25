@@ -49,6 +49,7 @@ declare tokeniss=""
 declare preprocessors=""
 declare postprocessors=""
 declare msi=""
+declare tags="HealthArchitectures-Solutions=FHIR-Proxy"
 
 function fail {
   echo $1 >&2
@@ -219,7 +220,7 @@ if [ $(az group exists --name $resourceGroupName) = false ]; then
 	set -e
 	(
 		set -x
-		az group create --name $resourceGroupName --location $resourceGroupLocation 1> /dev/null
+		az group create --name $resourceGroupName --location $resourceGroupLocation --tags $tags 1> /dev/null
 	)
 	else
 	echo "Using existing resource group..."
@@ -234,7 +235,7 @@ echo "Starting Secure FHIR Proxy deployment..."
 		#Store FHIR Server Information
 		if [[ -z "$kvexists" ]]; then
 			echo "Creating Key Vault "$kvname"..."
-			stepresult=$(az keyvault create --name $kvname --resource-group $resourceGroupName --location  $resourceGroupLocation)
+			stepresult=$(az keyvault create --name $kvname --resource-group $resourceGroupName --location  $resourceGroupLocation --tags $tags)
 			if [ $? != 0 ]; then
 				echo "Could not create new keyvault "$kvname
 				exit 1
@@ -248,13 +249,13 @@ echo "Starting Secure FHIR Proxy deployment..."
 		fi
 		#Create Storage Account
 		echo "Creating Storage Account ["$deployprefix$storageAccountNameSuffix"]..."
-		stepresult=$(az storage account create --name $deployprefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku Standard_LRS --encryption-services blob)
+		stepresult=$(az storage account create --name $deployprefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku Standard_LRS --encryption-services blob --tags $tags)
 		echo "Retrieving Storage Account Connection String..."
 		storageConnectionString=$(az storage account show-connection-string -g $resourceGroupName -n $deployprefix$storageAccountNameSuffix --query "connectionString" --out tsv)
 		stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-STORAGEACCT" --value $storageConnectionString)
 		#Redis Cache to Support Proxy Modules
 		echo "Creating Redis Cache ["$deployprefix$redisAccountNameSuffix"]..."
-		stepresult=$(az redis create --location $resourceGroupLocation --name $deployprefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0)
+		stepresult=$(az redis create --location $resourceGroupLocation --name $deployprefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $tags)
 		echo "Creating Redis Connection String..."
 		redisKey=$(az redis list-keys -g $resourceGroupName -n $deployprefix$redisAccountNameSuffix --query "primaryKey" --out tsv)
 		redisConnectionString=$deployprefix$redisAccountNameSuffix".redis.cache.windows.net:6380,password="$redisKey",ssl=True,abortConnect=False"
@@ -262,10 +263,10 @@ echo "Starting Secure FHIR Proxy deployment..."
 		#FHIR Proxy Function App
 		#Create Service Plan
 		echo "Creating Secure FHIR Proxy Function App Serviceplan["$deployprefix$serviceplanSuffix"]..."
-		stepresult=$(az appservice plan create -g  $resourceGroupName -n $deployprefix$serviceplanSuffix --number-of-workers 2 --sku B1)
+		stepresult=$(az appservice plan create -g  $resourceGroupName -n $deployprefix$serviceplanSuffix --number-of-workers 2 --sku B1 --tags $tags)
 		#Create the function app
 		echo "Creating Secure FHIR Proxy Function App ["$faname"]..."
-		fahost=$(az functionapp create --name $faname --storage-account $deployprefix$storageAccountNameSuffix  --plan $deployprefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --query defaultHostName --output tsv)
+		fahost=$(az functionapp create --name $faname --storage-account $deployprefix$storageAccountNameSuffix  --plan $deployprefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $tags --query defaultHostName --output tsv)
 		stepresult=$(az functionapp stop --name $faname --resource-group $resourceGroupName)
 		stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-HOST" --value $fahost)
 		echo "Creating MSI for Function App..."
