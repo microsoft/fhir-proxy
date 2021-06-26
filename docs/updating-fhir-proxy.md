@@ -5,26 +5,26 @@ By default the FHIR-Proxy function stays in sync with updates posted in the Gith
 ## Default FHIR Proxy Deployment 
 By default FHIR Proxy 
 
-![default-deployment](images/default-setup.png)
+![default-deployment](images/update/default-setup.png)
 
 ## Editing Deployment Center setup 
 If the FHIR-Proxy setup does match the default deployment, it can be changed as follows.
 
 1. Disconnect the existing connection 
 
-![change-deployment-cntr1](images/change-deployment-cntr1.png)
+![change-deployment-cntr1](images/update/change-deployment-cntr1.png)
 
 2.  Select External Git
 
-![change-deployment-cntr2](images/change-deployment-cntr2.png)
+![change-deployment-cntr2](images/update/change-deployment-cntr2.png)
 
 3.  Complete the form using __https://github.com/microsoft/fhir-proxy__, __main__ and __Public__ repo then select __Save__.  
 
-![change-deployment-cntr3](images/change-deployment-cntr3.png)
+![change-deployment-cntr3](images/update/change-deployment-cntr3.png)
 
 4.  Validate the deployment success via the Logs 
 
-![deployment-cntr-logs](images/deployment-cntr-logs.png)
+![deployment-cntr-logs](images/update/deployment-cntr-logs.png)
 
 
 ## Private Link FHIR Proxy Deployment

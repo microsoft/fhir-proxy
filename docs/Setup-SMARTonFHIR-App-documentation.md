@@ -8,7 +8,7 @@ Detailed information about FHIR launch contexts and scopes can be found [here](h
 
 Scopes are used to limit the resources a SMART on FHIR app can access within a launch context. It is best practice to grant the minimum scopes necessary for an application. A scope is made up of the context, the FHIR Resource, and the type of action that can be taken.
 
-![](images/smart_on_fhir_1.png)
+![](images/smart/smart_on_fhir_1.png)
 
 When configuring a registered application for a SMART on FHIR application follow these steps:
 
@@ -18,7 +18,7 @@ _These can be done through the Azure portal or through the Azure CLI. Here we wi
 
   - For more information on the interaction between SMART on FHIR apps and the authentication framework for FHIR Proxy, check out this [Application Model walk through](https://docs.microsoft.com/en-us/azure/active-directory/develop/application-model).
 
-![](images/smart_on_fhir_2.png)
+![](images/smart/smart_on_fhir_2.png)
 
 2. **Create context, resource (FHIR), and action-type specific scopes**.  
 3. **Add designated scopes to the API for the SMART on FHIR registered application**.  
@@ -32,15 +32,15 @@ _These can be done through the Azure portal or through the Azure CLI. Here we wi
 
 ## 2. To **create context, resource (FHIR), and action-type specific scopes**, open the Expose an API blade in the registered application.
 
-![](images/smart_on_fhir_3.png)
+![](images/smart/smart_on_fhir_3.png)
 
 Click **+ Add Scope** and name the scope according to the context.resource.action naming convention.
 
-![](images/smart_on_fhir_4.png)
+![](images/smart/smart_on_fhir_4.png)
 
 You will now have a scope defined that can be delegated to the SMART on FHIR app API.
 
-![](images/smart_on_fhir_5.png)
+![](images/smart/smart_on_fhir_5.png)
 
 For more information on creating scopes, check out this [quickstart](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-configure-app-expose-web-apis#:~:text=Sign%20in%20to%20the%20Azure%20portal.%20If%20you,Select%20Expose%20an%20API%20%3E%20Add%20a%20scope.).
 
@@ -48,17 +48,17 @@ For more information on creating scopes, check out this [quickstart](https://doc
 
 Open the API permissions blade on the registered application and Click **+ Add a permission**. The scopes you created in step 2 should be available to add to your application.
 
-![](images/smart_on_fhir_6.png)
+![](images/smart/smart_on_fhir_6.png)
 
 ## 4. To enable the authentication flow outlined below **configure the redirect URL for the SMART on FHIR registered application**.
 
 To do this, open the Authentication blade on the SMART on FHIR registered application. Click **+ Add a platform**, select **Web** and enter the redirect URL from your SMART on FHIR app.  
 
-![](images/smart_on_fhir_7.png)
+![](images/smart/smart_on_fhir_7.png)
 
 You have now configured Azure AD to facilitate the authorization workflow below for your SMART on FHIR app and the FHIR Proxy.  
 
-![](images/smart_on_fhir_8.png)
+![](images/smart/smart_on_fhir_8.png)
 
 
 # **User to Patient Mapping to utilize the Patient Context** 
@@ -70,21 +70,21 @@ Mapping an Azure AD Identifier to a FHIR Patient resource Id permits the person 
 Entering a mapping in the Identitylinks table can easily be done through the **Azure Storage Account Explorer**.
 
 1. Connect Azure Storage Account Explorer to your Storage Account.
-![](images/smart_on_fhir_9.png) 
+![](images/smart/smart_on_fhir_9.png) 
 
 2. Select storage account or service.
 
-![](images/smart_on_fhir_10.png)
+![](images/smart/smart_on_fhir_10.png)
 
 3. Select **Connection string**. You can find the Connection string on the Access keys blade for the Storage Account in the Azure Portal.
 
-![](images/smart_on_fhir_11.png)
+![](images/smart/smart_on_fhir_11.png)
 
 4. Once you&#39;ve connected to the storage account you can open the Identitylinks table and add an entry using the **+ Add** button.  
 The **RowKey** is the Azure AD Object Id for the user logging in and the **LinkedResourceId** is the FHIR Patient Id.  
 
-![](images/smart_on_fhir_12.png)
+![](images/smart/smart_on_fhir_12.png)
 
 The Azure AD Object Id can be found in Azure AD -> Users -> the selected user on the Profile blade.
 
-![](images/smart_on_fhir_3.png) 
+![](images/smart/smart_on_fhir_3.png) 
