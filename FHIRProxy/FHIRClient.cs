@@ -10,15 +10,40 @@ using System.Linq;
 using Microsoft.AspNetCore.Http;
 using System.Net;
 using Polly;
+using System.Collections.Concurrent;
 
 namespace FHIRProxy
 {
     public static class FHIRClient
     {
+        private static ConcurrentDictionary<string, string> _tokendict = new ConcurrentDictionary<string, string>();
         private static object lockobj = new object();
-        private static string _bearerToken = null;
         private static HttpClient _fhirClient =null;
-        
+        private static async Task<string> GetFHIRToken(ILogger log)
+        {
+            string tok = null;
+            if (_tokendict.TryGetValue("fhirtoken", out tok) && !ADUtils.isTokenExpired(tok)) return tok;
+            //renew
+            string resource = System.Environment.GetEnvironmentVariable("FS-RESOURCE");
+            string tenant = System.Environment.GetEnvironmentVariable("FS-TENANT-NAME");
+            string clientid = System.Environment.GetEnvironmentVariable("FS-CLIENT-ID");
+            string secret = System.Environment.GetEnvironmentVariable("FS-SECRET");
+            string authority = Utils.GetEnvironmentVariable("FS-AUTHORITY", "https://login.microsoftonline.com");
+            bool isMsi = ADUtils.isMSI(resource, tenant, clientid, secret);
+            log.LogInformation($"Obtaining new FHIR Access Token...Using MSI=({isMsi.ToString()})...");
+            string newtok = await ADUtils.GetAADAccessToken($"{authority}/{tenant}", clientid, secret, resource, isMsi);
+            if (newtok != null)
+            {
+                if (tok==null)
+                {
+                    _tokendict.TryAdd("fhirtoken", newtok);
+                } else { 
+                    _tokendict.TryUpdate("fhirtoken", newtok, tok);
+                }
+                log.LogInformation($"InitializeFHIRCDSTokens: fhir token renewed...");
+            }
+            return newtok;
+        }
         private static TimeSpan GetServerRetryAfter(HttpResponseMessage resp, ILogger log)
         {
             TimeSpan? retryafter = null;
@@ -28,6 +53,11 @@ namespace FHIRProxy
                 if (retryafter.HasValue)
                 {
                     return retryafter.Value;
+                }
+                if (resp.Headers.Contains("x-ms-retry-after-ms"))
+                {
+                    int rtms = int.Parse(resp.Headers.GetValues("x-ms-retry-after-ms").FirstOrDefault());
+                    return TimeSpan.FromMilliseconds(rtms);
                 }
             }
             catch (Exception e)
@@ -41,16 +71,23 @@ namespace FHIRProxy
         {
             if (_fhirClient == null)
             {
-                log.LogInformation("Initializing FHIR Client...");
-                SocketsHttpHandler socketsHandler = new SocketsHttpHandler
+                lock (lockobj)
                 {
-                    ResponseDrainTimeout = TimeSpan.FromSeconds(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-RESPONSEDRAINSECS", "30")),
-                    PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME", "5")),
-                    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO", "2")),
-                    MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "20")
-                };
-                _fhirClient = new HttpClient(socketsHandler);
+                    if (_fhirClient == null)
+                    {
+                        log.LogInformation("Initializing FHIR Client...");
+                        SocketsHttpHandler socketsHandler = new SocketsHttpHandler
+                        {
+                            ResponseDrainTimeout = TimeSpan.FromSeconds(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-RESPONSEDRAINSECS", "30")),
+                            PooledConnectionLifetime = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-LIFETIME", "5")),
+                            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(Utils.GetIntEnvironmentVariable("FP-POOLEDCON-IDLETO", "2")),
+                            MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "20")
+                        };
+                        _fhirClient = new HttpClient(socketsHandler);
+                    }
+                }
             }
+           
         }
         public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(HttpRequest req, string path, string body, ILogger log)
         {
@@ -66,21 +103,7 @@ namespace FHIRProxy
         }
         public static async System.Threading.Tasks.Task<FHIRResponse> CallFHIRServer(string path, string body, string method, IHeaderDictionary headers, ILogger log)
         {
-            if (!string.IsNullOrEmpty(System.Environment.GetEnvironmentVariable("FS-RESOURCE")) && ADUtils.isTokenExpired(_bearerToken))
-            {
-                lock (lockobj)
-                {
-                    if (ADUtils.isTokenExpired(_bearerToken))
-                    {
-                        log.LogInformation("Token is expired...Obtaining new bearer token...");
-                        _bearerToken = ADUtils.GetOAUTH2BearerToken(System.Environment.GetEnvironmentVariable("FS-RESOURCE"), System.Environment.GetEnvironmentVariable("FS-TENANT-NAME"),
-                                        System.Environment.GetEnvironmentVariable("FS-CLIENT-ID"), System.Environment.GetEnvironmentVariable("FS-SECRET")).GetAwaiter().GetResult();
-                        InititalizeHttpClient(log);
-                        _fhirClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _bearerToken);
- 
-                    }
-                }
-            }
+            InititalizeHttpClient(log);
             HttpMethod rm = HttpMethod.Put;
             switch (method)
             {
@@ -128,6 +151,9 @@ namespace FHIRProxy
                         ct = ctvalues.First();
                         if (!string.IsNullOrEmpty(ct)) ct = ct.Split(";")[0];
                     }
+                    //Add Authorization
+                    string _bearerToken = await GetFHIRToken(log);
+                    _fhirRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _bearerToken);
                     foreach (string headerKey in headers.Keys)
                     {
                         try

@@ -34,6 +34,9 @@ namespace FHIRProxy.postprocessors
         private Object lockobj = new object();
         private string[] _fhirSupportedResources = null;
         private bool initializationfailed = false;
+        private string _updateAction = null;
+        private bool _bulkLoadMode = false; 
+
         public FHIRCDSSyncAgentPostProcess2()
         {
            
@@ -48,17 +51,27 @@ namespace FHIRProxy.postprocessors
                 {
                     try
                     {
+                        _updateAction=Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION", "Update");
+                        _bulkLoadMode = Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD");
                         string _sbcfhirupdates = Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES");
-                        _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
+                        if (_bulkLoadMode)
+                        {
+                            _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRBULK");
+                        }
+                        else
+                        {
+                            _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
+                        }
                         string fsr = Utils.GetEnvironmentVariable("SA-FHIRMAPPEDRESOURCES");
                         if (!string.IsNullOrEmpty(fsr)) _fhirSupportedResources=fsr.Split(",");
                         if (string.IsNullOrEmpty(_sbcfhirupdates) || string.IsNullOrEmpty(_qname))
                         {
-                            log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize SA-SERVICEBUSNAMESPACEFHIRUPDATES and/or SA-SERVICEBUSQUEUENAMEFHIRUPDATES are not defined...Check Configuration");
+                            log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize SA-SERVICEBUSNAMESPACEFHIRUPDATES and/or Queue name is/are not defined...Check Configuration");
                             initializationfailed = true;
                             return;
                         }
                         _queueClient = new ServiceBusClient(Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES"));
+                       
                        
                     }
                     catch (Exception e)
@@ -169,7 +182,7 @@ namespace FHIRProxy.postprocessors
         {
             if (resource.IsNullOrEmpty()) return null;
             string action = "Unknown";
-            if (status.StartsWith("200")) action = Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION","Update");
+            if (status.StartsWith("200")) action = _updateAction;
             if (status.StartsWith("201")) action = "Create";
             if (status.Contains("DELETE")) action = "Delete";
             string _msgBody = resource.FHIRResourceType() + "/" + resource.FHIRResourceId() + "," + action + ",";
@@ -182,25 +195,28 @@ namespace FHIRProxy.postprocessors
             }
             ServiceBusMessage dta = new ServiceBusMessage(Encoding.UTF8.GetBytes(_msgBody));
             //For duplicate message sending hash together 
-            dta.MessageId = hashMessage(resource.FHIRResourceType() + "/" + resource.FHIRReferenceId() + "/" + resource.FHIRVersionId() + "/" + action);
-            //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
-            string partitionkey =resource.FHIRResourceType();
-            if (resource.FHIRResourceType().Equals("Patient"))
+            dta.MessageId = Guid.NewGuid().ToString();
+            if (!_bulkLoadMode)
             {
-                partitionkey += "/" + resource.FHIRReferenceId();
-            }
-            else if (!resource["patient"].IsNullOrEmpty() && !resource["patient"]["reference"].IsNullOrEmpty())
-            {
-                partitionkey = (string)resource["patient"]["reference"];
+                //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
+                string partitionkey = resource.FHIRResourceType();
+                if (resource.FHIRResourceType().Equals("Patient"))
+                {
+                    partitionkey += "/" + resource.FHIRReferenceId();
+                }
+                else if (!resource["patient"].IsNullOrEmpty() && !resource["patient"]["reference"].IsNullOrEmpty())
+                {
+                    partitionkey = (string)resource["patient"]["reference"];
 
+                }
+                else if (!resource["subject"].IsNullOrEmpty() && !resource["subject"]["reference"].IsNullOrEmpty())
+                {
+                    partitionkey = (string)resource["subject"]["reference"];
+                }
+                dta.PartitionKey = partitionkey;
+                //Set session to be the same as partition key
+                dta.SessionId = partitionkey;
             }
-            else if (!resource["subject"].IsNullOrEmpty() && !resource["subject"]["reference"].IsNullOrEmpty())
-            {
-                partitionkey = (string)resource["subject"]["reference"];
-            }
-            dta.PartitionKey = partitionkey;
-            //Set session to be the same as partition key
-            dta.SessionId = partitionkey;
             return dta;
         }
         public string hashMessage(string s)

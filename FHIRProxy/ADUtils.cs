@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -28,34 +29,35 @@ namespace FHIRProxy
             return false;
             
         }
-        public static async Task<string> GetOAUTH2BearerToken(string resource, string tenant = null, string clientid = null, string secret = null)
+        public static async Task<string> GetAADAccessToken(string authority, string clientId, string clientSecret, string audience, bool msi)
         {
-            if (!string.IsNullOrEmpty(resource) && (string.IsNullOrEmpty(tenant) && string.IsNullOrEmpty(clientid) && string.IsNullOrEmpty(secret)))
+            try
             {
-                //Assume Managed Service Identity with only resource provided.
-                var azureServiceTokenProvider = new AzureServiceTokenProvider();
-                var _accessToken = await azureServiceTokenProvider.GetAccessTokenAsync(resource);
-                return _accessToken;
-            }
-            else
-            {
-                using (System.Net.WebClient client = new System.Net.WebClient())
+                if (msi)
                 {
-                    byte[] response =
-                     client.UploadValues("https://login.microsoftonline.com/" + tenant + "/oauth2/token", new NameValueCollection()
-                     {
-                        {"grant_type","client_credentials"},
-                        {"client_id",clientid},
-                        { "client_secret", secret },
-                        { "resource", resource }
-                     });
+                    var _azureServiceTokenProvider = new AzureServiceTokenProvider();
+                    return await _azureServiceTokenProvider.GetAccessTokenAsync(audience);
 
-
-                    string result = System.Text.Encoding.UTF8.GetString(response);
-                    JObject obj = JObject.Parse(result);
-                    return (string)obj["access_token"];
                 }
+                else
+                {
+                    var _authContext = new AuthenticationContext(authority);
+                    var _clientCredential = new ClientCredential(clientId, clientSecret);
+                    var _authResult = await _authContext.AcquireTokenAsync(audience, _clientCredential);
+                    return _authResult.AccessToken;
+                }
+
             }
+            catch (Exception e)
+            {
+                return null;
+            }
+
+        }
+        
+        public static bool isMSI(string resource, string tenant = null, string clientid = null, string secret = null)
+        {
+            return (!string.IsNullOrEmpty(resource) && (string.IsNullOrEmpty(tenant) && string.IsNullOrEmpty(clientid) && string.IsNullOrEmpty(secret)));
         }
     }
 }
