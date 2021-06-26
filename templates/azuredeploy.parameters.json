@@ -7,8 +7,7 @@
                 "costCenter": "12345",
                 "customerName": "Contoso IT",
                 "projectName": "fhirProxy-Dev",
-                "environment": "Development",
-                "fhirProxyVersion": "v1.0"
+                "environment": "Development"
             }
         },
         "storageAccountName": {
