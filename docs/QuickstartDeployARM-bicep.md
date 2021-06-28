@@ -65,13 +65,13 @@ For more information, see [Quickstart: Register an application with the Microsof
 ## **Step 1 Deployment (Azure Portal)** <a name="azure_portal_step_1"></a>
 ##### In Step 1, you will be filling out information in an ARM template that will let you automatically deploy the basic infrastructure components for FHIR Proxy. These components are FHIR Proxy's **Application Service Plan**, **Storage Account**, **Function App**, **Key Vault**, **Application Insights**, **Log Analytics Workspace**, and **Redis Cache**.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmicrosoft%2Ffhir-proxy%2Fmain%2Fazure-quickstart%2Fazuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmicrosoft%2Ffhir-proxy%2Fmain%2Ftemplates%2Fazuredeploy.json)
 
 ### **Instructions**
 
 1. Click on the "Deploy to Azure" link above.
 2. Select (or create) a **Resource group**.  
-    <img src="images/Azure_Portal_Screenshot_1_resize.png" width="578" height="444">
+    <img src="images/arm/Azure_Portal_Screenshot_1_resize.png" width="578" height="444">
 3. Scroll down and enter tag values (as needed) in the **Resource Tags** field:  
 
         {"costCenter": "XXXXX",
@@ -79,7 +79,7 @@ For more information, see [Quickstart: Register an application with the Microsof
         "projectName": "XXXXX",
         "environment": "XXXXX",
         "fhirProxyVersion": "v1.0"}
-    <img src="images/Azure_Portal_Screenshot_2_resize.png" width="613" height="380">
+    <img src="images/arm/Azure_Portal_Screenshot_2_resize.png" width="613" height="380">
 
 4. Fill in these FHIR Server parameter values (*see information about where to locate each value*):
     + **Fhir Server Url** → (*Azure Portal - FHIR Server resource - Authentication - Audience*)
@@ -110,17 +110,17 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 8. You should receive a "Validation Passed" message.  
 
-    <img src="images/Azure_Portal_Screenshot_3_resize.png" width="573" height="428">
+    <img src="images/arm/Azure_Portal_Screenshot_3_resize.png" width="573" height="428">
 
 9. Click the blue "Create" button.
 
 10. You should be taken to the Overview blade in Deployment with a "Deployment is in progress" message.
-<img src="images/Azure_Portal_Screenshot_4_resize.png" width="516" height="362">
+<img src="images/arm/Azure_Portal_Screenshot_4_resize.png" width="516" height="362">
 
 ##### **FHIR Proxy deployment typically takes between 15 - 25 minutes.*
 
 11. When **Step 1** deployment is complete, you will receive a message like shown below.  
-<img src="images/Azure_Portal_Screenshot_5_resize.png" width="493" height="327">
+<img src="images/arm/Azure_Portal_Screenshot_5_resize.png" width="493" height="327">
 
 ## **Step 2 Deployment (Azure Portal)** <a name="azure_portal_step_2"></a>
 ##### For Step 2*, you will be registering FHIR Proxy as an application in the AAD tenant and storing credentials that FHIR Proxy needs to operate with FHIR Server. General information about these topics can be found here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals).
@@ -133,13 +133,13 @@ For more information, see [Quickstart: Register an application with the Microsof
 13. Click on "New registration".
 
 14. A **Register an application** form will open.
-<img src="images/Azure_Portal_Screenshot_10_resize.png" width="656" height="439">
+<img src="images/arm/Azure_Portal_Screenshot_10_resize.png" width="656" height="439">
 
 15. In the **Name** field, enter the name that you want to display in AAD for your FHIR Proxy application registration. 
     Recommended: Function App name + ".azurewebsites.net" (```<function_app_name>.azurewebsites.net```).
 
 16. Scroll down to the **Redirect URI (optional)** field, and for **Web**, input "https://" + Function App name + "/.auth/login/aad/callback" (```https://<function_app_name>/.auth/login/aad/callback```).
-<img src="images/Azure_Portal_Screenshot_11_resize.png" width="702" height="433">
+<img src="images/arm/Azure_Portal_Screenshot_11_resize.png" width="702" height="433">
 
 17. Click the blue "Register" button.
 
@@ -148,7 +148,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 19. You will be taken to the *Portal - Azure Active Directory - Registered Applications - FHIR Proxy - Expose an API* blade. There you will see **Application ID URI** at the top. Click on "Set".
 
 20. Under **Add a scope**, in the **Application ID URI** field enter "https://" + Function App name + ".azurewebsites.net" (```https://<function_app_name>.azurewebsites.net```).
-<img src="images/Azure_Portal_Screenshot_12_resize.png" width="800" height="342">
+<img src="images/arm/Azure_Portal_Screenshot_12_resize.png" width="800" height="342">
 
 21. Click the blue "Save and continue" button. In the *Portal - Azure Active Directory - Overview* blade you should see your new URI appear under **Application ID URI**.
 
@@ -161,12 +161,12 @@ For more information, see [Quickstart: Register an application with the Microsof
 25. Under **Add a client secret**, in the **Description** field, enter Function App name + ".azurewebsites.net" (```<function_app_name>.azurewebsites.net```).
 
 26. In the **Expires** dropdown menu, make your selection for the client secret's lifetime before expiration.
-<img src="images/Azure_Portal_Screenshot_13_resize.png" width="800" height="350">
+<img src="images/arm/Azure_Portal_Screenshot_13_resize.png" width="800" height="350">
 
 27. Click the blue "Add" button.
 
 28. Under **Client secrets**, you will now see FHIR Proxy's client secret **Value** and **Secret ID**.
-<img src="images/Azure_Portal_Screenshot_14_resize.png" width="800" height="350">
+<img src="images/arm/Azure_Portal_Screenshot_14_resize.png" width="800" height="350">
 
 29. Make sure to copy the client secret **Value** (and **Secret ID**) strings and store them somewhere safely before leaving the page. Once you leave the page, you won't be able to access the client secret **Value** from AAD again.
 
@@ -179,30 +179,30 @@ For more information, see [Quickstart: Register an application with the Microsof
 33. You will be taken to an **Add access policy** form. Add an access policy for yourself in the Key Vault so that you will be able to store (and access) FHIR Proxy credentials. See this page for more information: [Assign a Key Vault access policy using the Azure portal](https://docs.microsoft.com/en-us/azure/key-vault/general/assign-access-policy-portal).
 
 34. Under **Principal**, search for yourself, highlight the object that appears below the search field, and then click the "Select" button.
-<img src="images/Azure_Portal_Screenshot_15_resize.png" width="800" height="350">
+<img src="images/arm/Azure_Portal_Screenshot_15_resize.png" width="800" height="350">
 
 35. Now click the blue "Add" button at the bottom of the **Add access policy** form.
-<img src="images/Azure_Portal_Screenshot_16_resize.png" width="730" height="315">
+<img src="images/arm/Azure_Portal_Screenshot_16_resize.png" width="730" height="315">
 
 36. Once you are back in the *Portal - FHIR Proxy resource group - Key Vault - Access Policies* blade, click the "Save" button.
 
 37. Now go to the *Portal - FHIR Proxy resource group - Key Vault - Secrets* blade.
 
 38. You should see a list of nine items in the **Name** column.
-<img src="images/Azure_Portal_Screenshot_17_resize.png" width="680" height="320">
+<img src="images/arm/Azure_Portal_Screenshot_17_resize.png" width="680" height="320">
 
 39. Click on "Generate/Import".
 
 40. Under **Create a secret** in the **Name** field, enter "FP-RBAC-CLIENT-ID" as shown and then copy your FHIR Proxy's **Application (client) ID** from *Portal - Azure Active Directory - Overview* and paste it into the **Value** field (as shown).
-<img src="images/Azure_Portal_Screenshot_18_resize.png" width="440" height="390">
+<img src="images/arm/Azure_Portal_Screenshot_18_resize.png" width="440" height="390">
 
 41. Click the blue "Create" button.
 
 42. Repeat #39-41 for "FP-RBAC-TENANT-NAME" as shown below. The **Directory (tenant) ID** can be obtained from *Portal - Azure Active Directory - Overview*.
-<img src="images/Azure_Portal_Screenshot_19_resize.png" width="460" height="390">
+<img src="images/arm/Azure_Portal_Screenshot_19_resize.png" width="460" height="390">
 
 43. Lastly, repeat #39-41 for "FP-RBAC-CLIENT-SECRET" as shown below. Paste the client secret string from #28-29 into the **Value** field. Select the **Set expiration date** parameter as desired and fill in your preferred expiration date (if needed).
-<img src="images/Azure_Portal_Screenshot_20_resize.png" width="460" height="390">
+<img src="images/arm/Azure_Portal_Screenshot_20_resize.png" width="460" height="390">
 
 
 ## **Step 3 Deployment (Azure Portal)** <a name="azure_portal_step_3"></a>
@@ -213,7 +213,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 45. Click on the pencil icon in the **Edit** column and you will be taken to the **Add an identity provider** form shown below. 
 
-<img src="images/Azure_Portal_Screenshot_7_resize.png" width="535" height="523">
+<img src="images/arm/Azure_Portal_Screenshot_7_resize.png" width="535" height="523">
 
 46. Populate these **App registration** fields with information obtained from **Step 2**:
 
@@ -223,7 +223,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 47. When you are done putting in the information above and you have selected your **App Service authentication settings**, click on the **Next: Permissions** button. You should receive a message as shown below.
 
-<img src="images/Azure_Portal_Screenshot_8_resize.png" width="561" height="237">
+<img src="images/arm/Azure_Portal_Screenshot_8_resize.png" width="561" height="237">
 
 48. You are now done with your initial deployment of FHIR Proxy. Please see the [**After the install**](#after_the_install) section to confirm that the deployment was successful.
 
@@ -246,9 +246,9 @@ For more information, see [Quickstart: Register an application with the Microsof
 
         $ git clone https://github.com/microsoft/fhir-proxy.git
 
-3. Change the current working directory to ```./fhir-proxy/azure-quickstart```.
+3. Change the current working directory to ```./fhir-proxy/templates```.
 
-        $ cd fhir-proxy/azure-quickstart
+        $ cd fhir-proxy/templates
 
 4. Log in to your Azure account (if not already logged in).
     
@@ -259,13 +259,12 @@ For more information, see [Quickstart: Register an application with the Microsof
 
         $ az group create --name <resource_group_name> --location $locationName
 
-6. Inside the ```azure-quickstart``` directory, open the ```azuredeploy.parameters.json``` file in a text editor. Find the ```"resourceTags"``` parameter and fill in the values (as needed).
+6. Inside the ```templates``` directory, open the ```azuredeploy.parameters.json``` file in a text editor. Find the ```"resourceTags"``` parameter and fill in the values (as needed).
 
         {"costCenter": "XXXXX",
         "customerName": "XXXXX",
         "projectName": "XXXXX",
-        "environment": "XXXXX",
-        "fhirProxyVersion": "v1.0"}
+        "environment": "XXXXX"}
 
 7. With the ```azuredeploy.parameters.json``` file still open, populate the ```"value": ""``` for each FHIR Server parameter (please see the [**Prerequisites**](#prerequisites) section for information on where to find these parameters in Azure Portal).
 
@@ -322,7 +321,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 ### **Instructions**
 
-12. Inside the ```azure-quickstart``` directory, you will see a file named ```registerproxy.bash```.
+12. Inside the ```templates``` directory, you will see a file named ```registerproxy.bash```.
 
     → This is an Azure CLI-based utility that creates an application registration for FHIR Proxy in the AAD tenant.  
     → The following ```[options]``` are available:
@@ -366,7 +365,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 + To verify that your FHIR Proxy deployment completed successfully, go to *Azure Portal - FHIR Proxy resource group - Key Vault - Secrets*. If the list of secrets is as shown below, then your initial FHIR Proxy deployment was successful.
 
-    <img src="images/Azure_Portal_Screenshot_9_resize.png" width="626" height="329">
+    <img src="images/arm/Azure_Portal_Screenshot_9_resize.png" width="626" height="329">
 
 + As mentioned in [Step 2 Deployment (Azure Portal)](#azure_portal_step_2), you can add an access policy for yourself in *Azure Portal - FHIR Proxy resource group - Key Vault* in order to access FHIR Proxy's hidden credentials – should you need to for any reason. See this page for more information: [Assign a Key Vault access policy using the Azure portal](https://docs.microsoft.com/en-us/azure/key-vault/general/assign-access-policy-portal).
 

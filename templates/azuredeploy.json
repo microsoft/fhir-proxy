@@ -219,7 +219,7 @@
   "functions": [],
   "variables": {
     "haTag": {
-      "HealthArchitectures-Solutions": "FHIR-Proxy"
+      "HealthArchitectures": "FHIR-Proxy"
     },
     "assignedTags": "[union(parameters('resourceTags'), variables('haTag'))]",
     "fpName": "[if(empty(parameters('fhirProxyName')), format('fhirproxy{0}', parameters('uniqueValue')), parameters('fhirProxyName'))]",
