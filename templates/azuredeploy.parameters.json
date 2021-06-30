@@ -1,0 +1,65 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceTags": {
+            "value": {
+                "costCenter": "12345",
+                "customerName": "Contoso IT",
+                "projectName": "fhirProxy-Dev",
+                "environment": "Development"
+            }
+        },
+        "storageAccountName": {
+            "value": ""
+        },
+        "storageKind": {
+            "value": "StorageV2"
+        },
+        "softDeleteRetentionInDays": {
+            "value": 30
+        },
+        "storageKeySource": {
+            "value": "Microsoft.Storage"
+        },
+        "fhirProxyName": {
+            "value": ""
+        },
+        "fhirProxyRepoUrl": {
+            "value": "https://github.com/microsoft/fhir-proxy"
+        },
+        "fhirProxyRepoBranch": {
+            "value": "main"
+        },
+        "fhirProxyServiceName": {
+            "value": "samplefhirprxy"
+        },
+        "appServicePlanSku": {
+            "value": "S1"
+        },
+        "keyVaultName": {
+            "value": ""
+        },
+        "objectId": {
+            "value": ""
+        },
+        "redisCacheName": {
+            "value": ""
+        },
+        "fhirServerResource": {
+            "value": ""
+        },
+        "fhirServerUrl": {
+            "value": ""
+        },
+        "fhirServerTenantName": {
+            "value": ""
+        },
+        "fhirServerClientId": {
+            "value": ""
+        },
+        "fhirServerSecret": {
+            "value": ""
+        }
+    }
+}

@@ -1,0 +1,634 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.4.63.48766",
+      "templateHash": "2732624282638736291"
+    }
+  },
+  "parameters": {
+    "tenantId": {
+      "type": "string",
+      "defaultValue": "[subscription().tenantId]",
+      "metadata": {
+        "description": "Azure Active Directory Tenant that is associated with the subscription where the FHIR Proxy is beng deployed"
+      }
+    },
+    "resourceLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure Region where resource will be created, defaults to the region that was used when creating the resource group"
+      }
+    },
+    "uniqueValue": {
+      "type": "string",
+      "defaultValue": "[take(uniqueString(subscription().subscriptionId, resourceGroup().name), 8)]",
+      "metadata": {
+        "description": "Unique string that will be used to generate resource names, defaults to the uniqueString function"
+      }
+    },
+    "resourceTags": {
+      "type": "object",
+      "metadata": {
+        "description": "Tags to be applied to resources that are deployed in this template"
+      }
+    },
+    "fhirServerUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "FHIR Server URL, https://fhirserver.azurewebsites.net/"
+      }
+    },
+    "fhirServerTenantName": {
+      "type": "string"
+    },
+    "fhirServerClientId": {
+      "type": "string"
+    },
+    "fhirServerSecret": {
+      "type": "secureString",
+      "metadata": {
+        "description": "FHIR Server Client Secret"
+      }
+    },
+    "fhirServerResource": {
+      "type": "string"
+    },
+    "fhirProxyPreProcess": {
+      "type": "string",
+      "defaultValue": "FHIRProxy.preprocessors.TransformBundlePreProcess",
+      "metadata": {
+        "description": "FHIR Proxy preprocessor function list"
+      }
+    },
+    "fhirProxyPostProcess": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "FHIR Proxy postprocessor function list"
+      }
+    },
+    "minimumTlsVersion": {
+      "type": "string",
+      "defaultValue": "TLS1_2",
+      "metadata": {
+        "description": "Minimum TLS vserion used by Storage Account"
+      }
+    },
+    "fhirProxyName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Specify the name that will be assigned to the FHIR Proxy service"
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Key Vault name"
+      }
+    },
+    "softDeleteRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "metadata": {
+        "description": "Specifies how long Azure will keep the Key Vault after is has been deleted. Must be in the range of 7-90 days."
+      }
+    },
+    "secretsPermissions": {
+      "type": "array",
+      "defaultValue": [
+        "get"
+      ],
+      "metadata": {
+        "description": "Specifies the permissions to secrets in the vault. Valid values are: all, get, list, set, delete, backup, restore, recover, and purge."
+      }
+    },
+    "keysPermissions": {
+      "type": "array",
+      "defaultValue": [
+        "get"
+      ],
+      "metadata": {
+        "description": "Specifies the permissions to keys in the vault. Valid values are: all, encrypt, decrypt, wrapKey, unwrapKey, sign, verify, get, list, create, update, import, delete, backup, restore, recover, and purge."
+      }
+    },
+    "objectId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Specifies the object ID of a user, service principal or security group in the Azure Active Directory tenant for the vault. The object ID must be unique for the list of access policies. Get it by using Get-AzADUser or Get-AzADServicePrincipal cmdlets."
+      }
+    },
+    "kvSkuName": {
+      "type": "string",
+      "defaultValue": "standard",
+      "metadata": {
+        "description": "Specifies whether the key vault is a standard vault or a premium vault. The default setting is standard"
+      },
+      "allowedValues": [
+        "standard",
+        "premium"
+      ]
+    },
+    "storageAccountName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Storage account name. Defaults to storageaccount<uniqueid>"
+      }
+    },
+    "storageSku": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "metadata": {
+        "description": "Storage account SKU. Defaults to Standard_LRS"
+      },
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS",
+        "Premium_ZRS",
+        "Standard_GZRS",
+        "Standard_RAGZRS"
+      ]
+    },
+    "storageKind": {
+      "type": "string",
+      "defaultValue": "StorageV2",
+      "metadata": {
+        "description": ""
+      }
+    },
+    "storageKeySource": {
+      "type": "string",
+      "defaultValue": "Microsoft.Storage",
+      "metadata": {
+        "description": ""
+      }
+    },
+    "redisMinimumTlsVersion": {
+      "type": "string",
+      "defaultValue": "1.2",
+      "metadata": {
+        "description": "Minimum TLS vserion used by Redis Cache"
+      }
+    },
+    "redisCacheName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Redis cache resource name"
+      }
+    },
+    "fhirProxyRepoUrl": {
+      "type": "string",
+      "defaultValue": "https://github.com/microsoft/fhir-proxy",
+      "metadata": {
+        "description": "Git repo that contains the FHIR Proxy software"
+      }
+    },
+    "fhirProxyRepoBranch": {
+      "type": "string",
+      "defaultValue": "main",
+      "metadata": {
+        "description": "Git repo branch name"
+      }
+    },
+    "appServicePlanSku": {
+      "type": "string",
+      "defaultValue": "S1",
+      "metadata": {
+        "description": "App Service Plan SKU (S1)"
+      }
+    },
+    "fhirProxyServiceName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "FHIR Proxy App Service resource name"
+      }
+    }
+  },
+  "functions": [],
+  "variables": {
+    "haTag": {
+      "HealthArchitectures": "FHIR-Proxy"
+    },
+    "assignedTags": "[union(parameters('resourceTags'), variables('haTag'))]",
+    "fpName": "[if(empty(parameters('fhirProxyName')), format('fhirproxy{0}', parameters('uniqueValue')), parameters('fhirProxyName'))]",
+    "enabledForDeployment": false,
+    "enabledForDiskEncryption": false,
+    "enabledForTemplateDeployment": false,
+    "enableRbacAuthorization": false,
+    "enabledForSoftDelete": true,
+    "deployKeyVault": true,
+    "kvName": "[if(empty(parameters('keyVaultName')), format('keyvault{0}', parameters('uniqueValue')), parameters('keyVaultName'))]",
+    "deployStorageAccount": true,
+    "saName": "[if(empty(parameters('storageAccountName')), format('storageaccount{0}', parameters('uniqueValue')), parameters('storageAccountName'))]",
+    "rcName": "[if(empty(parameters('redisCacheName')), format('rediscache{0}', parameters('uniqueValue')), parameters('redisCacheName'))]",
+    "deployRedisCache": true,
+    "deployAppServicePlan": true,
+    "aspName": "[if(empty(parameters('fhirProxyServiceName')), format('appserviceplan{0}', parameters('uniqueValue')), format('{0}-asp', parameters('fhirProxyServiceName')))]",
+    "roleAdmin": "Administrator",
+    "roleReader": "Reader",
+    "roleWriter": "Writer",
+    "rolePatient": "Patient",
+    "roleParticipant": "Practitioner,RelatedPerson",
+    "roleGlobal": "DataScientist",
+    "logAnalyticsWorkspaceName": "[format('laws-{0}', parameters('uniqueValue'))]",
+    "deployLogAnalyticsWorkspace": true,
+    "appInsightName": "[format('appinsights-{0}', parameters('uniqueValue'))]",
+    "deployApplicationInsights": true
+  },
+  "resources": [
+    {
+      "condition": "[variables('deployKeyVault')]",
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2019-09-01",
+      "name": "[variables('kvName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('assignedTags')]",
+      "properties": {
+        "tenantId": "[parameters('tenantId')]",
+        "sku": {
+          "family": "A",
+          "name": "[parameters('kvSkuName')]"
+        },
+        "accessPolicies": [
+          {
+            "objectId": "[if(greater(length(parameters('objectId')), 0), parameters('objectId'), reference(resourceId('Microsoft.Web/sites', variables('fpName')), '2020-12-01', 'full').identity.principalId)]",
+            "tenantId": "[parameters('tenantId')]",
+            "permissions": {
+              "keys": "[parameters('keysPermissions')]",
+              "secrets": "[parameters('secretsPermissions')]"
+            }
+          }
+        ],
+        "enabledForDeployment": "[variables('enabledForDeployment')]",
+        "enabledForDiskEncryption": "[variables('enabledForDiskEncryption')]",
+        "enabledForTemplateDeployment": "[variables('enabledForTemplateDeployment')]",
+        "softDeleteRetentionInDays": "[parameters('softDeleteRetentionInDays')]",
+        "enableSoftDelete": "[variables('enabledForSoftDelete')]",
+        "enableRbacAuthorization": "[variables('enableRbacAuthorization')]",
+        "networkAcls": {
+          "defaultAction": "Allow",
+          "bypass": "AzureServices"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('fpName'))]"
+      ]
+    },
+    {
+      "condition": "[variables('deployStorageAccount')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2021-01-01",
+      "name": "[variables('saName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('assignedTags')]",
+      "kind": "[parameters('storageKind')]",
+      "sku": {
+        "name": "[parameters('storageSku')]",
+        "tier": "Standard"
+      },
+      "properties": {
+        "accessTier": "Hot",
+        "supportsHttpsTrafficOnly": true,
+        "allowBlobPublicAccess": false,
+        "isHnsEnabled": false,
+        "isNfsV3Enabled": false,
+        "minimumTlsVersion": "[parameters('minimumTlsVersion')]",
+        "encryption": {
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "table": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "queue": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "[parameters('storageKeySource')]",
+          "requireInfrastructureEncryption": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2019-06-01",
+      "name": "[format('{0}/default', variables('saName'))]",
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "enabled": true,
+          "days": 7
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('saName'))]"
+      ]
+    },
+    {
+      "condition": "[variables('deployRedisCache')]",
+      "type": "Microsoft.Cache/redis",
+      "apiVersion": "2020-06-01",
+      "name": "[variables('rcName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('assignedTags')]",
+      "properties": {
+        "minimumTlsVersion": "[parameters('redisMinimumTlsVersion')]",
+        "sku": {
+          "family": "C",
+          "name": "Basic",
+          "capacity": 0
+        }
+      }
+    },
+    {
+      "condition": "[variables('deployAppServicePlan')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2020-09-01",
+      "name": "[variables('aspName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('assignedTags')]",
+      "sku": {
+        "name": "[parameters('appServicePlanSku')]"
+      },
+      "kind": "functionapp"
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-12-01",
+      "name": "[variables('fpName')]",
+      "location": "[parameters('resourceLocation')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "kind": "functionapp",
+      "properties": {
+        "enabled": true,
+        "httpsOnly": true,
+        "clientAffinityEnabled": false,
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]",
+        "siteConfig": {
+          "alwaysOn": true,
+          "ftpsState": "FtpsOnly"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('aspName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/config",
+      "apiVersion": "2020-12-01",
+      "name": "[format('{0}/{1}', variables('fpName'), 'appsettings')]",
+      "properties": {
+        "FUNCTIONS_EXTENSION_VERSION": "~3",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet",
+        "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightName'))).InstrumentationKey]",
+        "AzureWebJobsStorage": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('saName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('saName')), '2021-01-01').keys[0].value)]",
+        "FP-ADMIN-ROLE": "[variables('roleAdmin')]",
+        "FP-READER-ROLE": "[variables('roleReader')]",
+        "FP-WRITER-ROLE": "[variables('roleWriter')]",
+        "FP-GLOBAL-ACCESS-ROLES": "[variables('roleGlobal')]",
+        "FP-PATIENT-ACCESS-ROLES": "[variables('rolePatient')]",
+        "FP-PARTICIPANT-ACCESS-ROLES": "[variables('roleParticipant')]",
+        "FP-HOST": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-HOST/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FP-PRE-PROCESSOR-TYPES": "[if(empty(parameters('fhirProxyPreProcess')), 'FHIRProxy.preprocessors.TransformBundlePreProcess', parameters('fhirProxyPreProcess'))]",
+        "FP-POST-PROCESSOR-TYPES": "[if(empty(parameters('fhirProxyPostProcess')), '', parameters('fhirProxyPostProcess'))]",
+        "FP-RBAC-NAME": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-RBAC-NAME/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FP-RBAC-TENANT-NAME": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-RBAC-TENANT-NAME/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FP-RBAC-CLIENT-ID": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-RBAC-CLIENT-ID/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FP-RBAC-CLIENT-SECRET": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-RBAC-CLIENT-SECRET/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FP-REDISCONNECTION": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-REDISCONNECTION/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FP-STORAGEACCT": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FP-STORAGEACCT/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FS-URL": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FS-URL/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FS-TENANT-NAME": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FS-TENANT-NAME/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FS-CLIENT-ID": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FS-CLIENT-ID/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FS-SECRET": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FS-SECRET/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]",
+        "FS-RESOURCE": "[format('@Microsoft.KeyVault(SecretUri={0}/secrets/FS-RESOURCE/)', if(variables('deployKeyVault'), reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName'))).vaultUri, ''))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightName'))]",
+        "[resourceId('Microsoft.Web/sites', variables('fpName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('saName'))]"
+      ]
+    },
+    {
+      "condition": "[variables('deployLogAnalyticsWorkspace')]",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2020-03-01-preview",
+      "name": "[variables('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('assignedTags')]",
+      "properties": {
+        "retentionInDays": 30,
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "condition": "[variables('deployLogAnalyticsWorkspace')]",
+      "type": "microsoft.insights/diagnosticSettings",
+      "apiVersion": "2017-05-01-preview",
+      "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', variables('logAnalyticsWorkspaceName'))]",
+      "name": "diagnosticSettings",
+      "properties": {
+        "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]",
+        "logs": [
+          {
+            "category": "Audit",
+            "enabled": true,
+            "retentionPolicy": {
+              "days": 7,
+              "enabled": true
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "days": 7,
+              "enabled": true
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "condition": "[and(variables('deployLogAnalyticsWorkspace'), variables('deployApplicationInsights'))]",
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02-preview",
+      "name": "[variables('appInsightName')]",
+      "location": "[parameters('resourceLocation')]",
+      "kind": "web",
+      "tags": "[variables('assignedTags')]",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FP-HOST', variables('kvName'))]",
+      "properties": {
+        "value": "[reference(resourceId('Microsoft.Web/sites', variables('fpName'))).defaultHostName]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('fpName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FP-RBAC-NAME', variables('kvName'))]",
+      "properties": {
+        "value": "[format('https://{0}', reference(resourceId('Microsoft.Web/sites', variables('fpName'))).defaultHostName)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites', variables('fpName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FP-STORAGEACCT', variables('kvName'))]",
+      "properties": {
+        "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};EndpointSuffix={1};AccountKey={2}', variables('saName'), environment().suffixes.storage, listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('saName')), '2021-01-01').keys[0].value)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('saName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FP-REDISCONNECTION', variables('kvName'))]",
+      "properties": {
+        "value": "[format('{0}:{1},password={2},ssl=True,abortConnect=False', reference(resourceId('Microsoft.Cache/redis', variables('rcName'))).hostName, reference(resourceId('Microsoft.Cache/redis', variables('rcName'))).sslPort, listKeys(resourceId('Microsoft.Cache/redis', variables('rcName')), '2020-06-01').primaryKey)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.Cache/redis', variables('rcName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('fhirServerUrl')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FS-URL', variables('kvName'))]",
+      "properties": {
+        "value": "[parameters('fhirServerUrl')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('fhirServerTenantName')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FS-TENANT-NAME', variables('kvName'))]",
+      "properties": {
+        "value": "[parameters('fhirServerTenantName')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('fhirServerClientId')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FS-CLIENT-ID', variables('kvName'))]",
+      "properties": {
+        "value": "[parameters('fhirServerClientId')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('fhirServerSecret')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FS-SECRET', variables('kvName'))]",
+      "properties": {
+        "value": "[parameters('fhirServerSecret')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "condition": "[not(empty(parameters('fhirServerResource')))]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2019-09-01",
+      "name": "[format('{0}/FS-RESOURCE', variables('kvName'))]",
+      "properties": {
+        "value": "[parameters('fhirServerResource')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/sites/sourcecontrols",
+      "apiVersion": "2020-12-01",
+      "name": "[format('{0}/{1}', variables('fpName'), 'web')]",
+      "properties": {
+        "repoUrl": "[parameters('fhirProxyRepoUrl')]",
+        "branch": "[parameters('fhirProxyRepoBranch')]",
+        "isManualIntegration": true
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/sites/config', variables('fpName'), 'appsettings')]",
+        "[resourceId('Microsoft.Web/sites', variables('fpName'))]",
+        "[resourceId('Microsoft.Cache/redis', variables('rcName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "fhirProxyHostName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', variables('fpName'))).defaultHostName]"
+    },
+    "fhirProxyMsiObjectID": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Web/sites', variables('fpName')), '2020-12-01', 'full').identity.principalId]"
+    }
+  }
+}

@@ -1,0 +1,88 @@
+[
+    {
+        "allowedMemberTypes": [
+            "User",
+            "Application"
+        ],
+        "description": "Writer of the FHIR Server",
+        "displayName": "Resource Writer",
+        "id": "2d1c681b-71e0-4f12-9040-d0f42884be86",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "Writer"
+    },
+    {
+        "allowedMemberTypes": [
+            "User",
+            "Application"
+        ],
+        "description": "Reader of the FHIR Server",
+        "displayName": "Resource Reader",
+        "id": "24c50db1-1e11-4273-b6a0-b697f734bcb4",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "Reader"
+    },
+    {
+        "allowedMemberTypes": [
+            "User"
+        ],
+        "description": "DataScientist Role with de-id access to all resources",
+        "displayName": "DataScientist",
+        "id": "b90c2f1a-6a2c-4d1e-9ee6-d97cd5632307",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "DataScientist"
+    },
+    {
+        "allowedMemberTypes": [
+            "User"
+        ],
+        "description": "RelatedPerson Access to FHIR Resources",
+        "displayName": "RelatedPerson",
+        "id": "75f86d84-27b6-4740-bd3d-4ec763c36144",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "RelatedPerson"
+    },
+    {
+        "allowedMemberTypes": [
+            "User"
+        ],
+        "description": "Patient Access to FHIR resources",
+        "displayName": "Patient",
+        "id": "94b4402c-ea4a-43ac-a8f2-85a482e303a9",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "Patient"
+    },
+    {
+        "allowedMemberTypes": [
+            "User"
+        ],
+        "description": "Practitioner Access to FHIR resources",
+        "displayName": "Practitioner",
+        "id": "8796299c-9039-4eb0-a93d-6eda41763238",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "Practitioner"
+    },
+    {
+        "allowedMemberTypes": [
+            "User"
+        ],
+        "description": "Administrator of the FHIR Server",
+        "displayName": "Administrator",
+        "id": "ef3fd1c8-82cc-4619-a484-2cbcf97eefc1",
+        "isEnabled": true,
+        "lang": null,
+        "origin": "Application",
+        "value": "Administrator"
+    }
+]
