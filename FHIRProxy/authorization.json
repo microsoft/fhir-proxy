@@ -22,7 +22,7 @@
     },
     {
       "path_prefix": "/manage",
-      "policies": { "unauthenticated_action": "RejectWith401" }
+      "policies": { "unauthenticated_action": "RedirectToLoginPage" }
     }
   ]
 }

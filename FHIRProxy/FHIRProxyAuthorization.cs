@@ -33,18 +33,16 @@ namespace FHIRProxy
         public override Task OnExecutingAsync(FunctionExecutingContext executingContext, CancellationToken cancellationToken)
         {
             var req = executingContext.Arguments.First().Value as HttpRequest;
-            FHIRParsedPath pp = req.parsePath();
-            string id = pp.ResourceId;
-            string res = pp.ResourceType;
+          
             ILogger log = executingContext.Arguments["log"] as ILogger;
-            if (id == null) id = "";
+           
             ClaimsPrincipal principal = executingContext.Arguments["principal"] as ClaimsPrincipal;
             ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
            
             bool admin = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-ADMIN-ROLE"));
             bool reader = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-READER-ROLE"));
             bool writer = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-WRITER-ROLE"));
-            bool ispostcommand = req.Method.Equals("POST") && id.Equals("_search") && reader;
+            
             string inroles = "";
             if (admin) inroles += "A";
             if (reader) inroles += "R";
@@ -59,34 +57,49 @@ namespace FHIRProxy
                 req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
                 req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not Authenticated");
                 goto leave;
-            }
-            //Claims Trump Role Access if scope claims are present then request must pass scope check
-            if (hasScopeClaim(ci))
-            {
-                if (!PassedScopeCheck(req, ci, res, id, log))
-                {
-                    req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
-                    req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal did not pass claims scope for this request.");
-                    goto leave;
-                }
-            } else {
-                //No claims present use role access
-                if (!PassedRoleCheck(req, reader, writer, admin, ispostcommand))
-                {
-                    req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
-                    req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not in an authorized role");
-                    goto leave;
-                }
-            }
-            string passheader = req.Headers["X-MS-AZUREFHIR-AUDIT-PROXY"];
-            if (string.IsNullOrEmpty(passheader)) passheader = executingContext.FunctionName;
-            //Since we are proxying with service client need to ensure authenticated proxy principal is audited
+            }//
+            //Set Authentication Status/Roles
             req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.OK).ToString());
             req.Headers.Add(Utils.FHIR_PROXY_ROLES, inroles);
-            req.Headers.Add("X-MS-AZUREFHIR-AUDIT-USERID", ci.ObjectId());
-            req.Headers.Add("X-MS-AZUREFHIR-AUDIT-TENANT", ci.Tenant());
-            req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", req.HttpContext.Connection.RemoteIpAddress.ToString());
-            req.Headers.Add("X-MS-AZUREFHIR-AUDIT-PROXY", passheader);
+            //Access checks for /fhir proxy endpoint
+            if (executingContext.FunctionName.Equals("ProxyFunction"))
+            {
+                FHIRParsedPath pp = req.parsePath();
+                string id = pp.ResourceId;
+                string res = pp.ResourceType;
+                if (id == null) id = "";
+                bool ispostcommand = req.Method.Equals("POST") && id.Equals("_search") && reader;
+                //Claims Trump Role Access if scope claims are present then request must pass scope check
+                List<string> smartClaims = ExtractSmartScopeClaims(ci);
+                if (smartClaims.Count > 0)
+                {
+                    if (!PassedScopeCheck(req, ci, res, id, log))
+                    {
+                        req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
+                        req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal did not pass claims scope for this request.");
+                        goto leave;
+                    }
+                }
+                else
+                {
+                    //No smart claims present use role access
+                    if (!PassedRoleCheck(req, reader, writer, admin, ispostcommand))
+                    {
+                        req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
+                        req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not in an authorized role");
+                        goto leave;
+                    }
+                }
+                string passheader = req.Headers["X-MS-AZUREFHIR-AUDIT-PROXY"];
+                if (string.IsNullOrEmpty(passheader)) passheader = "fhir-proxy";
+                //Since we are proxying with service client need to ensure authenticated proxy principal is audited
+               
+                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-USERID", ci.ObjectId());
+                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-TENANT", ci.Tenant());
+                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", req.HttpContext.Connection.RemoteIpAddress.ToString());
+                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-PROXY", passheader);
+            }
+           
           leave:
             return base.OnExecutingAsync(executingContext, cancellationToken);
         }
@@ -96,27 +109,34 @@ namespace FHIRProxy
             if (!req.Method.Equals("GET") && !admin && !writer && !ispostcommand) return false;
             return true;
         }
-        private bool hasScopeClaim(ClaimsIdentity ci)
+        private List<string> ExtractSmartScopeClaims(ClaimsIdentity ci)
         {
+            List<string> retVal = new List<string>();
             IEnumerable<Claim> claims = ci.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
             if (claims == null || claims.Count() == 0) claims = ci.Claims.Where(x => x.Type == "scp");
-            return (claims != null && claims.Count() > 0);
-        }
-        private bool PassedScopeCheck(HttpRequest req, ClaimsIdentity ci,string res,string resid, ILogger log)
-        {
-            //Check for SMART Scopes (e.g. <patient/user>.<resource>|*.Read|Write|*)
-            IEnumerable<Claim> claims = ci.Claims.Where(x => x.Type == "http://schemas.microsoft.com/identity/claims/scope");
-            if (claims == null || claims.Count() == 0) claims = ci.Claims.Where(x => x.Type == "scp");
-            if (claims==null || claims.Count()==0)
+            if (claims == null || claims.Count() == 0)
             {
-                log.LogWarning($"FHIRProxyAuthorization:Claims check. There are no scope claims in the access token.!");
-                return false;
+                return retVal;
             }
-            log.LogInformation($"FHIRProxyAuthorization:Begin Claims check. There are {claims.Count()} scope claims entries");
             foreach (Claim c in claims)
             {
                 string[] claimsinentry = c.Value.Split(" ");
                 foreach (string claim in claimsinentry)
+                {
+                    string[] s = claim.Split(".");
+                    if (s.Length == 3 && (s[0].Equals("patient") || s[0].Equals("user") || s[0].Equals("system")))
+                    {
+                        retVal.Add(claim);
+                    }
+                }
+            }
+            return retVal;
+        }
+        private bool PassedScopeCheck(HttpRequest req, ClaimsIdentity ci,string res,string resid, ILogger log)
+        {
+            //Check for SMART Scopes (e.g. <patient/user>.<resource>|*.Read|Write|*)
+                List<string> smartClaims = ExtractSmartScopeClaims(ci);
+                foreach (string claim in smartClaims)
                 {
                     string[] s = claim.Split(".");
                     log.LogInformation($"FHIRProxyAuthorization: Checking scope: {claim}");
@@ -140,8 +160,8 @@ namespace FHIRProxy
                         log.LogWarning($"FHIRProxyAuthorization:Claim {claim} is not a SMART claim. Will not match a scope. Expected format is [patient|user].[resourceType|*].[read|write|*]");
                     }
                 }
-            }
-
+            
+                //didn't pass scope checks
             
             return false;
            

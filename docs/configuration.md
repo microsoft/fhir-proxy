@@ -107,14 +107,14 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
  
    _Note: You will need to login as a user in a FHIR Reader and/or FHIR Administrative role to view._
  
- 3. You will need to obtain the participant user principal name for the AAD instance in your tenant that are assigned and in roles for the secure proxy application.  Make sure the Role they are in corresponds to the FHIR Resource you are linking. 
-    For example: ```somedoctor@sometenant.onmicrosoft.com```
- 4. Now you can link the FHIR Resource to the user principal name by entering the following URL in your browser:
+ 3. You will need to obtain the participant user object id for the AAD instance in your tenant that are assigned and in roles for the secure proxy application.  Make sure the Role they are in corresponds to the FHIR Resource you are linking. 
+   
+ 4. Now you can link the FHIR Resource to the user principal object id by entering the following URL in your browser:</br>
  
-    ```https://<your fhir proxy url>/manage/link/<ResourceName>/<ResourceID>?name=<user principal name>``` 
+    ```https://<your fhir proxy url>/manage/link/<FHIR ResourceName>/<FHIR ResourceID>/<AD Object ID>``` 
 
-    For example to connect Dr. Mickey in my AAD tenant principal who’s user name is mickey@myaad.onmicrosoft.com to the FHIR Practitioner Resource Id 3bdaac8f-5c8e-499d-b906-aab31633337d you would enter the following URL:
-    ```https://<your fhir proxy url>/manage/link/Practitioner/3bdaac8f-5c8e-499d-b906-aab31633337d?name=mickey@myaad.onmicrosoft.com```
+    For example to connect Dr. Mickey in my AAD tenant principal who’s object id is 9293929-8281-dj89-a999-ppoiiwjwj to the FHIR Practitioner Resource Id 3bdaac8f-5c8e-499d-b906-aab31633337d you would enter the following URL:
+    ```https://<your fhir proxy url>/manage/link/Practitioner/3bdaac8f-5c8e-499d-b906-aab31633337d/9293929-8281-dj89-a999-ppoiiwjwj```
      
     _Note: You will need to login as a user in a FHIR Administrative role to perform the assignment_
 

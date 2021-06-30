@@ -42,7 +42,7 @@ namespace FHIRProxy.postprocessors
             //Needed Variables
             ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
             string aadten = ci.Tenant();
-            string name = principal.Identity.Name;
+            string name = ci.ObjectId();
 
             bool admin = Utils.inServerAccessRole(req,"A");
             List<string> resourceidentities = new List<string>();
