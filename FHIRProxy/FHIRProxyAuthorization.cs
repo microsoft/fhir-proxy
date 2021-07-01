@@ -52,6 +52,7 @@ namespace FHIRProxy
             req.Headers.Remove(Utils.FHIR_PROXY_ROLES);
             req.Headers.Remove(Utils.FHIR_PROXY_SMART_SCOPE);
             req.Headers.Remove(Utils.PATIENT_CONTEXT_FHIRID);
+          
             if (!principal.Identity.IsAuthenticated)
             {
                 req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
@@ -75,6 +76,8 @@ namespace FHIRProxy
                 {
                     if (!PassedScopeCheck(req, ci, res, id, log))
                     {
+                        req.Headers.Remove(Utils.AUTH_STATUS_HEADER);
+                        req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
                         req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
                         req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal did not pass claims scope for this request.");
                         goto leave;
@@ -85,6 +88,8 @@ namespace FHIRProxy
                     //No smart claims present use role access
                     if (!PassedRoleCheck(req, reader, writer, admin, ispostcommand))
                     {
+                        req.Headers.Remove(Utils.AUTH_STATUS_HEADER);
+                        req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
                         req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
                         req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not in an authorized role");
                         goto leave;
