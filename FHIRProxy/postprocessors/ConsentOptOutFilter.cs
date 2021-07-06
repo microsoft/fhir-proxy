@@ -58,7 +58,7 @@ namespace FHIRProxy.postprocessors
             if (Utils.inServerAccessRole(req, "A")) return new ProxyProcessResult(true, "", "", fr);
             ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
             string aadten = ci.Tenant();
-            string name = principal.Identity.Name;
+            string name = ci.ObjectId();
             var cache = Utils.RedisConnection.GetDatabase();
             List<string> associations = ((string)cache.StringGet($"{ASSOCIATION_CACHE_PREFIX}{aadten}-{name}")).DeSerializeList<string>();
             if (associations == null)
@@ -73,7 +73,7 @@ namespace FHIRProxy.postprocessors
                     associations.Add(practitioner.PartitionKey + "/" + practitioner.LinkedResourceId);
                     //Load organization from PractionerRoles
                     var prs = await FHIRClient.CallFHIRServer($"PractitionerRole?practitioner={practitioner.LinkedResourceId}", "","GET",req.Headers,log);
-                    var ro = (JObject)prs.Content;
+                    var ro = prs.toJToken();
                     if (ro.FHIRResourceType().Equals("Bundle"))
                     {
                         JArray entries = (JArray)ro["entry"];
@@ -159,7 +159,7 @@ namespace FHIRProxy.postprocessors
                 //Fetch and Cache Deny access Consent Information
                 var pid = patientId.Split("/")[1];
                 var consentrecs = await FHIRClient.CallFHIRServer($"Consent?patient={pid}&category={consentcat}","","GET",headers,log);
-                var result = (JObject)consentrecs.Content;
+                var result = consentrecs.toJToken();
                 if (result.FHIRResourceType().Equals("Bundle"))
                 {
                     JArray entries = (JArray)result["entry"];
