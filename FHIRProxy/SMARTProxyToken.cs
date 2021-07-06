@@ -13,6 +13,8 @@ using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Text;
+
 namespace FHIRProxy
 {
     public static class SMARTProxyToken
@@ -35,11 +37,13 @@ namespace FHIRProxy
                 return new ContentResult() { Content = "Content-Type invalid must be application/x-www-form-urlencoded", StatusCode = 400, ContentType = "text/plain" };
 
             }
+            string appiduri = req.Scheme + "://" + req.Host.Value;
             string code = null;
             string redirect_uri = null;
             string client_id = null;
             string client_secret = null;
             string grant_type = null;
+            string refresh_token = null;
             //Read in Form Collection
             IFormCollection col = req.Form;
             if (col != null)
@@ -49,6 +53,21 @@ namespace FHIRProxy
                 client_id = col["client_id"];
                 client_secret = col["client_secret"];
                 grant_type = col["grant_type"];
+                refresh_token = col["refresh_token"];
+            }
+            //Check for Client Id and Secret in Basic Auth Header and use if not in POST body
+            var authHeader = req.Headers["Authorization"].FirstOrDefault();
+            string headclientid = null;
+            string headsecret = null;
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Basic "))
+            {
+                string encodedUsernamePassword = authHeader.Substring("Basic ".Length).Trim();
+                byte[] data = Convert.FromBase64String(encodedUsernamePassword);
+                string decodedString = Encoding.UTF8.GetString(data);
+                headclientid = decodedString.Substring(0, decodedString.IndexOf(":"));
+                headsecret = decodedString.Substring(decodedString.IndexOf(":") + 1);
+                if (string.IsNullOrEmpty(client_id)) client_id = headclientid;
+                if (string.IsNullOrEmpty(client_secret)) client_secret = headsecret;
             }
             //Create Key Value Pairs List
             var keyValues = new List<KeyValuePair<string, string>>();
@@ -72,6 +91,12 @@ namespace FHIRProxy
             {
                 keyValues.Add(new KeyValuePair<string, string>("client_secret", client_secret));
             }
+            if (!string.IsNullOrEmpty(refresh_token))
+            {
+                keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
+            }
+
+
             //POST to token endpoint
             var client = new HttpClient();
             client.BaseAddress = new Uri($"https://{aadname}");
@@ -101,8 +126,19 @@ namespace FHIRProxy
                 }
 
             }
+            //Replace Scopes back to SMART from Fully Qualified AD Scopes
+            if (!obj["scope"].IsNullOrEmpty())
+            {
+                string sc = obj["scope"].ToString();
+                sc = sc.Replace(appiduri + "/", "");
+                sc = sc.Replace("patient.", "patient/");
+                sc = sc.Replace("user.", "user/");
+                sc = sc.Replace("launch.", "launch/");
+                obj["scope"] = sc;
+            }
             req.HttpContext.Response.Headers.Add("Cache-Control","no-store");
             req.HttpContext.Response.Headers.Add("Pragma", "no-cache");
+            if (!string.IsNullOrEmpty(authHeader)) req.HttpContext.Response.Headers.Add("Authorization", authHeader);
             var cr = new ContentResult()
             {
                 Content = obj.ToString(),

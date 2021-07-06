@@ -63,7 +63,8 @@ namespace FHIRProxy
                 foreach (var s in scopes)
                 {
                     if (!string.IsNullOrEmpty(scopeString)) scopeString += " ";
-                    if (s.StartsWith("system", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("launch",System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("patient/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user/", System.StringComparison.InvariantCultureIgnoreCase))
+                    if (s.StartsWith("system/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("launch",System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("patient/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user/", System.StringComparison.InvariantCultureIgnoreCase) ||
+                        s.Equals("fhirUser"))
                     {
                         var newScope = s.Replace("/", ".");
                         scopeString += $"{aud}/{newScope}";

@@ -164,7 +164,8 @@
     "param" : ["patient"]
   },
   {
-    "code" : "Device"
+      "code": "Device",
+      "param": [ "patient" ]
   },
   {
     "code" : "DeviceDefinition"

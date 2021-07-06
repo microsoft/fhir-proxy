@@ -41,6 +41,11 @@ namespace FHIRProxy
             arr3.Add("Patient Access for EHR Launch");
             arr3.Add("Clinician Access for Standalone Apps");
             arr3.Add("Clinician Access for EHR Launch");
+            arr3.Add("client-confidential-symmetric");
+            arr3.Add("sso-openid-connect");
+            arr3.Add("context-standalone-patient");
+            arr3.Add("permission-offline");
+            arr3.Add("permission-patient");
             obj["capabilities"] = arr3;
             return new JsonResult(obj);
         }
