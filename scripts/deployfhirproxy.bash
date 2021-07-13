@@ -78,7 +78,7 @@ function kvuri {
 
 usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -p <prefix>" 1>&2; exit 1; }
 # Initialize parameters specified from command line
-while getopts ":i:g:n:l:p" arg; do
+while getopts ":i:g:n:l:p:" arg; do
 	case "${arg}" in
 		p)
 			deployprefix=${OPTARG:0:14}
