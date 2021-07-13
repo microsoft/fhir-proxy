@@ -181,30 +181,15 @@ namespace FHIRProxy
             {
                 //See if resource is patient compartment to check for query scope no access for non-patient compartment resources...
                 if (!comp.isPatientCompartmentResource(res)) return false;
-                
-                //Check if patient is in context already
-                string fhirid = null;
-                if (req.Headers.ContainsKey(Utils.PATIENT_CONTEXT_FHIRID))
+                //See if fhirUser claim for Patient or OID has been linked to a patient
+                string fhirid = GetFHIRId(ci, "Patient", log);
+                if (string.IsNullOrEmpty(fhirid))
                 {
-                    fhirid = req.Headers[Utils.PATIENT_CONTEXT_FHIRID].FirstOrDefault();
+                    log.LogWarning("FHIRProxyAuthorization: Scope context is for Patient but no Patient Identity Claim or Link found");
+                    return false;
                 }
-                else
-                {
-                    IEnumerable<Claim> claims = ci.Claims;
-                    fhirid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-ID-CLAIM", "fhirpatientid")).Select(c => c.Value).SingleOrDefault();
-                    if (string.IsNullOrEmpty(fhirid))
-                    {
-                        //See if OID has been linked to a patient if no persisted FHIR ID claim specified
-                        fhirid = GetFHIRIdFromOID(ci, "Patient", log);
-                        if (string.IsNullOrEmpty(fhirid))
-                        {
-                            log.LogWarning("FHIRProxyAuthorization: Scope context is for Patient but no Patient Identity Claim or Link found");
-                            return false;
-                        }
-                    }
-                    //Set fhirid in context for post filtering
-                    req.Headers.Add(Utils.PATIENT_CONTEXT_FHIRID, fhirid);
-                }
+                //Set fhirid in context for post filtering
+                req.Headers.Add(Utils.PATIENT_CONTEXT_FHIRID, fhirid);
                 //If Patient resource must have Patient Identity Claim for FHIR Logical Id in Token and must match id parameter
                 if (res.Equals("Patient"))
                 {
@@ -254,8 +239,17 @@ namespace FHIRProxy
             }
             return false;
         }
-        public static string GetFHIRIdFromOID(ClaimsIdentity ci, string res,ILogger log)
+        public static string GetFHIRId(ClaimsIdentity ci, string res,ILogger log)
         {
+            //Check the fhirUser claim see if it's a fhirPatient
+            IEnumerable<Claim> claims = ci.Claims;
+            string fhirid = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-PATIENT-FHIR-ID-CLAIM", "fhirUser")).Select(c => c.Value).SingleOrDefault();
+            if (!string.IsNullOrEmpty(fhirid) && fhirid.StartsWith($"{res}/"))
+            {
+                fhirid = fhirid.Replace($"{res}/", "");
+                log.LogInformation($"GetFHIRId: Type: {res} ID: {fhirid} Found in fhirUser claim");
+                return fhirid;
+            }
             string aadten = (string.IsNullOrEmpty(ci.Tenant()) ? "Unknown" : ci.Tenant());
             string oid = ci.ObjectId();
             if (string.IsNullOrEmpty(oid))

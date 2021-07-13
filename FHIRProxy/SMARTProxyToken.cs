@@ -117,7 +117,7 @@ namespace FHIRProxy
                 if (ci.HasScope("launch.patient"))
                 {
                     
-                    var pt = FHIRProxyAuthorization.GetFHIRIdFromOID(ci, "Patient", log);
+                    var pt = FHIRProxyAuthorization.GetFHIRId(ci, "Patient", log);
                     if (!string.IsNullOrEmpty(pt))
                     {
                         log.LogInformation($"Launch Scope for patient...{pt}");
@@ -134,6 +134,8 @@ namespace FHIRProxy
                 sc = sc.Replace("patient.", "patient/");
                 sc = sc.Replace("user.", "user/");
                 sc = sc.Replace("launch.", "launch/");
+                if (!sc.Contains("openid")) sc = sc + " openid";
+                if (!sc.Contains("offline_access")) sc = sc + " offline_access";
                 obj["scope"] = sc;
             }
             req.HttpContext.Response.Headers.Add("Cache-Control","no-store");
