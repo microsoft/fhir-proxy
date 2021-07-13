@@ -80,7 +80,7 @@ By default, no pre/post processors are configured to run.  You will need to enab
 This post process allows for date based sorting alternative on FHIR Servers that do not natively support _sort. The processor implements top level _sort=date or _sort=-date (reverse chron) query parameter for supported resource queries up to a hard maximum of 5000.</br>
  
 ### [Publish Event Post-Processor](docs/configuration.md)
-This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured eventhub.  These events can be subscribed too by any number of consumers in order to facilitate any number of orchestrated workflows. (e.g. Clinical Decision Support, Audits, Alerts, etc...)</br>
+This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured eventhub. These events can be subscribed to by any number of consumers in order to facilitate any number of orchestrated workflows. (e.g. Clinical Decision Support, Audits, Alerts, etc...)</br>
 
 ### [Transform Bundle Pre-Processor](docs/configuration.md)
 This processing module will transform incoming transaction bundle requests into batch bundle request and maintain UUID associations of contained resources.  This is a alternative for updating FHIR Servers unable to handle transaction based requests.</br>
