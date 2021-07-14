@@ -49,7 +49,11 @@ declare tokeniss=""
 declare preprocessors=""
 declare postprocessors=""
 declare msi=""
+
 declare tags="HealthArchitectures=FHIR-Proxy"
+declare script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+=======
+
 
 function fail {
   echo $1 >&2
@@ -297,7 +301,7 @@ echo "Starting Secure FHIR Proxy deployment..."
 		echo "Configuring reply urls for app..."
 		stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls)
 		echo "Adding FHIR Custom Roles to Manifest..."
-		stepresult=$(az ad app update --id $spappid --app-roles @fhirroles.json)
+		stepresult=$(az ad app update --id $spappid --app-roles @${script_dir}/fhirroles.json)
 		echo "Enabling AAD Authorization and Securing the FHIR Proxy"
 		stepresult=$(az webapp auth update -g $resourceGroupName -n $faname --enabled true --action AllowAnonymous --aad-allowed-token-audiences $fahost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss)
 		echo "Starting fhir proxy function app..."
