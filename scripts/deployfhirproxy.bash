@@ -49,8 +49,11 @@ declare tokeniss=""
 declare preprocessors=""
 declare postprocessors=""
 declare msi=""
-declare tags="HealthArchitectures-Solutions=FHIR-Proxy"
+
+declare tags="HealthArchitectures=FHIR-Proxy"
 declare script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+=======
+
 
 function fail {
   echo $1 >&2
