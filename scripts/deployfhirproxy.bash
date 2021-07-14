@@ -49,7 +49,7 @@ declare tokeniss=""
 declare preprocessors=""
 declare postprocessors=""
 declare msi=""
-declare tags="HealthArchitectures-Solutions=FHIR-Proxy"
+declare tags="HealthArchitectures=FHIR-Proxy"
 
 function fail {
   echo $1 >&2
