@@ -112,17 +112,30 @@ echo "Creating Service Client Principal "$spname"..."
 		echo "Loading configuration settings from key vault "$kvname"..."
 		fphost=$(az keyvault secret show --vault-name $kvname --name FP-HOST --query "value" --out tsv)
 		fpclientid=$(az keyvault secret show --vault-name $kvname --name FP-RBAC-CLIENT-ID --query "value" --out tsv)
+		fpobjectid=$(az ad sp show --id $fpclientid --query "objectId" --out tsv)
 		if [ -z "$fpclientid" ] || [ -z "$fphost" ]; then
 			echo $kvname" does not appear to contain fhir proxy settings...Is the Proxy Installed?"
 			exit 1
 		fi
 		echo "Creating FHIR Proxy Client Service Principal for AAD Auth"
-		stepresult=$(az ad sp create-for-rbac -n $spname)
+		stepresult=$(az ad sp create-for-rbac --skip-assignment -n $spname)
 		spappid=$(echo $stepresult | jq -r '.appId')
 		sptenant=$(echo $stepresult | jq -r '.tenant')
 		spsecret=$(echo $stepresult | jq -r '.password')
-		stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role)
-		stepresult=$(az ad app permission grant --id $spappid --api $fpclientid)
+		spobjectid=$(az ad sp show --id $spappid --query "objectId" --out tsv)
+		echo "Granting FHIR Proxy Client Service Principal access to FHIR Proxy if access doesn't already exist"
+		approleassignments=$(az rest --url "https://graph.microsoft.com/v1.0/servicePrincipals/$fpobjectid/appRoleAssignedTo")
+		for appRoleId in '24c50db1-1e11-4273-b6a0-b697f734bcb4' '2d1c681b-71e0-4f12-9040-d0f42884be86'
+		do
+			# This logic is needed because az rest will return a BadRequest error if the role assignment already exists
+			exists=$(echo $approleassignments | jq -r --arg appRoleId "$appRoleId" --arg spobjectid "$spobjectid" '.value[] | select(.appRoleId==$appRoleId and .principalId==$spobjectid)')
+			if [ -z "$exists" ]
+			then
+				stepresult=$(az rest --method POST \
+								--uri "https://graph.microsoft.com/v1.0/servicePrincipals/$fpobjectid/appRoleAssignments" \
+								--body "{\"principalId\": \"$spobjectid\", \"resourceId\": \"$fpobjectid\", \"appRoleId\": \"$appRoleId\"}")
+			fi
+		done
 		if [ -n "$storekv" ]; then
 			echo "Updating Keyvault with new Service Client Settings..."
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-TENANT-NAME" --value $sptenant)
@@ -159,15 +172,13 @@ echo "Creating Service Client Principal "$spname"..."
 			echo "Your Service Principal Tenant Id is: "$sptenant
 			echo "Your Service Principal Resource/Audience is: "$fpclientid
 		fi
-		echo " "
 		if [ -n "$genpostman" ]; then
+			echo " "
 			echo "For your convenience a Postman environment "$spname".postman_environment.json has been generated"
 			echo "It can imported along with the FHIR CALLS-Sample.postman_collection.json into postman to test your proxy access"
 			echo "For Postman Importing help please reference the following URL:"
 			echo "https://learning.postman.com/docs/getting-started/importing-and-exporting-data/#importing-postman-data"
 		fi
-		echo "You will need to access Azure portal and grant admin consent to "$spname" API Permissions"
-		echo "For more information see https://docs.microsoft.com/en-us/azure/active-directory/manage-apps/grant-admin-consent#grant-admin-consent-in-app-registrations"
 		echo "************************************************************************************************************"
 		echo " "
 		echo "Note: The display output and files created by this script can contain sensitive information please protect it!"
