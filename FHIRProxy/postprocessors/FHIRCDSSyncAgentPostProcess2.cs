@@ -202,7 +202,7 @@ namespace FHIRProxy.postprocessors
                 string partitionkey = resource.FHIRResourceType();
                 if (resource.FHIRResourceType().Equals("Patient"))
                 {
-                    partitionkey += "/" + resource.FHIRReferenceId();
+                    partitionkey = resource.FHIRReferenceId();
                 }
                 else if (!resource["patient"].IsNullOrEmpty() && !resource["patient"]["reference"].IsNullOrEmpty())
                 {

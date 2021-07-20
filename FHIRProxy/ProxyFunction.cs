@@ -110,12 +110,13 @@ namespace FHIRProxy
                     postrslt.Response.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Post-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
 
                 }
-                //Check for Patient Context for single object requests and Filter single resources not restricted by query
-                if (!string.IsNullOrEmpty(parsedPath.ResourceId) && !PatientCompartment.Instance().ResourceIsAllowedForPatientContext(req, postrslt.Response.toJToken(),log))
+                //Check for User Scoped allowed resources
+                var scoperesult = FHIRProxyAuthorization.ResultAllowedForUserScope(postrslt.Response.toJToken(), principal, req, log);
+                if (!scoperesult.Result)
                 {
                     postrslt.Response = new FHIRResponse();
                     postrslt.Response.StatusCode = System.Net.HttpStatusCode.Unauthorized;
-                    postrslt.Response.Content = Utils.genOOErrResponse("authorization-denied", $"Resource {parsedPath.ResourceType}/{parsedPath.ResourceId} does not belong to patient in context.");
+                    postrslt.Response.Content = Utils.genOOErrResponse("authorization-denied", scoperesult.Message);
                 }
                 //Reverse Proxy Response
                 postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req);

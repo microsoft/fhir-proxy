@@ -31,7 +31,7 @@ namespace FHIRProxy
             string authority = Utils.GetEnvironmentVariable("FS-AUTHORITY", "https://login.microsoftonline.com");
             bool isMsi = ADUtils.isMSI(resource, tenant, clientid, secret);
             log.LogInformation($"Obtaining new FHIR Access Token...Using MSI=({isMsi.ToString()})...");
-            string newtok = await ADUtils.GetAADAccessToken($"{authority}/{tenant}", clientid, secret, resource, isMsi);
+            string newtok = await ADUtils.GetAADAccessToken($"{authority}/{tenant}", clientid, secret, resource, isMsi,log);
             if (newtok != null)
             {
                 if (tok==null)
@@ -40,7 +40,7 @@ namespace FHIRProxy
                 } else { 
                     _tokendict.TryUpdate("fhirtoken", newtok, tok);
                 }
-                log.LogInformation($"InitializeFHIRCDSTokens: fhir token renewed...");
+                log.LogInformation($"GetFHIRToken: fhir token renewed...");
             }
             return newtok;
         }
@@ -135,7 +135,7 @@ namespace FHIRProxy
                                              return GetServerRetryAfter(response.Result, log);
                                          },
                                          onRetryAsync: async (response, timespan, retryCount, context) => {
-                                             log.LogWarning($"CDS Request failed. Waiting {timespan} before next retry. Retry attempt {retryCount}");
+                                             log.LogWarning($"FHIR Request failed. Waiting {timespan} before next retry. Retry attempt {retryCount}");
                                          }
                    );
             HttpResponseMessage _fhirResponse = 
