@@ -21,7 +21,7 @@ The base pre and post processing modules included and can be configured are:
  + ConsentOptOutFilter - This post-processing module adds the ability to deny access to FHIR Server resources for patients who have elected to OPTOUT everyone or specific individuals and/or organizations from access to their medical data.
  + EverythingPatientPreProcess - This pre-preocessing module implements a limited $everything at the patient level. It returns up to 5000 related resources for the Patient
 
-A _SamplePreProcess_ and _SamplePostProcess_ are available in the project folders ```FHIRProxy/preprocessors``` and ```FHIRProxy/postprocessors``` </br>
+A __SamplePreProcess__ and __SamplePostProcess__ are available in the project folders <b>```FHIRProxy/preprocessors```</b> and <b>```FHIRProxy/postprocessors```</b> </br>
  
 See [Configuration](docs/configuration.md) document for full descriptions and configuration instructions.
 
@@ -48,15 +48,26 @@ Please note you should deploy this proxy into a tenant that you have appropriate
    + The Audience/Resource for the FHIR Server/Service Client typically https://<I>[yourfhirservername]</I>.azurehealthcareapis.com for Azure API for FHIR
 6. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
 7. Select Bash Shell 
-8. Clone this repo ```git clone https://github.com/microsoft/fhir-proxy```
-9. Switch to the scripts subdirectory of this repo ```cd ./fhir-proxy/scripts/```
-10. Run the ```deployfhirproxy.bash``` script and follow the prompts
+8. Clone this repo 
+```bash
+git clone https://github.com/microsoft/fhir-proxy
+```
+
+9. Switch to the scripts subdirectory of this repo 
+```bash 
+cd ./fhir-proxy/scripts/
+```
+10. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
+```bash
+./deployfhirproxy.bash 
+```
+
 11. Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
 
 ## Proxy Endpoint
-The new endpoint for your FHIR Server should now be: ```https://<secure proxy url from above>/fhir/```. You can use any supported FHIR HTTP verb and any FHIR compliant request/query
+The new endpoint for your FHIR Server should now be: <b>```https://<secure proxy url from above>/fhir/```</b>. You can use any supported FHIR HTTP verb and any FHIR compliant request/query
 For example to see conformance statement for the FHIR Server, use your browser and access the proxy endpoint:</br>
-```https://<secure proxy url from above>/fhir/metadata```
+<b>```https://<secure proxy url from above>/fhir/metadata```</b>
 
 Proxy endpoints will authenticate/authorize your access to the FHIR server will execute configured pre-processing routines, pass the modified request on to the FHIR Server via the configured service client, execute configured post-processing routines on the result and rewrite the server response to the client. 
 The original user principal name and tenant are passed in custom headers to the FHIR server for accurate security and compliance auditing.  
@@ -80,7 +91,7 @@ By default, no pre/post processors are configured to run.  You will need to enab
 This post process allows for date based sorting alternative on FHIR Servers that do not natively support _sort. The processor implements top level _sort=date or _sort=-date (reverse chron) query parameter for supported resource queries up to a hard maximum of 5000.</br>
  
 ### [Publish Event Post-Processor](docs/configuration.md)
-This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured eventhub.  These events can be subscribed too by any number of consumers in order to facilitate any number of orchestrated workflows. (e.g. Clinical Decision Support, Audits, Alerts, etc...)</br>
+This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured eventhub. These events can be subscribed to by any number of consumers in order to facilitate any number of orchestrated workflows. (e.g. Clinical Decision Support, Audits, Alerts, etc...)</br>
 
 ### [Transform Bundle Pre-Processor](docs/configuration.md)
 This processing module will transform incoming transaction bundle requests into batch bundle request and maintain UUID associations of contained resources.  This is a alternative for updating FHIR Servers unable to handle transaction based requests.</br>
