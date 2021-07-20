@@ -48,7 +48,7 @@ namespace FHIRProxy
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
 
             }
@@ -69,6 +69,7 @@ namespace FHIRProxy
         }
         public bool isPatientCompartmentResource(string resourceType)
         {
+            if (string.IsNullOrEmpty(resourceType)) return false;
             return _compresources.ContainsKey(resourceType);
         }
         public string[] GetPatientParametersForResourceType(string resourceType)
@@ -81,31 +82,6 @@ namespace FHIRProxy
             }
             return null;
         }
-        public bool ResourceIsAllowedForPatientContext(HttpRequest req, JToken resource,ILogger log)
-        {
-            if (!req.Headers.ContainsKey(Utils.PATIENT_CONTEXT_FHIRID)) return true;
-            string fhirid = req.Headers[Utils.PATIENT_CONTEXT_FHIRID].First();
-            if (resource.FHIRResourceType().Equals("Patient"))
-            {
-                log.LogInformation($"ResourceIsAllowedForPatientContext: Comparing {resource["id"].ToString()} to {fhirid}");
-                bool result = fhirid.Equals(resource["id"].ToString());
-                log.LogInformation($"ResourceIsAllowedForPatientContext: Compare result {result}");
-                return result;
-            }
-            string[] parms = GetPatientParametersForResourceType(resource.FHIRResourceType());
-            if (parms == null || parms.Length==0) return true;
-            foreach (string fieldname in parms)
-            {
-                JToken element = resource[fieldname];
-                if (element != null)
-                {
-                    log.LogInformation($"ResourceIsAllowedForPatientContext: Comparing {element.ToString()} to {fhirid}");
-                    if (element.ToString().Contains(fhirid)) return true;
-                }
-
-            }
-            return false;
-
-        }
+        
     }
 }

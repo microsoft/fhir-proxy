@@ -7,13 +7,14 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System.Web;
+using System;
 
 namespace FHIRProxy
 {
     public static class SMARTProxyAuthorize
     {
         [FunctionName("SMARTProxyAuthorize")]
-        public static async Task<IActionResult> Run(
+        public static IActionResult Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "AadSmartOnFhirProxy/authorize")] HttpRequest req,
             ILogger log)
         {

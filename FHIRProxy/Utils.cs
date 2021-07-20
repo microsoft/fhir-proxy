@@ -16,8 +16,6 @@ namespace FHIRProxy
         public static readonly string AUTH_STATUS_MSG_HEADER = "fhirproxy-AuthorizationStatusMessage";
         public static readonly string FHIR_PROXY_SMART_SCOPE = "fhirproxy-smart-scope";
         public static readonly string FHIR_PROXY_ROLES = "fhirproxy-roles";
-        public static readonly string UNSUPPORTED_CMDS = "$export,_operations";
-        public static readonly string PATIENT_CONTEXT_FHIRID = "fhirproxy-patcontext-fhirid";
         private static Lazy<ConnectionMultiplexer> lazyConnection = new Lazy<ConnectionMultiplexer>(() =>
         {
             string cacheConnection = GetEnvironmentVariable("FP-REDISCONNECTION");

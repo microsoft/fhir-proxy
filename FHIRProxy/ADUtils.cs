@@ -1,4 +1,5 @@
 ﻿using Microsoft.Azure.Services.AppAuthentication;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json.Linq;
 using System;
@@ -29,7 +30,7 @@ namespace FHIRProxy
             return false;
             
         }
-        public static async Task<string> GetAADAccessToken(string authority, string clientId, string clientSecret, string audience, bool msi)
+        public static async Task<string> GetAADAccessToken(string authority, string clientId, string clientSecret, string audience, bool msi,ILogger log)
         {
             try
             {
@@ -50,6 +51,7 @@ namespace FHIRProxy
             }
             catch (Exception e)
             {
+                log.LogError($"GetAADAccessToken: Exception getting access token: {e.Message}");
                 return null;
             }
 

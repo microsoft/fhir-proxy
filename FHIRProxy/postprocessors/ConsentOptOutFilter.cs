@@ -12,7 +12,7 @@
 * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-using Hl7.Fhir.Model;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -20,10 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Text;
 using StackExchange.Redis;
-using Newtonsoft.Json;
-using Hl7.FhirPath.Expressions;
 using System.Threading.Tasks;
 
 namespace FHIRProxy.postprocessors
