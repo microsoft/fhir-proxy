@@ -1,7 +1,11 @@
 ## Adding fhirUser as Custom Claim to AAD OAuth Tokens
-To support SMART Launch fhirUser scope to restrict content to the logged in user and/or set patient/user Context you can associated Active Directory user accounts with an FHIR resource logical ID in the FHIR Server.  This association allows for populating the fhirUser claim in OAuth tokens and setting context for the calling SMART Applications as detailed in the [SMART App Launch Framework](http://www.hl7.org/fhir/smart-app-launch/)</br>
+To support SMART Launch fhirUser scope to restrict content to the logged in user and/or set patient/user Context you can associated Active Directory user accounts with a specific FHIR resource on the FHIR Server.  This association allows for populating the fhirUser claim in OAuth tokens and setting context for the calling SMART Applications as detailed in the [SMART App Launch Framework](http://www.hl7.org/fhir/smart-app-launch/)</br>
 
-<B><I>Note: You musy have rights to administer claims policy in your AD Tenant and read/write user profiles in order to proceed</B></I>
+### Prerequisites
+1. <B><I>You must have rights to administer claims policy in your AD Tenant and read/write user profiles in order to proceed</B></I>
+2. You have installed the fhir-proxy in the tenant.
+
+### Configure fhirUser Custom Claim
 1. [Download and Install Windows Powershell for your platform](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.1)
 2. Launch Powershell with Administrator privledges
 3. Follow the [prerequisites](https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-claims-mapping#prerequisites) for running AD Policy Commands
@@ -21,7 +25,7 @@ To support SMART Launch fhirUser scope to restrict content to the logged in user
     ```
     Get-AzureADPolicy
     ```
-6. Apply this policy to your fhir-proxy client principle ID (You can find it on [Azure Portal](https://portal.azure.com) > Enterprise Applications > fhir-proxy install name (e.g. myfhirproxy.azurewebsites.net):
+6. Apply this policy to your fhir-proxy client principle ID (You can find it on [Azure Portal](https://portal.azure.com) > Enterprise Applications > fhir-proxy install name (e.g. myfhirproxy.azurewebsites.net) > Object Id under Properties:
     ```
         Add-AzureADServicePrincipalPolicy -Id <ObjectId of the fhir-proxy ServicePrincipal> -RefObjectId <ObjectId of the Policy>
     ```
