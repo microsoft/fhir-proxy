@@ -121,6 +121,16 @@ namespace FHIRProxy
             }
             return o;
         }
+        public static string fhirUser(this ClaimsIdentity ci)
+        {
+            IEnumerable<Claim> claims = ci.Claims;
+            string fhiruser = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser")).Select(c => c.Value).SingleOrDefault();
+            if (string.IsNullOrEmpty(fhiruser))
+            {
+                return null;
+            }
+            return fhiruser;
+        }
         public static bool HasScope(this ClaimsIdentity identity, string scope)
         {
             if (string.IsNullOrEmpty(scope)) return false;

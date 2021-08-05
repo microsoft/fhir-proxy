@@ -108,19 +108,31 @@ namespace FHIRProxy
             var response = await client.SendAsync(request);
             string contresp = await response.Content.ReadAsStringAsync();
             JObject obj = JObject.Parse(contresp);
-            //Load Access Token and check for Context Claims and Set Context if requested or linked
-            if (!obj["access_token"].IsNullOrEmpty())
+            //Load id_token to set fhirUser context in cache for tenant
+            if (!obj["id_token"].IsNullOrEmpty())
             {
                 var handler = new JwtSecurityTokenHandler();
-                var token = handler.ReadToken((string)obj["access_token"]) as JwtSecurityToken;
-                ClaimsIdentity ci = new ClaimsIdentity(token.Claims);
-                if (ci.HasScope("launch.patient"))
+                var access_token = handler.ReadToken((string)obj["access_token"]) as JwtSecurityToken;
+                var id_token = handler.ReadToken((string)obj["id_token"]) as JwtSecurityToken;
+                ClaimsIdentity id_ci = new ClaimsIdentity(id_token.Claims);
+                ClaimsIdentity access_ci = new ClaimsIdentity(access_token.Claims);
+                string aadten = id_ci.Tenant();
+                string oid = id_ci.ObjectId();
+                string fhiruser = id_ci.fhirUser();
+                //No FHIR User in claims in id_token then check the mapping table
+                if (string.IsNullOrEmpty(fhiruser)) fhiruser = FHIRProxyAuthorization.GetMappedFHIRUser(id_ci, log);
+               
+                if (!string.IsNullOrEmpty(aadten) && !string.IsNullOrEmpty(oid) && !string.IsNullOrEmpty(fhiruser))
+                {
+                    var cache = Utils.RedisConnection.GetDatabase();
+                    cache.StringSet($"usermap-{aadten}-{oid}", fhiruser);
+                }
+                if (access_ci.HasScope("launch.patient") && fhiruser.StartsWith("Patient"))
                 {
                     
-                    var pt = FHIRProxyAuthorization.GetFHIRId(ci, "Patient", log);
+                    var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
                     if (!string.IsNullOrEmpty(pt))
                     {
-                        log.LogInformation($"Launch Scope for patient...{pt}");
                         obj["patient"] = pt;
                     }
                 }

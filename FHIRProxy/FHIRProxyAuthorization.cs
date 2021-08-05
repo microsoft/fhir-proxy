@@ -180,41 +180,55 @@ namespace FHIRProxy
             return false;
            
         }
-        public static UserScopeResult ResultAllowedForUserScope(JToken tok, ClaimsPrincipal principal, HttpRequest req, ILogger log)
+        public static UserScopeResult ResultAllowedForUserScope(JToken tok, ClaimsPrincipal principal, ILogger log)
         {
             ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
-            return ResultAllowedForUserScope(tok, ci, req, log);
+            return ResultAllowedForUserScope(tok, ci, log);
         }
-        public static UserScopeResult ResultAllowedForUserScope(JToken tok,ClaimsIdentity ci, HttpRequest req, ILogger log)
+        public static UserScopeResult ResultAllowedForUserScope(JToken tok, ClaimsIdentity ci, ILogger log)
         {
             if (tok == null) return new UserScopeResult(true);
+            if (tok.FHIRResourceType().Equals("OperationOutcome")) return new UserScopeResult(true);
             List<string> smartClaims = ExtractSmartScopeClaims(ci);
             //No Claims in token then pass scope context by default
             if (smartClaims == null || smartClaims.Count == 0) return new UserScopeResult(true);
             string claimstring = String.Join(" ", smartClaims);
-            //Load fhirUser
-            string fhiruser = GetFHIRUser(ci, log);
+            //Load fhirUser placed in cache by SMARTProxyToken issuer.
+            string fhiruser = GetCachedFHIRUser(ci);
+            if (string.IsNullOrEmpty(fhiruser))
+            {
+                return new UserScopeResult(false, $"fhirUser is not in context...SMART Scopes require a fhirUser claim see fhir proxy documentation");
+            }
+            PatientCompartment comp = PatientCompartment.Instance();
+            if (!tok.FHIRResourceType().Equals("Bundle"))
+            {
+                return CheckResourceUserScope(tok, ci, comp, claimstring, log);
+            }
+            else
+            {
+                var resourcesToCheck = (JArray)tok["entry"];
+                if (!resourcesToCheck.IsNullOrEmpty())
+                {
+                    //Any entry not related to patient in bundle will cause scope reject for entire query
+                    foreach (JToken t in resourcesToCheck)
+                    {
+                        JToken resource = t["resource"];
+                        var rslt = CheckResourceUserScope(resource, ci, comp, claimstring, log);
+                        if (!rslt.Result) return rslt;
+                    }
+                    
+                }
+                return new UserScopeResult(true);
+            }
+        }
+        public static UserScopeResult CheckResourceUserScope(JToken resource,ClaimsIdentity ci, PatientCompartment comp,string claimstring,  ILogger log)
+        {
+            string fhiruser = GetCachedFHIRUser(ci);
             if (string.IsNullOrEmpty(fhiruser))
             {
                 return new UserScopeResult(false, $"fhirUser is not in access_token claims...SMART Scopes require a fhirUser claim see fhir proxy documentation");
             }
-            JArray resourcesToCheck = null;
-            if (!tok.FHIRResourceType().Equals("Bundle"))
-            {
-                resourcesToCheck = new JArray();
-                JObject o = new JObject();
-                o["resource"] = tok;
-                if (tok.FHIRResourceType().Equals("OperationOutcome")) return new UserScopeResult(true);
-                resourcesToCheck.Add(o);
-            } else
-            {
-                resourcesToCheck = (JArray)tok["entry"];
-            }
-            PatientCompartment comp = PatientCompartment.Instance();
-            foreach (JToken t in resourcesToCheck) {
-                log.LogInformation("Token: " + t.ToString());
-                JToken resource = t["resource"];
-                string resourceType = resource.FHIRResourceType();
+            string resourceType = resource.FHIRResourceType();
                 if (fhiruser.StartsWith("Patient/"))
                 {
                     //TODO: Is restricting to patient compartment results enough if not recheck search bundle results against scopes.
@@ -227,14 +241,12 @@ namespace FHIRProxy
                     }*/
                     //See if resource is patient compartment to check for query scope no access for non-patient compartment resources...
                     if (!comp.isPatientCompartmentResource(resourceType)) return new UserScopeResult(false, $"Resource type {resourceType} is not in the Patient Compartment definition");
-                    //See if fhirUser claim for Patient or OID has been linked to a patient
-                    string fhirid = GetFHIRId(ci, "Patient", log);
-                    if (string.IsNullOrEmpty(fhirid))
-                    {
-                        return new UserScopeResult(false, $"FHIRProxyAuthorization: Scope context is for Patient but FHID Id not specified in FHIR User: {fhiruser}");
-                    }
                     //If Patient resource must have Patient Identity Claim for FHIR Logical Id in Token and must match id parameter
-                    if (resourceType.Equals("Patient") && !fhirid.Equals(t.FHIRResourceId())) return new UserScopeResult(false, $"Patient resource does not match patient context scope Context: {fhirid} Resource: {t.FHIRResourceId()}");
+                    if (resourceType.Equals("Patient"))
+                    {
+                        if (fhiruser.Contains(resource.FHIRResourceId())) return new UserScopeResult(true);
+                        else return new UserScopeResult(false, $"Patient resource does not match patient context scope Context: {fhiruser} Resource: {resource.FHIRResourceId()}");
+                    }
                     //Get the list of parms to check for patient scope
                     string[] parms = comp.GetPatientParametersForResourceType(resourceType);
                     //See if this resource has a reference to the patient in user context
@@ -243,11 +255,12 @@ namespace FHIRProxy
                         bool hasPatientRef = false;
                         foreach (string p in parms)
                         {
-                            string rslt = t[p].ToString();
-                            if (!string.IsNullOrEmpty(rslt) && rslt.Contains(fhirid)) hasPatientRef = true;
+                            string rslt = (resource[p].IsNullOrEmpty() ? "" : resource[p].ToString());
+                            if (!string.IsNullOrEmpty(rslt) && rslt.Contains(fhiruser)) hasPatientRef = true;
                         }
-                        if (!hasPatientRef) {
-                            return new UserScopeResult(false, $"Could not find Patient Reference {fhiruser} in reference fields {String.Join(",", parms)} of resource {t.FHIRResourceType()}/{t.FHIRResourceId()}");
+                        if (!hasPatientRef)
+                        {
+                            return new UserScopeResult(false, $"Could not find Patient Reference {fhiruser} in reference fields {String.Join(",", parms)} of resource {resource.FHIRResourceType()}/{resource.FHIRResourceId()}");
                         }
                     }
                 }
@@ -271,45 +284,52 @@ namespace FHIRProxy
                         return new UserScopeResult(false, $"User in context {fhiruser} does not have scope permission to read resource {resourceType} contained in this result");
                     }
                 }
-            }
-            //All Checks Passed
-            return new UserScopeResult(true);
+                //All Checks Passed
+                return new UserScopeResult(true);
         }
-
-        public static string GetFHIRUser(ClaimsIdentity ci, ILogger log)
+        public static string GetFHIRIdFromFHIRUser(string fhiruser)
         {
-            IEnumerable<Claim> claims = ci.Claims;
-            string fhiruser = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser")).Select(c => c.Value).SingleOrDefault();
-            if (string.IsNullOrEmpty(fhiruser))
-            {
-                return null;
-            }
-            return fhiruser;
+            if (fhiruser == null || !fhiruser.Contains("/")) return fhiruser;
+            return fhiruser.Substring(fhiruser.LastIndexOf("/") +1);
         }
-        public static string GetFHIRId(ClaimsIdentity ci, string res,ILogger log)
+        public static string GetCachedFHIRUser(ClaimsIdentity ci)
         {
-            //Check the fhirUser claim see if it's a fhirPatient
-            string fhirid = GetFHIRUser(ci, log);
-            if (!string.IsNullOrEmpty(fhirid) && fhirid.StartsWith($"{res}/"))
-            {
-                fhirid = fhirid.Replace($"{res}/", "");
-                log.LogInformation($"GetFHIRId: Type: {res} ID: {fhirid} Found in fhirUser claim");
-                return fhirid;
-            }
+            var cache = Utils.RedisConnection.GetDatabase();
+            string aadten = ci.Tenant();
+            string oid = ci.ObjectId();
+            if (string.IsNullOrEmpty(aadten) || string.IsNullOrEmpty(oid)) return null;
+            return cache.StringGet($"usermap-{aadten}-{oid}");
+        }
+        public static string GetMappedFHIRUser(ClaimsIdentity ci,ILogger log)
+        {
+            //Check the fhirUser claim
             string aadten = (string.IsNullOrEmpty(ci.Tenant()) ? "Unknown" : ci.Tenant());
             string oid = ci.ObjectId();
             if (string.IsNullOrEmpty(oid))
             {
-                log.LogWarning("FHIRProxyAuthorization: No OID claim found in Claims Identity!");
+                log.LogWarning("GetMappedFHIRUser: No OID claim found in Claims Identity!");
                 return null;
             }
             var table = Utils.getTable();
-            var entity = Utils.getLinkEntity(table, res, aadten + "-" + oid);
+            //Check for Patient Association
+            var entity = Utils.getLinkEntity(table, "Patient", aadten + "-" + oid);
             if (entity != null)
             {
-                return entity.LinkedResourceId;
+                return $"Patient/{entity.LinkedResourceId}";
             }
-            log.LogInformation($"FHIRProxyAuthorization: No linked FHIR {res} Resource for oid:{oid}");
+            //Check for Practitioner Association
+            entity = Utils.getLinkEntity(table, "Practitioner", aadten + "-" + oid);
+            if (entity != null)
+            {
+                return $"Practitioner/{entity.LinkedResourceId}";
+            }
+            //Check for Practitioner Association
+             entity = Utils.getLinkEntity(table, "RelatedPerson", aadten + "-" + oid);
+            if (entity != null)
+            {
+                return $"RelatedPerson/{entity.LinkedResourceId}";
+            }
+            log.LogInformation($"FHIRProxyAuthorization: No linked FHIR Resource for oid:{oid}");
             return null;
         }
 

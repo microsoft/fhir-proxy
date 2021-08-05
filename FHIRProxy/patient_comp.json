@@ -135,7 +135,7 @@
   {
     "code" : "Condition",
     "param" : ["patient",
-    "asserter"]
+    "asserter","subject"]
   },
   {
     "code" : "Consent",

@@ -111,7 +111,7 @@ namespace FHIRProxy
 
                 }
                 //Check for User Scoped allowed resources
-                var scoperesult = FHIRProxyAuthorization.ResultAllowedForUserScope(postrslt.Response.toJToken(), principal, req, log);
+                var scoperesult = FHIRProxyAuthorization.ResultAllowedForUserScope(postrslt.Response.toJToken(), principal, log);
                 if (!scoperesult.Result)
                 {
                     postrslt.Response = new FHIRResponse();
