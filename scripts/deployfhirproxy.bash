@@ -181,15 +181,15 @@ fi
 #Prompt for FHIR Server Parameters
 if [ -z "$fsurl" ]; then
 			echo $kvname" does not exist or does not contain FHIR Server settings..."
+            echo " "
             echo "Gathering your API for FHIR Service - or FHIR Server information..."
-			echo " "
 			echo "Enter the destination FHIR Server URL (aka Endpoint):"
 			read fsurl
 			if [ -z "$fsurl" ] ; then
 				echo "You must provide a destination FHIR Server URL"
 				exit 1;
 			fi
-			echo "Enter the FHIR Server - Service Client Tenant ID (used to connect to the FHIR Service). Empty for MSI[]:"
+			echo "Enter the Tenant ID of the FHIR Server Service Client (used to connect to the FHIR Service). Empty for MSI[]:"
 			read fstenant
 			if [ ! -z "$fstenant" ] ; then
 				echo "Enter the FHIR Server - Service Client Application ID (used to connecto to the FHIR Service). Leave Empty for MSI[]:"

@@ -40,31 +40,65 @@ Information needed by this script
  
 FHIR-Proxy Application Configuration loaded by this script 
 
-Name                               | Value              | Source 
------------------------------------|--------------------|---------------------------------------------
-SA-EMRAGENT-CONNECTION             | Keyvalut reference | Service Bus Connection Endpoint from Sync-Agent deployment
-SA-EMRAGENT-CONNECTION-TOPIC       | Keyvalut reference | Static Queue name from Sync-Agent deployment 
-SA-FHIR-USEMSI                     | Keyvalut reference | MSI Identity from Sync-Agent deployment 
-SA-FHIRLOADERSTORAGECONNECTION     | Keyvalut reference | Data Store Connection Encpoint from FHIR-Loader deployment
-SA-FHIRMAPPEDRESOURCES             | Keyvalut reference | Static Resource list from Sync-Agent setup 
-SA-SERVICEBUSNAMESPACECDSUPDATES   | Keyvalut reference | Service Bus Connection Endpoint from Sync-Agent deployment
-SA-SERVICEBUSNAMESPACEFHIRUPDATES  | Keyvalut reference | Service Bus Connection Endpoint from Sync-Agent deployment
-SA-SERVICEBUSQUEUENAMECDSUPDATES   | Keyvalut reference | Service Bus Connection Endpoint from Sync-Agent deployment
-SA-SERVICEBUSQUEUENAMEFHIRBULK     | Keyvalut reference | Static Queue name from Sync-Agent deployment
-SA-SERVICEBUSQUEUENAMEFHIRUPDATES  | Keyvalut reference | Static Queue name from Sync-Agent deployment
+Name                               | Value                      | Source 
+-----------------------------------|----------------------------|-----------------------------------
+APPINSIGHTS_INSTRUMENTATIONKEY     | GUID                       | App Service Configuration
+AzureWebJobsStorage                | Endpoint                   | App Service Configuration 
+FP-ADMIN-ROLE                      | Administrator              | App Service Configuration 
+FP-GLOBAL-ACCESS-ROLES             | Data Scientist             | App Service Configuration
+FP-PARTICIPANT-ACCESS-ROLES        | Practitioner,RelatedPerson | App Service Configuration 
+FP-PATIENT-ACCESS-ROLES            | Patient                    | App Service Configuration
+FP-PRE-PROCESSOR-TYPES             | FHIRProxy.preprocessors.TransformBundle | App Service Configuration
+FP-READER-ROLE                     | Reader                     | App Service Configuration
+FP-REDISCONNECTION                 | REDIS Connection           | Keyvault reference 
+FP-STORAGEACCT                     | Storage Account connection | Keyvault reference 
+FP-WRITER-ROLE                     | Writer                     | App Service Configuration 
+FS-CLIENT-ID                       | FHIR Service Client ID     | Keyvault reference 
+FS-RESOURCE                        | FHIR Service Auth resource | Keyvault reference 
+FS-SECRET                          | FHIR Service Client Secret | Keyvault reference 
+FS-TENANT-NAME                     | FHIR Service Tenant ID     | Keyvault reference 
+FS-URL                             | FHIR Service URL           | Keyvault reference 
+FUNCTIONS_EXTENSION_VERSION        | Function Version           | App Service Configuration 
+FUNCTIONS_WORKER_RUNTIME           | Function runtime           | App Service Configuration 
+
+FHIR-Proxy KeyVault Configuration loaded by this script 
+
+Name                               | Value                      | Use 
+-----------------------------------|----------------------------|-------------------
+FP-HOST                            | Function Endpoint          | Connection (without https://)
+FP-RBAC-CLIENT-ID                  | GUID                       | Function App Regisration  
+FP-RBAC-CLIENT-SECRET              | Client Secret              | Funcation App - Client Secret  
+FP-RBAC-NAME                       | Function URL               | Connection (with https://)
+FP-RBAC-TENANT-NAME                | GUID                       | Auth source  
+FP-REDISCONNECTION                 | Connection point           | Redis connection 
+FP-STORAGEACCT                     | Endpoint connection        | Storage connection 
+FS-CLIENT-ID                       | FHIR Service Client ID     | Client ID use to connect to FHIR Service
+FS-RESOURCE                        | FHIR Service URL           | Connection with https:// 
+FS-SECRET                          | FHIR Service Client Secret | App 
+FS-TENANT-NAME                     | FHIR Service Tenant        | Resource Auth provider 
+FS-URL                             | FHIR Service URL           | Connection (with https://) 
+
+
 
 
 ## Step 2.  createProxyServiceClient.bash
-This script can be re-run without issue
+This script creates a Service Client for FHIR-Proxy allowing users to connect to the Proxy endpoint via Postman.
 
- - Prerequisites:  Dataverse Application ID and secret information  
+ - Prerequisites:  FHIR-Proxy installed   
 
 Information needed by this script
  - KeyVault Name installed with FHIR-Proxy
- - CDS Instance URL
- - CDS Tenant ID,
- - CDS Client ID,
- - CDS Client Secret
+
+
+It can be executed with no arguments or with arguments
+```azurecli
+./createProxyServiceClient.bash
+```
+or
+ 
+```azurecli
+./createProxyServiceClient.bash -k <keyvault> -n <service client name> -s (to store credentials in <keyvault>) -p (to generate postman environment)
+```  
 
 Sync Agent Application Configuration loaded by this script 
 
