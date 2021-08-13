@@ -123,25 +123,4 @@ __NOTE__ To complete the authorization needed for FHIR-Proxy to access your FHIR
 
 
 
-## Step 3.  controlSyncAgent.bash
-Control Sync Agent script will start and stop the Sync Agent by adding or removing the FP-POST-PROCESSOR-TYPES from the FHIR Proxy Application Configuration. 
 
-This script must be run to enable the FHIR-SyncAgent after the install 
-
-
-FHIR-Proxy (yes, FHIR-Proxy) Application Configuration loaded by this script 
-
-Name                               | Value                     | Source 
------------------------------------|---------------------------|---------------------------------------------
-FP-POST-PROCESSOR-TYPES            | Application Configuration | Proxy Module  
-
-Note:  The current iteration of the FP-POST-PROCESSOR-TYPES is FHIRProxy.postprocessors.FHIRCDSSyncAgentPostProcess2
-
-
-```bash
-Usage: $0 -a <fhir-poxy appname> -g <resourceGroupName> -c <enable or disable>
-```
-
--enable restores the FP-POST-PROCESSOR-TYPES from the FHIR-Proxy Application Configuration and restarts Proxy 
-
--disable removes the FP-POST-PROCESSOR-TYPES from the FHIR-Proxy Application Configuration and restarts Proxy 
