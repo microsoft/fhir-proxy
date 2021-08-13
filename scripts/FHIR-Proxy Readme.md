@@ -122,5 +122,7 @@ FP-HOST                          | FHIR Proxy URL (beginning with https://) (end
 __NOTE__ To complete the authorization needed for FHIR-Proxy to access your FHIR Serivce you need to assign the Fhir-Proxy RBAC client created during setup to the API Permissions of the FHIR-Proxy Host.  Instructions for this can be found [here](https://github.com/microsoft/fhir-proxy/blob/main/docs/INSTALL.md#adding-application-service-principals-to-the-fhir-server-proxy)
 
 
+## Resources
+You can download sample Postman Collections and Environment files [here](https://github.com/daemel/fhir-postman)
 
 
