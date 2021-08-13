@@ -142,7 +142,7 @@ if [[ -z "$resourceGroupLocation" ]]; then
 fi
 #Prompt for parameters is some required parameters are missing
 if [[ -z "$deployprefix" ]]; then
-	echo "Enter your deployment prefix ["$defdeployprefix"]:"
+	echo "Enter your deployment prefix - proxy components begin with this prefix ["$defdeployprefix"]:"
 	read deployprefix
 	if [ -z "$deployprefix" ] ; then
 		deployprefix=$defdeployprefix
@@ -181,21 +181,23 @@ fi
 #Prompt for FHIR Server Parameters
 if [ -z "$fsurl" ]; then
 			echo $kvname" does not exist or does not contain FHIR Server settings..."
-			echo "Enter the destination FHIR Server URL:"
+            echo "Gathering your API for FHIR Service - or FHIR Server information..."
+			echo " "
+			echo "Enter the destination FHIR Server URL (aka Endpoint):"
 			read fsurl
 			if [ -z "$fsurl" ] ; then
 				echo "You must provide a destination FHIR Server URL"
 				exit 1;
 			fi
-			echo "Enter the FHIR Server Service Client Tenant ID. Empty for MSI[]:"
+			echo "Enter the FHIR Server - Service Client Tenant ID (used to connect to the FHIR Service). Empty for MSI[]:"
 			read fstenant
 			if [ ! -z "$fstenant" ] ; then
-				echo "Enter the FHIR Server Service Client Application ID. Leave Empty for MSI[]:"
+				echo "Enter the FHIR Server - Service Client Application ID (used to connecto to the FHIR Service). Leave Empty for MSI[]:"
 				read fsclientid
-				echo "Enter the FHIR Server Service Client Secret. Leave Empty for MSI[]:"
+				echo "Enter the FHIR Server - Service Client Secret (used to connect to the FHIR Service). Leave Empty for MSI[]:"
 				read fssecret
 			fi
-			echo "Enter the FHIR Server/Service Client Audience/Resource ["$fsurl"]:"
+			echo "Enter the FHIR Server - Service Client Audience/Resource (FHIR Service URL) ["$fsurl"]:"
 			read fsaud
 			if [ -z "$fsaud" ] ; then
 					fsaud=$fsurl
