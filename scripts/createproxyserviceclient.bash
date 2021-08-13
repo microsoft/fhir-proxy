@@ -9,6 +9,25 @@ IFS=$'\n\t'
 # Setup Application Service Client to FHIR Proxy --- Author Steve Ordahl Principal Architect Health Data Platform
 #
 
+declare stepresult=""
+declare spname=""
+declare kvname=""
+declare kvexists=""
+declare defsubscriptionId=""
+declare fpclientid=""
+declare fptenantid=""
+declare fpsecret=""
+declare fphost=""
+declare repurls=""
+declare spappid=""
+declare sptenant=""
+declare spsecret=""
+declare storekv=""
+declare genpostman=""
+declare pmenv=""
+declare pmuuid=""
+declare pmfhirurl=""
+
 usage() { echo "Usage: $0 -k <keyvault> -n <service client name> -s (to store credentials in <keyvault>) -p (to generate postman environment)" 1>&2; exit 1; }
 
 function fail {
@@ -32,24 +51,8 @@ function retry {
     }
   done
 }
-declare stepresult=""
-declare spname=""
-declare kvname=""
-declare kvexists=""
-declare defsubscriptionId=""
-declare fpclientid=""
-declare fptenantid=""
-declare fpsecret=""
-declare fphost=""
-declare repurls=""
-declare spappid=""
-declare sptenant=""
-declare spsecret=""
-declare storekv=""
-declare genpostman=""
-declare pmenv=""
-declare pmuuid=""
-declare pmfhirurl=""
+
+
 # Initialize parameters specified from command line
 while getopts ":k:n:sp" arg; do
 	case "${arg}" in

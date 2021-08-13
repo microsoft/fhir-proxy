@@ -61,6 +61,7 @@ FS-URL                             | FHIR Service URL           | Keyvault refer
 FUNCTIONS_EXTENSION_VERSION        | Function Version           | App Service Configuration 
 FUNCTIONS_WORKER_RUNTIME           | Function runtime           | App Service Configuration 
 
+
 FHIR-Proxy KeyVault Configuration loaded by this script 
 
 Name                               | Value                      | Use 
@@ -77,7 +78,6 @@ FS-RESOURCE                        | FHIR Service URL           | Connection wit
 FS-SECRET                          | FHIR Service Client Secret | App 
 FS-TENANT-NAME                     | FHIR Service Tenant        | Resource Auth provider 
 FS-URL                             | FHIR Service URL           | Connection (with https://) 
-
 
 
 
@@ -100,21 +100,26 @@ or
 ./createProxyServiceClient.bash -k <keyvault> -n <service client name> -s (to store credentials in <keyvault>) -p (to generate postman environment)
 ```  
 
-Sync Agent Application Configuration loaded by this script 
+FHIR-Proxy KeyVault Configuration loaded by this script 
 
-Name                               | Value              | Source 
------------------------------------|--------------------|---------------------------------------------
-SA-CDSAUDIENCE                     | Keyvalut reference | Application URL from Sync-Agent setup 
-SA-CDSCLIENTID                     | Keyvalut reference | Application Client ID from Sync-Agent setup
-SA-CDSSECRET                       | Keyvalut reference | Application Client Secret from Sync-Agent setup
-SA-CDSTENANTID                     | Keyvalut reference | Application Tenant ID from Sync-Agent setup
+Name                             | Value                              | Use 
+---------------------------------|------------------------------------|-------------------
+FP-SC-CLIENT-ID                  | FHIR Proxy Service Client ID       | Client ID use to connect to FHIR Service
+FP-SC-RESOURCE                   | FHIR Proxy Service Client Resource | Application Registration URL
+FP-SC-SECRET                     | FHIR Proxy Service Client Secret   | Client Secret  
+FP-SC-TENANT-NAME                | FHIR Proxy Service Client Tenant   | GUID 
 
+__NOTE__ Use these setting when setting up a Postman environment to access the Proxy 
 
-Dataverse Environment variables EXPORTED by this script.  Admins need the following information to configure Dataverse Environment Variables via FHIR Sync Administration
-- Service Bus URL
-- Service Queue
-- Service Bus Shared Access Policy
-- Service Bus Shared Access Policy Key
+Name                             | Value                              | Postman Env setting  
+---------------------------------|------------------------------------|-------------------
+FP-SC-CLIENT-ID                  | FHIR Proxy Service Client ID       | clientId
+FP-SC-RESOURCE                   | FHIR Proxy Service Client Resource | resource
+FP-SC-SECRET                     | FHIR Proxy Service Client Secret   | clientSecret  
+FP-SC-TENANT-NAME                | FHIR Proxy Service Client Tenant   | tenantId 
+FP-HOST                          | FHIR Proxy URL (beginning with https://) (ending with /fhir)  | fhirurl 
+
+__NOTE__ To complete the authorization needed for FHIR-Proxy to access your FHIR Serivce you need to assign the Fhir-Proxy RBAC client created during setup to the API Permissions of the FHIR-Proxy Host.  Instructions for this can be found [here](https://github.com/microsoft/fhir-proxy/blob/main/docs/INSTALL.md#adding-application-service-principals-to-the-fhir-server-proxy)
 
 
 
