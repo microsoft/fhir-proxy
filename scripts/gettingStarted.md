@@ -1,12 +1,13 @@
-# FHIR-Proxy Scripts Readme.md
+# FHIR-Proxy Getting Started Readme.md
 
-Script purpose and order of execution 
+Script purpose, order of execution and other steps necessary to get up and running with FHIR-Proxy
 
 ## Prerequisites 
 
 These scripts will gather (and export) information necessary to the proper operation of the FHIR-Proxy and will store that information into the Keyvault installed by the script (deployfhirproxy.bash)
  - Prerequisites:  Azure API for FHIR 
  - Prerequisites:  Clone the FHIR-Proxy repo from GitHub [instructions](https://github.com/microsoft/fhir-proxy#deploying-your-own-fhir-proxy) 
+ 
 ```azurecli
 git clone https://github.com/microsoft/fhir-proxy
 ```
@@ -14,6 +15,7 @@ git clone https://github.com/microsoft/fhir-proxy
 
 ## Step 1.  deployFhirProxy.bash
 This is the main component deployment script for the Azure Components and FHIR-Proxy code.  It can be executed with no arguments or with arguments
+
 ```azurecli
 ./deployFhirProxy.bash
 ```
@@ -122,7 +124,48 @@ FP-HOST                          | FHIR Proxy URL (beginning with https://) (end
 __NOTE__ To complete the authorization needed for FHIR-Proxy to access your FHIR Serivce you need to assign the Fhir-Proxy RBAC client created during setup to the API Permissions of the FHIR-Proxy Host.  Instructions for this can be found [here](https://github.com/microsoft/fhir-proxy/blob/main/docs/INSTALL.md#adding-application-service-principals-to-the-fhir-server-proxy)
 
 
+## Step 3.  Adding Application Service Principals to the FHIR Server Proxy
+
+a) Go to Azure AD – select the confidential client made with the CreateProxyServiceClient script.  Note, that app is not owned by you, so be sure to search for it under the All Applications tab
+
+![aadimage1](../docs/images/gettingstarted/aad1.png)
+
+Note this is the same application ID you should use in your Postman setup 
+
+![aadimage2](../docs/images/gettingstarted/aad2.png)
+
+![postman1](../docs/images/gettingstarted/postman1.png)
+
+
+b) Click on the API Permissions left on the left hand navigation menu
+
+c) Click on the under Configured Permissions, Click + Add a Permission 
+
+d) On the Request API Permissions tab Click on the APIs my organization uses button
+
+e) In the search box enter the name of your FHIR Proxy (e.g. myproxy.azurewebsites.net)
+
+f) Choose your proxy registration from the list
+
+g) On the Request API Permissions tab Click on the APIs my organization uses button
+
+h) In the search box enter the name of your FHIR Proxy (e.g. myproxy.azurewebsites.net)
+
+i) Choose your proxy registration from the list
+
+j) Click on the Application Permissions Box
+
+k) Select the Roles you want this principal to be assigned in the Proxy (Reader, Writer or Both)
+
+l) Click the Add Permissions box at the bottom to commit
+
+This is what it should look like when you are done 
+
+![aadimage3](../docs/images/gettingstarted/aad3.png)
+
+
 ## Resources
 You can download sample Postman Collections and Environment files [here](https://github.com/daemel/fhir-postman)
+
 
 
