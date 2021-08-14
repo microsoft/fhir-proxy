@@ -232,6 +232,16 @@ fi
 
 #Set up variables
 faresourceid="/subscriptions/"$subscriptionId"/resourceGroups/"$resourceGroupName"/providers/Microsoft.Web/sites/"$faname
+
+# Final Check 
+#
+echo "Starting deployment of... $0 -i $subscriptionId -g $resourceGroupName -l $resourceGroupLocation -p $defdeployprefix"
+read -p 'Press Enter to continue, or Ctrl+C to exit'
+
+set +e
+
+# Start deployment
+
 #Start deployment
 echo "Starting Secure FHIR Proxy deployment..."
 (
@@ -257,6 +267,7 @@ echo "Starting Secure FHIR Proxy deployment..."
 		echo "Retrieving Storage Account Connection String..."
 		storageConnectionString=$(az storage account show-connection-string -g $resourceGroupName -n $deployprefix$storageAccountNameSuffix --query "connectionString" --out tsv)
 		stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-STORAGEACCT" --value $storageConnectionString)
+		
 		#Redis Cache to Support Proxy Modules
 		echo "Creating Redis Cache ["$deployprefix$redisAccountNameSuffix"]..."
 		stepresult=$(az redis create --location $resourceGroupLocation --name $deployprefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $tags)
@@ -264,10 +275,12 @@ echo "Starting Secure FHIR Proxy deployment..."
 		redisKey=$(az redis list-keys -g $resourceGroupName -n $deployprefix$redisAccountNameSuffix --query "primaryKey" --out tsv)
 		redisConnectionString=$deployprefix$redisAccountNameSuffix".redis.cache.windows.net:6380,password="$redisKey",ssl=True,abortConnect=False"
 		stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-REDISCONNECTION" --value $redisConnectionString)
+		
 		#FHIR Proxy Function App
 		#Create Service Plan
 		echo "Creating Secure FHIR Proxy Function App Serviceplan["$deployprefix$serviceplanSuffix"]..."
 		stepresult=$(az appservice plan create -g  $resourceGroupName -n $deployprefix$serviceplanSuffix --number-of-workers 2 --sku B1 --tags $tags)
+		
 		#Create the function app
 		echo "Creating Secure FHIR Proxy Function App ["$faname"]..."
 		fahost=$(az functionapp create --name $faname --storage-account $deployprefix$storageAccountNameSuffix  --plan $deployprefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $tags --query defaultHostName --output tsv)
@@ -277,6 +290,7 @@ echo "Starting Secure FHIR Proxy deployment..."
 		msi=$(az functionapp identity assign -g $resourceGroupName -n $faname --query "principalId" --out tsv)
 		echo "Setting KeyVault Policy to allow secret access..."
 		stepresult=$(az keyvault set-policy -n $kvname --secret-permissions list get --object-id $msi)
+		
 		#Add App Settings
 		echo "Configuring Secure FHIR Proxy App ["$faname"]..."
 		stepresult=$(az functionapp config appsettings set --name $faname --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess FP-REDISCONNECTION=$(kvuri FP-REDISCONNECTION) FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE))
@@ -296,8 +310,9 @@ echo "Starting Secure FHIR Proxy deployment..."
 		stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-RBAC-CLIENT-SECRET" --value $spsecret)
 		echo "Adding Sign-in User Read Permission on Graph API..."
 		stepresult=$(az ad app permission add --id $spappid --api 00000002-0000-0000-c000-000000000000 --api-permissions 311a71cc-e848-46a1-bdf8-97ff7156d8e6=Scope)
+		
 		#echo "Granting Admin Consent to Permission..."
-		#stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
+		stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
 		echo "Configuring reply urls for app..."
 		stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls)
 		echo "Adding FHIR Custom Roles to Manifest..."
