@@ -162,11 +162,15 @@ if [[ -z "$genpostman" ]]; then
     fi
 fi
 
+# Final Check 
+#
 echo "Starting deployment of... $0 -k $kvname -n $spname -s $storekv -p $genpostman"
 read -p 'Press Enter to continue, or Ctrl+C to exit'
 
 set +e
-#Start deployment
+
+# Start deployment
+#
 echo "Creating Service Client Principal "$spname"..."
 (
 		echo "Loading configuration settings from key vault "$kvname"..."
