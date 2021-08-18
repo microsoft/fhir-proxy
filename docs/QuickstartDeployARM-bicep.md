@@ -12,23 +12,23 @@
 7. [**FAQ**](#faq)
 
 ### **Introduction** <a name="introduction"></a>
-In this guide, you’ll learn how to deploy [FHIR Proxy](https://github.com/microsoft/fhir-proxy) as a gateway server application in support of [Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/overview)/[FHIR Server for Azure](https://github.com/microsoft/fhir-server) (FHIR Server). For general information about FHIR Proxy, please see the [FHIR Proxy README](https://github.com/microsoft/fhir-proxy#readme).
+In this guide, you’ll learn how to deploy [FHIR Proxy](https://github.com/microsoft/fhir-proxy) as a gateway server application in support of [Azure Healthcare APIs](https://docs.microsoft.com/en-us/azure/healthcare-apis/) [FHIR service](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/) / [OSS FHIR Server for Azure](https://github.com/microsoft/fhir-server). For general information about FHIR Proxy, please see the [FHIR Proxy README](https://github.com/microsoft/fhir-proxy#readme).
 
 ### **General Considerations** <a name="general_considerations"></a>
-+ FHIR Proxy works in tandem with FHIR Server, and for the two to operate together, they must be installed in the same Azure Active Directory (AAD) tenant.
-+ For the order of installation, it is best to install FHIR Server first and then FHIR Proxy. This guide assumes that the user is deploying FHIR Proxy in an AAD tenant with an existing FHIR Server installation.
-+ FHIR Proxy and FHIR Server can be in the same resource group, or they can live in separate resource groups.
++ FHIR Proxy must be installed in the same Azure Active Directory (AAD) tenant along with the FHIR server it is paired with (either Azure Healthcare APIs [FHIR service](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/) or the [OSS FHIR Server for Azure](https://github.com/microsoft/fhir-server)).
++ For the order of installation, it is best to install the FHIR server first and then FHIR Proxy. This guide assumes that the user is deploying FHIR Proxy in an AAD tenant with an existing FHIR server installation.
++ FHIR Proxy and the FHIR server can be in the same resource group, or they can live in separate resource groups.
 + When FHIR Proxy is installed, the following **basic infrastructure components** are placed in FHIR Proxy's resource group:
     + **Application Service Plan** - The underlying compute platform for FHIR Proxy.
     + **Storage Account** - Required by the Application Service Plan for data persistence, etc.
     + **Function App** - The layer that wraps FHIR Proxy's code execution, providing an interface for messaging with other Azure resources.
-    + **Key Vault** - For secure management of authentication secrets needed to access FHIR server, Redis Cache, etc.
+    + **Key Vault** - For secure management of authentication secrets needed to access the FHIR server, Redis Cache, etc.
     + **Application Insights** - For performance metrics and issue tracing.
     + **Log Analytics Workspace** - For easier consolidation of Application Insights data.
     + **Redis Cache** - Caching to speed up data queries, etc.
 + To accommodate a range of Azure administrative privileges, FHIR Proxy deployment is divided into **three steps**:
     + **Step 1** Deploy FHIR Proxy basic infrastructure components (see above).  
-    + **Step 2** Register FHIR Proxy as an application in the AAD tenant (allows FHIR Proxy to connect with FHIR Server).  
+    + **Step 2** Register FHIR Proxy as an application in the AAD tenant (allows FHIR Proxy to connect with the FHIR server).  
     + **Step 3** Update the Function App configuration to enable AAD Authentication (sets the authentication framework for accessing FHIR Proxy).
 
 ## **Prerequisites** <a name="prerequisites"></a>
@@ -41,13 +41,13 @@ Make sure to have the following ready before deploying FHIR Proxy.
 + An Azure resource group (can be created at time of install)
 + Azure Subscription ID (```subscriptionId```)
 + AAD Tenant ID (```tenantId```)
-+ A FHIR Server installation in the AAD tenant
-+ Access to the following FHIR Server parameters (*see information about where to locate each value*):
-    + FHIR Server URL (```fhirServerUrl```) → (*Azure Portal - FHIR Server resource - Authentication - Audience*)
-    + FHIR Server Tenant Name (```fhirServerTenantName```) → (*Azure Portal - AAD - Properties - Name*)
-    + FHIR Server Client ID (```fhirServerClientId```) → (*Azure Portal - AAD - App registrations - Application (client) ID*)
-    + FHIR Server Secret (```fhirServerSecret```) → (*Azure Portal - AAD - App registrations - Display name - Client credentials*)
-    + FHIR Server Resource (```fhirServerResource```) → (*Azure Portal - FHIR Server resource group - Properties - Resource ID*)
++ A FHIR server installation in the AAD tenant
++ Access to the following FHIR server parameters (*see information about where to locate each value*):
+    + FHIR server URL (```fhirServerUrl```) → (*Azure Portal - FHIR server resource - Authentication - Audience*)
+    + FHIR server Tenant Name (```fhirServerTenantName```) → (*Azure Portal - AAD - Properties - Name*)
+    + FHIR server Client ID (```fhirServerClientId```) → (*Azure Portal - AAD - App registrations - Application (client) ID*)
+    + FHIR server Secret (```fhirServerSecret```) → (*Azure Portal - AAD - App registrations - Display name - Client credentials*)
+    + FHIR server Resource (```fhirServerResource```) → (*Azure Portal - FHIR server resource group - Properties - Resource ID*)
 
 
 ### For **Steps 2 and 3 Deployment:**
@@ -81,12 +81,12 @@ For more information, see [Quickstart: Register an application with the Microsof
         "fhirProxyVersion": "v1.0"}
     <img src="images/arm/Azure_Portal_Screenshot_2_resize.png" width="613" height="380">
 
-4. Fill in these FHIR Server parameter values (*see information about where to locate each value*):
-    + **Fhir Server Url** → (*Azure Portal - FHIR Server resource - Authentication - Audience*)
-    + **Fhir Server Tenant Name** → (*Azure Portal - AAD - Properties - Name*)
-    + **Fhir Server Client Id** → (*Azure Portal - AAD - App registrations - Application (client) ID*)
-    + **Fhir Server Secret** → (*Azure Portal - AAD - App registrations - Display name - Client credentials*)
-    + **Fhir Server Resource** → (*Azure Portal - FHIR Server resource group - Properties - Resource ID*)
+4. Fill in these FHIR server parameter values (*see information about where to locate each value*):
+    + **Fhir server Url** → (*Azure Portal - FHIR server resource - Authentication - Audience*)
+    + **Fhir server Tenant Name** → (*Azure Portal - AAD - Properties - Name*)
+    + **Fhir server Client Id** → (*Azure Portal - AAD - App registrations - Application (client) ID*)
+    + **Fhir server Secret** → (*Azure Portal - AAD - App registrations - Display name - Client credentials*)
+    + **Fhir server Resource** → (*Azure Portal - FHIR server resource group - Properties - Resource ID*)
 
 5. Scroll down and input your choice* of FHIR Proxy pre- and post-processor plugin modules in comma-separated lists:
     + **Fhir Proxy Pre Process** (```fhirProxyPreProcess```)
@@ -123,7 +123,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 <img src="images/arm/Azure_Portal_Screenshot_5_resize.png" width="493" height="327">
 
 ## **Step 2 Deployment (Azure Portal)** <a name="azure_portal_step_2"></a>
-##### For Step 2*, you will be registering FHIR Proxy as an application in the AAD tenant and storing credentials that FHIR Proxy needs to operate with FHIR Server. General information about these topics can be found here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals).
+##### For Step 2*, you will be registering FHIR Proxy as an application in the AAD tenant and storing credentials that FHIR Proxy needs to operate with the FHIR server. General information about these topics can be found here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals).
 
 ##### *If you would prefer to perform Step 2 without having to go through the process manually, use the [CLI Step 2](#cli_step_2) deployment option instead of Azure Portal. 
 
@@ -266,7 +266,7 @@ For more information, see [Quickstart: Register an application with the Microsof
         "projectName": "XXXXX",
         "environment": "XXXXX"}
 
-7. With the ```azuredeploy.parameters.json``` file still open, populate the ```"value": ""``` for each FHIR Server parameter (please see the [**Prerequisites**](#prerequisites) section for information on where to find these parameters in Azure Portal).
+7. With the ```azuredeploy.parameters.json``` file still open, populate the ```"value": ""``` for each FHIR server parameter (please see the [**Prerequisites**](#prerequisites) section for information on where to find these parameters in Azure Portal).
 
         "fhirServerResource": {
             "value": ""
@@ -316,7 +316,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 
 ## **Step 2 Deployment (CLI)** <a name="cli_step_2"></a>
-##### For Step 2, you will be registering FHIR Proxy as an application in the AAD tenant and storing credentials that FHIR Proxy needs to operate with FHIR Server. General information about these topics is available here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals). 
+##### For Step 2, you will be registering FHIR Proxy as an application in the AAD tenant and storing credentials that FHIR Proxy needs to operate with the FHIR server. General information about these topics is available here: [Application and service principal objects in Azure Active Directory](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals). 
 ##### Please see [Step 1 Deployment (CLI)](#cli_step_1) #1-5 for information on cloning the [fhir-proxy](https://github.com/microsoft/fhir-proxy) repository (if needed).
 
 ### **Instructions**
@@ -377,8 +377,8 @@ For more information, see [Quickstart: Register an application with the Microsof
 + **Resource Tags** in **Step 1 #3** aren't passing validation in **Step 1 #8**.
     + See if there are any spaces that can be removed from the comma-separated list and try again.
 
-+ **FHIR Server Secret** parameter value needed in **Step 1 #4** is nowhere to be found.
-    + It's possible that you haven't registered FHIR Server as an application in the AAD tenant yet. More information about this can be found here:  
++ **FHIR server Secret** parameter value needed in **Step 1 #4** is nowhere to be found.
+    + It's possible that you haven't registered the FHIR server as an application in the AAD tenant yet. More information about this can be found here:  
 
     [Register a service client application in Azure Active Directory](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)  
     [Register the Azure Active Directory apps for Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/fhir-app-registration?WT.mc_id=Portal-Microsoft_Healthcare_APIs)
@@ -387,8 +387,8 @@ For more information, see [Quickstart: Register an application with the Microsof
     + Make sure to click "Save" in the upper left before leaving the *Portal - FHIR Proxy resource group - Key Vault - Access Policies* blade.
 
 ### For Deployment using CLI:
-+ **FHIR Server Secret** parameter value needed in **Step 1 #7** is nowhere to be found.
-    + It's possible that you haven't registered FHIR Server as an application in the AAD tenant yet. More information about this can be found here:  
++ **FHIR server Secret** parameter value needed in **Step 1 #7** is nowhere to be found.
+    + It's possible that you haven't registered the FHIR server as an application in the AAD tenant yet. More information about this can be found here:  
 
     [Register a service client application in Azure Active Directory](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/register-service-azure-ad-client-app)  
     [Register the Azure Active Directory apps for Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir/fhir-app-registration?WT.mc_id=Portal-Microsoft_Healthcare_APIs)
