@@ -31,6 +31,7 @@ declare pmfhirurl=""
 declare defFhirSvcClient="fhirProxy-svc-client"$RANDOM
 declare kvanswer=""
 declare postman_answer=""
+declare fpscurl=""
 
 
 # Script Functions
@@ -193,6 +194,8 @@ echo "Creating Service Client Principal "$spname"..."
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-CLIENT-ID" --value $spappid)
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-SECRET" --value $spsecret)
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-RESOURCE" --value $fpclientid)
+			fpscurl="https://"$fphost
+			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-URL" --value $fpscurl)
 		fi
 		if [ -n "$genpostman" ]; then
 			echo "Generating Postman environment for proxy access..."

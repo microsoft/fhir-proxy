@@ -1,3 +1,7 @@
+# DRAFT - work in progress 
+
+
+
 # FHIR-Proxy Getting startd scripts Readme
 Script purpose, order of execution and other steps necessary to get up and running with FHIR-Proxy
 
