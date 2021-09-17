@@ -1,7 +1,3 @@
-# DRAFT - work in progress 
-
-
-
 # FHIR-Proxy Getting startd scripts Readme
 Script purpose, order of execution and other steps necessary to get up and running with FHIR-Proxy
 
@@ -10,20 +6,23 @@ Script purpose, order of execution and other steps necessary to get up and runni
 
 These scripts will gather (and export) information necessary to the proper operation of the FHIR-Proxy and will store that information into the FHIR-Proxy Keyvault.  
  - Prerequisites:  Azure API for FHIR 
- - 
- - Prerequisites:  
+ - Prerequisites:  Global Admin Privelages to resiter Application Service Clients 
+ - Prerequisites:  Subscription Contributor role to provision resources  
 
 
 ## Step 1.  deployFhirProxy.bash
-This is the main component deployment script for the Azure Components and Sync Agent code.  Note that retry logic is used to account for provisioning delays, i.e., networking provisioning is taking some extra time.  Default retry logic is 5 retries.   
+This is the main component deployment script for the Azure Components and FHIR-Proxy code.  Note that retry logic is used to account for provisioning delays, i.e., networking provisioning is taking some extra time.  Default retry logic is 5 retries.   
 
 Azure Components installed 
  - Function App (FHIR-Proxy) with App Insights and Storage 
  - Function App Service plan 
- - Keyvault
+ - Keyvault (if not already installed)
 
 Information needed by this script 
- - 
+ - Resource Group Name
+ - Resource Group Location 
+ - Key Vault Name
+ - FHIR Service Information (URL, Service Client ID, Secret, Tenant ID)
  
 
 Creating Service Principal for AAD Auth (FP-RBAC settings )
@@ -39,8 +38,24 @@ FUNCTIONS_EXTENSION_VERSION        | Function Version           | App Service Co
 FUNCTIONS_WORKER_RUNTIME           | Function runtime           | App Service Config
 FP-RBAC-CLIENT-ID                  |                            | Keyvault reference -> client ID
 FP-RBAC-CLIENT-SECRET              |                            | Keyvault reference  
-FP-RBAC-NAME                       |                            | Keyvault reference FP-RBAC-TENANT-NAME                |                            | Keyvault reference 
+FP-RBAC-NAME                       |                            | Keyvault reference 
+FP-RBAC-TENANT-NAME                |                            | Keyvault reference 
 FP-REDISCONNECTION
+FP-ADMIN-ROLE
+FP-PARTICIPANT-ACCESS
+FP-READER-ROLE
+FP-WRITER-ROLE
+FP-GLOBAL-ACCESS-ROLES
+FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess
+FP-PATIENT-ACCESS-ROLES
+FP-PARTICIPANT-ACCESS-ROLES
+FP-STORAGEACCT
+FS-TENANT-NAME
+FS-CLIENT-ID
+FS-CLIENT-SECRET
+FS-RESOURCE 
+
+
 
 
 ## Step 2.  createProxyServiceClient.bash
