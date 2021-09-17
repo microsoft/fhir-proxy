@@ -25,7 +25,6 @@ Information needed by this script
  - FHIR Service Information (URL, Service Client ID, Secret, Tenant ID)
  
 
-Creating Service Principal for AAD Auth (FP-RBAC settings )
 
 FHIR-Proxy Application Configuration values loaded by this script 
 
@@ -36,25 +35,26 @@ APPINSIGHTS_CONNECTION_STRING      | InstrumentationKey         | App Service Co
 AzureWebJobsStorage                | Endpoint                   | App Service Config 
 FUNCTIONS_EXTENSION_VERSION        | Function Version           | App Service Config 
 FUNCTIONS_WORKER_RUNTIME           | Function runtime           | App Service Config
-FP-RBAC-CLIENT-ID                  |                            | Keyvault reference -> client ID
-FP-RBAC-CLIENT-SECRET              |                            | Keyvault reference  
-FP-RBAC-NAME                       |                            | Keyvault reference 
-FP-RBAC-TENANT-NAME                |                            | Keyvault reference 
-FP-REDISCONNECTION
-FP-ADMIN-ROLE
-FP-PARTICIPANT-ACCESS
-FP-READER-ROLE
-FP-WRITER-ROLE
-FP-GLOBAL-ACCESS-ROLES
-FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess
-FP-PATIENT-ACCESS-ROLES
-FP-PARTICIPANT-ACCESS-ROLES
-FP-STORAGEACCT
-FS-TENANT-NAME
-FS-CLIENT-ID
-FS-CLIENT-SECRET
-FS-RESOURCE 
+FP-REDISCONNECTION                 | RedisCache connection      | App Service Config
+FP-RBAC-CLIENT-ID                  | Client ID                  | Keyvault reference 
+FP-RBAC-CLIENT-SECRET              | Client Secret              | Keyvault reference  
+FP-RBAC-NAME                       | Client Name                | Keyvault reference 
+FP-RBAC-TENANT-NAME                | Tenant ID / Name           | Keyvault reference 
+FP-ADMIN-ROLE                      | Proxy Role Name            | App Service Config
+FP-PARTICIPANT-ACCESS              | Proxy Role Name            | App Service Config
+FP-READER-ROLE                     | Proxy Role Name            | App Service Config
+FP-WRITER-ROLE                     | Proxy Role Name            | App Service Config
+FP-GLOBAL-ACCESS-ROLES             | Proxy Role Name            | App Service Config
+FP-PATIENT-ACCESS-ROLES            | Proxy Role Name            | App Service Config
+FP-PARTICIPANT-ACCESS-ROLES        | Proxy Role Name            | App Service Config
+FP-STORAGEACCT                     | Storage account connection | App Service Config
+FS-TENANT-NAME                     | FHIR Tenant ID / Name      | App Service Config
+FS-CLIENT-ID                       | FHIR Client ID             | Keyvault reference  
+FS-CLIENT-SECRET                   | FHIR Client Secret         | Keyvault reference  
+FS-RESOURCE                        | FHIR Resource              | Keyvault reference   
 
+
+FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess
 
 
 
@@ -64,7 +64,11 @@ Created fhir proxy service principal client "$spname" on "$(date)
 		echo "This client can be used for OAuth2 client_credentials flow authentication to the FHIR Proxy"
 		echo " "
 
- "FP-SC-TENANT-NAME" --value $sptenant)
- "FP-SC-CLIENT-ID" --value $spappid)
- "FP-SC-SECRET" --value $spsecret)
- "FP-SC-RESOURCE" --value $fpclientid) -> points to FP-RBAC-CLIENT-ID
+FHIR-Proxy Application Configuration values loaded by this script 
+
+Name                               | Value                      | Located              
+-----------------------------------|----------------------------|--------------------
+FP-SC-TENANT-NAME                  | GUID                       | App Service Config  
+FP-SC-CLIENT-ID                    | InstrumentationKey         | App Service Config 
+FP-SC-SECRET                       | Endpoint                   | App Service Config 
+FP-SC-RESOURCE                     | Function Version           | App Service Config 
