@@ -54,6 +54,7 @@ FS-CLIENT-SECRET                   | FHIR Client Secret         | Keyvault refer
 FS-RESOURCE                        | FHIR Resource              | Keyvault reference   
 
 
+
 FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess
 
 
@@ -72,3 +73,25 @@ FP-SC-TENANT-NAME                  | GUID                       | App Service Co
 FP-SC-CLIENT-ID                    | InstrumentationKey         | App Service Config 
 FP-SC-SECRET                       | Endpoint                   | App Service Config 
 FP-SC-RESOURCE                     | Function Version           | App Service Config 
+FP-SC-URL                          | Function Version           | App Service Config 
+
+# References 
+FHIR-Proxy serves as a middle tier application / access and authorization endpoint.  To better understand the difference in these approaches users should review 
+
+- Client Credentials, or Implicit Oauth flow with token 
+- Auth clode flow with code for token exchange
+
+; therefore to request an access token users make an HTTP POST to the tenant-specific Microsoft identity platform token endpoint with the following parameters.
+
+```azurecli
+https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token
+```
+Overview of Proxy Auth 
+![overview](../docs/images/authflow.png)
+
+Note:  When using FHIR-Proxy, refrain from using the FS- Client Credentials
+
+To read more about the Auth flow, refer to this Microsoft Document [doc](https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-client-creds-grant-flow)
+
+
+
