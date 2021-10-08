@@ -213,7 +213,7 @@ For more information, see [Quickstart: Register an application with the Microsof
 
 45. Click on the pencil icon in the **Edit** column and you will be taken to the **Add an identity provider** form shown below. 
 
-<img src="images/arm/Azure_Portal_Screenshot_7_resize.png" width="535" height="523">
+<img src="images/arm/Azure_Portal_Screenshot_7_resize_corrected.png" width="535" height="523">
 
 46. Populate these **App registration** fields with information obtained from **Step 2**:
 
