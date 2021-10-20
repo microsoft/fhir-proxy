@@ -39,30 +39,28 @@ Please note you should deploy this proxy into a tenant that you have appropriate
 1. [Get or Obtain a valid Azure Subscription](https://azure.microsoft.com/en-us/free/)</br>
    _Note:Skip to Step 5 if you already have a FHIR Server/Service Client deployed_
 2. [Deploy an Azure API for FHIR instance](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir-paas-portal-quickstart)
-3. [Register a Service Client to Access the FHIR Server](https://docs.microsoft.com/en-us/azure/healthcare-apis/register-service-azure-ad-client-app).
-4. [Find the Object Id for the Service Client and Register it with the FHIR Server](https://docs.microsoft.com/en-us/azure/healthcare-apis/find-identity-object-ids)
-5. You will need the following information to configure the Secure FHIR Proxy 
-   + Client/Application ID for the FHIR Service Client
-   + The Client Secret for the FHIR Service Client
-   + The AAD Tenant ID for the FHIR Server/Service Client
-   + The Audience/Resource for the FHIR Server/Service Client typically https://<I>[yourfhirservername]</I>.azurehealthcareapis.com for Azure API for FHIR
-6. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
-7. Select Bash Shell 
-8. Clone this repo 
-```bash
+3. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
+4. Select Bash Shell 
+5. Clone this repo 
+```azurecli
 git clone https://github.com/microsoft/fhir-proxy
 ```
 
-9. Switch to the scripts subdirectory of this repo 
-```bash 
+6. Switch to the scripts subdirectory of this repo 
+```azurecli 
 cd ./fhir-proxy/scripts/
 ```
-10. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
-```bash
+7. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
+```azurecli
 ./deployfhirproxy.bash 
 ```
 
-11. Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
+8. Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
+```azurecli
+./createProxyServiceClient.bash
+```
+
+Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
 
 ## Proxy Endpoint
 The new endpoint for your FHIR Server should now be: <b>```https://<secure proxy url from above>/fhir/```</b>. You can use any supported FHIR HTTP verb and any FHIR compliant request/query
