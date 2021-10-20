@@ -50,12 +50,18 @@ git clone https://github.com/microsoft/fhir-proxy
 ```azurecli 
 cd ./fhir-proxy/scripts/
 ```
-7. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
+
+7. Make the <b>```deployfhirproxy.bash and createProxyServiceclient.bash```</b> scripts executable
+```azurecli
+chmod +x *.bash
+``` 
+
+8. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
 ```azurecli
 ./deployfhirproxy.bash 
 ```
 
-8. Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
+9. Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
 ```azurecli
 ./createProxyServiceClient.bash
 ```
