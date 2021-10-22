@@ -55,15 +55,7 @@ FS-RESOURCE                        | FHIR Resource              | Keyvault refer
 
 
 
-FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess
-
-
-
 ## Step 2.  createProxyServiceClient.bash
-
-Created fhir proxy service principal client "$spname" on "$(date)
-		echo "This client can be used for OAuth2 client_credentials flow authentication to the FHIR Proxy"
-		echo " "
 
 FHIR-Proxy Application Configuration values loaded by this script 
 
@@ -81,7 +73,7 @@ FHIR-Proxy serves as a middle tier application / access and authorization endpoi
 - Client Credentials, or Implicit Oauth flow with token 
 - Auth clode flow with code for token exchange
 
-; therefore to request an access token users make an HTTP POST to the tenant-specific Microsoft identity platform token endpoint with the following parameters.
+To request an access token users make an HTTP POST to the tenant-specific Microsoft identity platform token endpoint with the following parameters.
 
 ```azurecli
 https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token
