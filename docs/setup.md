@@ -9,18 +9,7 @@
 - [Azure API for FHIR](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir-paas-portal-quickstart) 
 
 ### Install Instructions
-1. [Register a Service Client to Access the FHIR Server](https://docs.microsoft.com/en-us/azure/healthcare-apis/register-service-azure-ad-client-app)
-2. [Find the Object Id for the Service Client and Register it with the FHIR Server](https://docs.microsoft.com/en-us/azure/healthcare-apis/find-identity-object-ids)
-3. You will need the following information to configure the Secure FHIR Proxy 
-   + Client/Application ID for the FHIR Service Client
-   + The Client Secret for the FHIR Service Client
-   + The AAD Tenant ID for the FHIR Server/Service Client
-   + The Audience/Resource for the FHIR Server/Service Client typically https://<I>[yourfhirservername]</I>.azurehealthcareapis.com for Azure API for FHIR
-4. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
-5. Select Bash Shell 
-6. Clone this repo ```git clone https://github.com/microsoft/fhir-proxy```
-7. Switch to the fhir-proxy directory 
-8. Run the ```deployfhirproxy.bash``` script and follow the prompts
+Follow the instructions in the [Scripts Readme file](../scripts/Readme.md) file 
 
 ## Testing
 The new endpoint for your FHIR Server should now be: ```https://<secure proxy url from above>/fhir```. You can use any supported FHIR HTTP verb and any FHIR compliant request/query

@@ -9,8 +9,33 @@ IFS=$'\n\t'
 # Setup Application Service Client to FHIR Proxy --- Author Steve Ordahl Principal Architect Health Data Platform
 #
 
-usage() { echo "Usage: $0 -k <keyvault> -n <service client name> -s (to store credentials in <keyvault>) -p (to generate postman environment)" 1>&2; exit 1; }
+# Script variables 
+declare stepresult=""
+declare spname=""
+declare kvname=""
+declare kvexists=""
+declare defsubscriptionId=""
+declare fpclientid=""
+declare fptenantid=""
+declare fpsecret=""
+declare fphost=""
+declare repurls=""
+declare spappid=""
+declare sptenant=""
+declare spsecret=""
+declare storekv=""
+declare genpostman=""
+declare pmenv=""
+declare pmuuid=""
+declare pmfhirurl=""
+declare defFhirSvcClient="fhirProxy-svc-client"$RANDOM
+declare kvanswer=""
+declare postman_answer=""
+declare fpscurl=""
 
+
+# Script Functions
+#
 function fail {
   echo $1 >&2
   exit 1
@@ -32,25 +57,30 @@ function retry {
     }
   done
 }
-declare stepresult=""
-declare spname=""
-declare kvname=""
-declare kvexists=""
-declare defsubscriptionId=""
-declare fpclientid=""
-declare fptenantid=""
-declare fpsecret=""
-declare fphost=""
-declare repurls=""
-declare spappid=""
-declare sptenant=""
-declare spsecret=""
-declare storekv=""
-declare genpostman=""
-declare pmenv=""
-declare pmuuid=""
-declare pmfhirurl=""
+
+
+function kvuri {
+	echo "@Microsoft.KeyVault(SecretUri=https://"$kvname".vault.azure.net/secrets/"$@"/)"
+}
+
+
+function result () {
+    if [[ $1 = "ok" ]]; then
+        echo -e "..................... [ \033[32m ok \033[37m ] \r" 
+      else
+        echo -e "..................... [ \033[31m failed \033[37m ] \r"
+        exit 1
+      fi
+    echo -e "\033[37m \r"
+    sleep 1
+}
+
+usage() { echo "Usage: $0 -k <keyvault> -n <service client name> -s (to store credentials in <keyvault>) -p (to generate postman environment)" 1>&2; exit 1; }
+
+## Script Main Body (start here)
 # Initialize parameters specified from command line
+#
+
 while getopts ":k:n:sp" arg; do
 	case "${arg}" in
 		k)
@@ -71,6 +101,7 @@ shift $((OPTIND-1))
 echo "Executing "$0"..."
 echo "Note: You must be authenticated to the same tenant as the proxy server"
 echo "Checking Azure Authentication..."
+
 #login to azure using your credentials
 az account show 1> /dev/null
 
@@ -79,25 +110,27 @@ then
 	az login
 fi
 
+# set default subscription 
 defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
 
-#Prompt for parameters is some required parameters are missing
+# Prompt for parameters is some required parameters are missing
+
+echo " "
+echo "Collecting Script Parameters "
+echo " "
+
+
 if [[ -z "$kvname" ]]; then
 	echo "Enter keyvault name that contains the fhir proxy configuration: "
 	read kvname
+    if [ -z "$kvname" ]; then
+	    echo "Keyvault name must be specified"
+	    usage
+    fi
 fi
-if [ -z "$kvname" ]; then
-	echo "Keyvault name must be specified"
-	usage
-fi
-if [[ -z "$spname" ]]; then
-	echo "Enter a name for this service client [fhirproxy-svc-client]: "
-	read spname
-fi
-if [ -z "$spname" ]; then
-	spname="fhirproxy-svc-client"
-fi
-#Check KV exists
+
+# Check KV exists
+# 
 echo "Checking for keyvault "$kvname"..."
 kvexists=$(az keyvault list --query "[?name == '$kvname'].name" --out tsv)
 if [[ -z "$kvexists" ]]; then
@@ -105,8 +138,40 @@ if [[ -z "$kvexists" ]]; then
 	exit 1
 fi
 
+if [[ -z "$spname" ]]; then
+	echo "Enter a name for this service client [$defFhirSvcClient]: "
+	read spname
+    if [ -z "$spname" ]; then
+        spname=$defFhirSvcClient
+    fi
+	[[ "${spname:?}" ]]
+fi
+
+if [[ -z "$storekv" ]]; then
+	echo "Do you want to store the service client "$defFhirSvcClient" credentials in the keyvault "$kvname"? [y/n]: "
+	read kvanswer
+    if [[ $kvanswer =  "y" ]; then
+        storekv="yes"
+    fi
+fi
+
+if [[ -z "$genpostman" ]]; then
+	echo "Do you want to generate a Postman Environment ? [y/n]: "
+	read postman_answer
+    if [[ $postman_answer = "y" ]; then
+        genpostman="yes"
+    fi
+fi
+
+# Final Check 
+#
+echo "Starting deployment of... $0 -k $kvname -n $spname -s $storekv -p $genpostman"
+read -p 'Press Enter to continue, or Ctrl+C to exit'
+
 set +e
-#Start deployment
+
+# Start deployment
+#
 echo "Creating Service Client Principal "$spname"..."
 (
 		echo "Loading configuration settings from key vault "$kvname"..."
@@ -129,6 +194,8 @@ echo "Creating Service Client Principal "$spname"..."
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-CLIENT-ID" --value $spappid)
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-SECRET" --value $spsecret)
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-RESOURCE" --value $fpclientid)
+			fpscurl="https://"$fphost
+			stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-URL" --value $fpscurl)
 		fi
 		if [ -n "$genpostman" ]; then
 			echo "Generating Postman environment for proxy access..."
@@ -149,6 +216,7 @@ echo "Creating Service Client Principal "$spname"..."
 		echo "************************************************************************************************************"
 		echo "Created fhir proxy service principal client "$spname" on "$(date)
 		echo "This client can be used for OAuth2 client_credentials flow authentication to the FHIR Proxy"
+		echo " "
 		if [ -n "$storekv" ]; then
 			echo "Your client credentials have been securely stored as secrets in keyvault "$kvname
 			echo "The secret prefix is FP-SC-"
