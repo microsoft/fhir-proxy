@@ -123,7 +123,8 @@ echo " "
 if [[ -z "$kvname" ]]; then
 	echo "Enter keyvault name that contains the fhir proxy configuration: "
 	read kvname
-    if [ -z "$kvname" ]]; then
+    if [[ -z "$kvname" ]]; then
+
 	    echo "Keyvault name must be specified"
 	    usage
     fi
@@ -158,7 +159,7 @@ fi
 if [[ -z "$genpostman" ]]; then
 	echo "Do you want to generate a Postman Environment ? [y/n]: "
 	read postman_answer
-    if [[ $postman_answer = "y" ]; then
+    if [[ $postman_answer = "y" ]]; then
         genpostman="yes"
     fi
 fi
