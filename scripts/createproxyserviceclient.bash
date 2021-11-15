@@ -123,7 +123,7 @@ echo " "
 if [[ -z "$kvname" ]]; then
 	echo "Enter keyvault name that contains the fhir proxy configuration: "
 	read kvname
-    if [ -z "$kvname" ]; then
+    if [ -z "$kvname" ]]; then
 	    echo "Keyvault name must be specified"
 	    usage
     fi
@@ -150,7 +150,7 @@ fi
 if [[ -z "$storekv" ]]; then
 	echo "Do you want to store the service client "$defFhirSvcClient" credentials in the keyvault "$kvname"? [y/n]: "
 	read kvanswer
-    if [[ $kvanswer =  "y" ]; then
+    if [[ $kvanswer =  "y" ]]; then
         storekv="yes"
     fi
 fi
