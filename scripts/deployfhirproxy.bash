@@ -300,17 +300,18 @@ if [[ -z "$deployPrefix" ]]; then
 	deployPrefix=${deployPrefix//[^[:alnum:]]/}
     deployPrefix=${deployPrefix,,}
 	[[ "${deployPrefix:?}" ]]
+	proxyAppName="sfp-"$deployPrefix
 fi
 
 # Set a Default Function App Name
 # 
-echo "Enter the proxy function app name - this is the name of the proxy function app ["$defAppName"]:"
-read proxyAppName
-if [ -z "$proxyAppName" ] ; then
-	proxyAppName=$defAppName
-fi
+if [[ -z "$proxyAppName" ]]; then
+	echo "Enter the proxy function app name - this is the name of the proxy function app ["$defAppName"]:"
+	read proxyAppName
+	if [ -z "$proxyAppName" ] ; then
+		proxyAppName=$defAppName
+	fi
 [[ "${proxyAppName:?}" ]]
-
 
 
 #
@@ -337,16 +338,16 @@ if [[ -n "$keyVaultExists" ]]; then
 		echo "  FHIR Service URL: "$fhirServiceUrl
 
         fhirResourceId=$(az keyvault secret show --vault-name $keyVaultName --name FS-URL --query "value" --out tsv | awk -F. '{print $1}' | sed -e 's/https\:\/\///g') 
-		echo "  FHIR Resource ID: "$fhirResourceId 
+		echo "  FHIR Service Resource ID: "$fhirResourceId 
 
 		fhirServiceTenant=$(az keyvault secret show --vault-name $keyVaultName --name FS-TENANT-NAME --query "value" --out tsv)
-		echo "  FHIR Tenant ID: "$fhirServiceTenant 
+		echo "  FHIR Service Tenant ID: "$fhirServiceTenant 
 		
 		fhirServiceClientId=$(az keyvault secret show --vault-name $keyVaultName --name FS-CLIENT-ID --query "value" --out tsv)
-		echo "  FHIR Client ID: "$fhirServiceClientId
+		echo "  FHIR Service Client ID: "$fhirServiceClientId
 		
 		fhirServiceClientSecret=$(az keyvault secret show --vault-name $keyVaultName --name FS-SECRET --query "value" --out tsv)
-		echo "  FHIR Client Secret: *****"
+		echo "  FHIR Service Client Secret: *****"
 		
 		fhirServiceAudience=$(az keyvault secret show --vault-name $keyVaultName --name FS-RESOURCE --query "value" --out tsv) 
 		echo "  FHIR Service Audience: "$fhirServiceAudience 
@@ -467,7 +468,7 @@ read -p 'Press Enter to continue, or Ctrl+C to exit'
 #  Start Azure Setup  
 #############################################################
 #
-
+echo " "
 echo "Setting default subscription"
 az account set --subscription $subscriptionId
 
@@ -524,9 +525,8 @@ sleep 3
 #  Store FHIR Service values in Key Vault 
 #############################################################
 #
-echo "--- "
+echo "Storing FHIR Server Information in Vault..."
 (
-    echo "Storing FHIR Server Information in Vault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-URL" --value $fhirServiceUrl)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-TENANT-NAME" --value $fhirServiceTenant)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
@@ -548,6 +548,7 @@ sleep 3
 #  Store FHIR Proxy Deployment 
 #############################################################
 
+echo "---"
 echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 (
 	# Create Storage Account
