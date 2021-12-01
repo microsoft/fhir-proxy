@@ -80,6 +80,8 @@ declare fhirServiceClientRoleAssignment=""
 # KeyVault 
 declare keyVaultName=""
 declare keyVaultExists=""
+declare useExistingKeyVault=""
+declare createNewKeyVault=""
 
 # Postman 
 declare proxyAppName=""
@@ -444,6 +446,7 @@ echo "--- "
 echo "Ready to start deployment of FHIR-Proxy Application: ["$proxyAppName"] with the following values:"
 echo "Proxy Component Deploy Prefix:......... "$deployPrefix
 echo "FHIR Service URL:...................... "$fhirServiceUrl
+echo "FHIR Service Auth Type:................ "$authType
 echo "Subscription ID:....................... "$subscriptionId
 echo "Resource Group Name:................... "$resourceGroupName
 echo "  Use Existing Resource Group:......... "$useExistingResourceGroup
