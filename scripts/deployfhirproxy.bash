@@ -19,9 +19,6 @@ declare TAG="HealthArchitectures: FHIR-Proxy"
 declare functionSKU="B1"
 declare functionWorkers="2"
 declare storageSKU="Standard_LRS"
-declare defserviceBusNamespaceSKU="Standard"
-declare serviceBusNamespaceSKU=""
-declare serviceBusQueueMaxSize="4096"
 
 
 #########################################
@@ -586,7 +583,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	
 	stepresult=$(az functionapp stop --name $proxyAppName --resource-group $resourceGroupName)
 	
-	echo "Storing FHIR Proxy Function App Host name in Key Vault..."
+	echo "Storing FHIR Proxy Function App Host name in KeyVault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-HOST" --value $functionAppHost)
 	
 	echo "Creating Function App MSI for KeyVault Access..."
