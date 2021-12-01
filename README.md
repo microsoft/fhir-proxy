@@ -29,39 +29,38 @@ See [Configuration](docs/configuration.md) document for full descriptions and co
 All FHIR Server responses are re-written to include the proxy address as the appropriate endpoint so the FHIR Server URL is never directly exposed.
 
 ## Architecture Overview
-![Fhirproxy Arch](/docs/images/architecture/fhirproxy_arch.png)
+![Fhirproxy Arch](./docs/images/architecture/fhirproxy_arch.png)
 
 
 ## Deploying your own FHIR Proxy
-
 Please note you should deploy this proxy into a tenant that you have appropriate permissions to create and manage Application Registrations, Enterprise Applications, Permissions and Role Definitions Assignments
 
-1. [Get or Obtain a valid Azure Subscription](https://azure.microsoft.com/en-us/free/)</br>
-   _Note:Skip to Step 5 if you already have a FHIR Server/Service Client deployed_
-2. [Deploy an Azure API for FHIR instance](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir-paas-portal-quickstart)
-3. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
-4. Select Bash Shell 
-5. Clone this repo 
-```azurecli
-git clone https://github.com/microsoft/fhir-proxy
+_For detailed instructions please read this document_ **[./scripts/Readme.md](./scripts/Readme.md)**
+
+Launch Azure Cloud Shell (Bash Environment)  
+  
+[![Launch Azure Shell](/docs/images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
+
+Clone the repo to your Bash Shell (CLI) environment 
+```azurecli-interactive
+git clone https://github.com/microsoft/fhir-proxy 
+```
+Change working directory to the repo Scripts directory
+```azurecli-interactive
+cd ./fhir-proxy/scripts
 ```
 
-6. Switch to the scripts subdirectory of this repo 
-```azurecli 
-cd ./fhir-proxy/scripts/
+Make the Bash Shell Scripts used for Deployment and Setup executable 
+```azurecli-interactive
+chmod +x *.bash 
 ```
 
-7. Make the <b>```deployfhirproxy.bash and createProxyServiceclient.bash```</b> scripts executable
-```azurecli
-chmod +x *.bash
-``` 
-
-8. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
+Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
 ```azurecli
 ./deployfhirproxy.bash 
 ```
 
-9. Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
+Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
 ```azurecli
 ./createProxyServiceClient.bash
 ```
