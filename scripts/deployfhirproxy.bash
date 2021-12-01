@@ -221,7 +221,7 @@ intro
 # ---------------------------------------------------------------------
 # Prompt for common parameters if some required parameters are missing
 # 
-
+echo " "
 echo "Collecting Azure Parameters (unless supplied on the command line) "
 
 if [[ -z "$subscriptionId" ]]; then
