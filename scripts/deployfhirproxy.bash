@@ -279,7 +279,7 @@ fi
 # ---------------------------------------------------------------------
 # Prompt for script parameters if some required parameters are missing
 #
-
+echo " "
 echo "Collecting Script Parameters (unless supplied on the command line).."
 
 # Set default values for proxy service and application names 
@@ -289,7 +289,7 @@ defdeployPrefix=${defdeployPrefix//[^[:alnum:]]/}
 defdeployPrefix=${defdeployPrefix,,}
 
 if [[ -z "$deployPrefix" ]]; then
-	echo "Enter your install prefix - proxy components begin with this prefix ["$defdeployPrefix"]:"
+	echo "Enter your deploy prefix - proxy components begin with this prefix ["$defdeployPrefix"]:"
 	read deployPrefix
 	if [ -z "$deployPrefix" ] ; then
 		deployPrefix=$defdeployPrefix
@@ -328,6 +328,7 @@ keyVaultExists=$(az keyvault list --query "[?name == '$keyVaultName'].name" --ou
 if [[ -n "$keyVaultExists" ]]; then
 	set +e 
 	echo "  "$keyVaultName" found"
+	echo " "
 	echo "Checking for FHIR Service configuration..."
 	fhirServiceUrl=$(az keyvault secret show --vault-name $keyVaultName --name FS-URL --query "value" --out tsv)
 	if [ -n "$fhirServiceUrl" ]; then
@@ -440,8 +441,8 @@ fi
 # Prompt for final confirmation
 #
 echo "--- "
-echo "Ready to start deployment of FHIR-Proxy: ["$proxyAppName"] with the following values:"
-echo "Proxy Install Prefix:.................. "$proxydeployPrefix
+echo "Ready to start deployment of FHIR-Proxy Application: ["$proxyAppName"] with the following values:"
+echo "Proxy Component Deploy Prefix:......... "$deployPrefix
 echo "FHIR Service URL:...................... "$fhirServiceUrl
 echo "Subscription ID:....................... "$subscriptionId
 echo "Resource Group Name:................... "$resourceGroupName
