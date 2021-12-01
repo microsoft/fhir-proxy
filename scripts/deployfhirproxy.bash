@@ -485,22 +485,8 @@ echo "Starting Deployments "
     else
         echo "Using Existing Resource Group ["$resourceGroupName"]"
     fi
-)
-	
-if [ $?  != 0 ];
- then
-	echo "Resource Group create failed.  Please check your permissions in this Subscription and try again"
-    result "fail" 
-fi
 
-sleep 3
 
-#############################################################
-#  Deploy KeyVault 
-#############################################################
-#
-echo "--- "
-(
     if [[ "$useExistingKeyVault" == "no" ]]; then
         echo " "
         echo "Creating Key Vault ["$keyVaultName"] in location ["$resourceGroupName"]"
@@ -509,48 +495,18 @@ echo "--- "
     else
         echo "Using Existing Key Vault ["$keyVaultName"]"
     fi
-)
 
-	
-if [ $?  != 0 ];
- then
-	echo "Key Vault create failed.  Please check your permissions in this Subscription and try again"
-    result "fail" 
-fi
-
-sleep 3
-
-#############################################################
-#  Store FHIR Service values in Key Vault 
-#############################################################
-#
-echo "Storing FHIR Server Information in KeyVault..."
-(
+	echo "Storing FHIR Server Information in KeyVault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-URL" --value $fhirServiceUrl)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-TENANT-NAME" --value $fhirServiceTenant)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-SECRET" --value $fhirServiceClientSecret)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-RESOURCE" --value $fhirServiceAudience)
-)
 
-	
-if [ $?  != 0 ];
- then
-	echo "Key Vault update failed.  Please check your permissions in this Subscription and try again"
-    result "fail" 
-fi
+	echo "---"
+	echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 
-sleep 3
-
-
-#############################################################
-#  Store FHIR Proxy Deployment 
-#############################################################
-
-echo "---"
-echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
-(
 	# Create Storage Account
 	echo "Creating Storage Account ["$deployPrefix$storageAccountNameSuffix"]..."
 	stepresult=$(az storage account create --name $deployPrefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku $storageSKU --encryption-services blob --tags $TAG)
@@ -561,7 +517,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Storing Storage Account Connection String in Key Vault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-STORAGEACCT" --value $storageConnectionString)
 		
-	# Redis Cache to Support Proxy Modules
+	# Create Redis Cache to Support Proxy Modules
 	echo "Creating Redis Cache ["$deployPrefix$redisAccountNameSuffix"]..."
 	stepresult=$(az redis create --location $resourceGroupLocation --name $deployPrefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $TAG)
 	
@@ -574,9 +530,9 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 		
 	# Create App Service Plan
 	echo "Creating Secure FHIR Proxy Function App Serviceplan ["$deployPrefix$serviceplanSuffix"]..."
-	stepresult=$(az appservice plan create -g $resourceGroupName -n $deployPrefix$serviceplanSuffix --number-of-workers 2 --sku B1 --tags $TAG)
+	stepresult=$(az appservice plan create -g $resourceGroupName -n $deployPrefix$serviceplanSuffix --number-of-workers $functionWorkers --sku $functionSKU --tags $TAG)
 		
-	# Create the function app
+	# Create Proxy function app
 	echo "Creating Secure FHIR Proxy Function App ["$proxyAppName"]..."
 	functionAppHost=$(az functionapp create --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $TAG --query defaultHostName --output tsv)
 
