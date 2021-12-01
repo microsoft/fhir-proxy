@@ -349,7 +349,10 @@ if [[ -n "$keyVaultExists" ]]; then
 		echo "  FHIR Client Secret: *****"
 		
 		fhirServiceAudience=$(az keyvault secret show --vault-name $keyVaultName --name FS-RESOURCE --query "value" --out tsv) 
-		echo "  FHIR Service Audience: "$fhirServiceAudience ;
+		echo "  FHIR Service Audience: "$fhirServiceAudience 
+		
+		useExistingKeyVault="yes"
+    	createNewKeyVault="no" ;
 	else	
 		echo "  unable to read FHIR Service URL from ["$keyVaultName"]" 
         echo "  setting script to create new FHIR Service Entry in existing Key Vault ["$keyVaultName"]"
