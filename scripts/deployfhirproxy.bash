@@ -15,7 +15,7 @@ IFS=$'\n\t'
 #########################################
 # HealthArchitecture Deployment Settings 
 #########################################
-declare TAG="HealthArchitectures: FHIR-Proxy"
+declare TAG="HealthArchitectures = FHIR-Proxy"
 declare functionSKU="B1"
 declare functionWorkers="2"
 declare storageSKU="Standard_LRS"
@@ -59,7 +59,7 @@ declare distribution="distribution/publish.zip"
 declare postmanTemplate="postmantemplate.json"
 
 # FHIR
-declare defAuthType="MSI"
+declare defAuthType="SP"
 declare authType=""
 declare fhirServiceUrl=""
 declare fhirServiceClientId=""
@@ -204,7 +204,7 @@ defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g')
 
 # Test for correct directory path / destination 
 if [ -f "${script_dir}/$0" ] && [ -f "${script_dir}/fhirroles.json" ] ; then
-	echo "Script execution directory is correct..."
+	echo "Checking Script execution directory..."
 else
 	echo "Please ensure you launch this script from within the ./scripts directory"
 	usage ;
@@ -496,7 +496,7 @@ fi
 sleep 3
 
 #############################################################
-#  Deploy Key Vault 
+#  Deploy KeyVault 
 #############################################################
 #
 echo "--- "
@@ -524,12 +524,13 @@ sleep 3
 #  Store FHIR Service values in Key Vault 
 #############################################################
 #
-echo "Storing FHIR Server Information in Vault..."
+echo "Storing FHIR Server Information in KeyVault..."
 (
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-URL" --value $fhirServiceUrl)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-TENANT-NAME" --value $fhirServiceTenant)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-SECRET" --value $fhirServiceClientSecret)
+	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-RESOURCE" --value $fhirServiceAudience)
 )
 
@@ -600,7 +601,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	stepresult=$(retry az functionapp deployment source config --branch main --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --resource-group $resourceGroupName)
 	
 	echo "Creating Service Principal for AAD Auth"
-	stepresult=$(az ad sp create-for-rbac -n "https://"$functionAppHost --skip-assignment)
+	stepresult=$(az ad sp create-for-rbac -n "https://"$functionAppHost --skip-assignment --only-show-errors)
 	spappid=$(echo $stepresult | jq -r '.appId')
 	sptenant=$(echo $stepresult | jq -r '.tenant')
 	spsecret=$(echo $stepresult | jq -r '.password')
@@ -616,8 +617,8 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Adding Sign-in User Read Permission on Graph API..."
 	stepresult=$(az ad app permission add --id $spappid --api 00000002-0000-0000-c000-000000000000 --api-permissions 311a71cc-e848-46a1-bdf8-97ff7156d8e6=Scope)
 		
-	echo "Granting Admin Consent to Permission..."
-	stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
+	#echo "Granting Admin Consent to Permission..."
+	#stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
 	
 	echo "Configuring reply urls for app..."
 	stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls)
