@@ -299,8 +299,9 @@ if [[ -z "$deployPrefix" ]]; then
 	deployPrefix=${deployPrefix:0:14}
 	deployPrefix=${deployPrefix//[^[:alnum:]]/}
     deployPrefix=${deployPrefix,,}
-	[[ "${deployPrefix:?}" ]]
-	proxyAppName="sfp-"$deployPrefix
+	[[ "${deployPrefix:?}" ]] ;
+else 
+	proxyAppName="sfp-"${deployPrefix}
 fi
 
 # Set a Default Function App Name
@@ -311,6 +312,7 @@ if [[ -z "$proxyAppName" ]]; then
 	if [ -z "$proxyAppName" ] ; then
 		proxyAppName=$defAppName
 	fi
+fi
 [[ "${proxyAppName:?}" ]]
 
 
