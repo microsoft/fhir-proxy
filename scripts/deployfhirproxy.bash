@@ -310,11 +310,6 @@ fi
 [[ "${proxyAppName:?}" ]]
 
 
-# Set a Default KeyVault Name 
-#
-defKeyVaultName=${defKeyVaultName:0:14}
-defKeyVaultName=${defKeyVaultName//[^[:alnum:]]/}
-defKeyVaultName=${defKeyVaultName,,}
 
 #
 if [[ -z "$keyVaultName" ]]; then
@@ -323,9 +318,6 @@ if [[ -z "$keyVaultName" ]]; then
 	if [ -z "$keyVaultName" ] ; then
 		keyVaultName=$defKeyVaultName
 	fi
-	keyVaultName=${keyVaultName:0:14}
-	keyVaultName=${keyVaultName//[^[:alnum:]]/}
-    keyVaultName=${keyVaultName,,}
 	[[ "${keyVaultName:?}" ]]
 fi
 
@@ -339,22 +331,22 @@ if [[ -n "$keyVaultExists" ]]; then
 	echo "Checking for FHIR Service configuration..."
 	fhirServiceUrl=$(az keyvault secret show --vault-name $keyVaultName --name FS-URL --query "value" --out tsv)
 	if [ -n "$fhirServiceUrl" ]; then
-		echo "  FHIR Service URL: ["$fhirServiceUrl"]"
+		echo "  FHIR Service URL: "$fhirServiceUrl
 
         fhirResourceId=$(az keyvault secret show --vault-name $keyVaultName --name FS-URL --query "value" --out tsv | awk -F. '{print $1}' | sed -e 's/https\:\/\///g') 
-		echo "  set FHIR Resource ID..." 
+		echo "  FHIR Resource ID: "$fhirResourceId 
 
 		fhirServiceTenant=$(az keyvault secret show --vault-name $keyVaultName --name FS-TENANT-NAME --query "value" --out tsv)
-		echo "  set FHIR Tenant ID..." 
+		echo "  FHIR Tenant ID: "$fhirServiceTenant 
 		
 		fhirServiceClientId=$(az keyvault secret show --vault-name $keyVaultName --name FS-CLIENT-ID --query "value" --out tsv)
-		echo "  set FHIR Client ID..."
+		echo "  FHIR Client ID: "$fhirServiceClientId
 		
 		fhirServiceClientSecret=$(az keyvault secret show --vault-name $keyVaultName --name FS-SECRET --query "value" --out tsv)
-		echo "  set FHIR Secret..."
+		echo "  FHIR Client Secret: *****"
 		
 		fhirServiceAudience=$(az keyvault secret show --vault-name $keyVaultName --name FS-RESOURCE --query "value" --out tsv) 
-		echo "  set FHIR Audience..." ;
+		echo "  FHIR Service Audience: "$fhirServiceAudience ;
 	else	
 		echo "  unable to read FHIR Service URL from ["$keyVaultName"]" 
         echo "  setting script to create new FHIR Service Entry in existing Key Vault ["$keyVaultName"]"
@@ -365,7 +357,6 @@ else
 	echo "  Script will deploy new Key Vault ["$keyVaultName"]" 
     useExistingKeyVault="no"
     createNewKeyVault="yes"
-	fi
 fi
 
 # Prompt for FHIR Server Parameters if not found in KeyVault
@@ -375,7 +366,7 @@ if [ -z "$fhirServiceUrl" ]; then
 	read fhirServiceUrl
 	if [ -z "$fhirServiceUrl" ] ; then
 		echo "You must provide a destination FHIR Server URL"
-		exit 1;
+		exit 1 ;
 	fi
 fi
 
