@@ -142,6 +142,32 @@ FP-SC-SECRET                       | Proxy Service Secret       | Keyvault refer
 FP-SC-RESOURCE                     | FHIR Resource ID           | Keyvault reference 
 FP-SC-URL                          | Proxy URL                  | Keyvault reference 
 
+
+## Step 3.  Grant Admin Access (Portal)
+We purposely do not grant Admin Access in the createProxyServiceClient script as not everyone has Application Administrator rights.  We will supply an "admin script" for this in the next release, in the meantime here are the Azure Portal steps necessary to grant admin access. 
+
+Log into the Azure Portal, and go to Azure Active Directory 
+
+![login](../docs/images/login.png)
+
+Go to App Registrations and find the client created with the createProxyServiceClient.bash script 
+
+![appreg](../docs/images/appreg.png)
+
+Select API Permissions on the left blade, then slect Grant admin consent for "your tenant name"
+
+![api](../docs/images/api-permissions.png)
+
+Grant Admin Consent 
+
+![apigrant](../docs/images/api-grant.png)
+
+![apigrant](../docs/images/api-grant2.png)
+
+Complete 
+
+![apigrant](../docs/images/complete.png)
+
 ---
 
 # References 
