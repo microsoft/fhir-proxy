@@ -10,6 +10,7 @@ IFS=$'\n\t'
 #
 
 # Script variables 
+declare script_dir="$( cd -P -- "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 declare stepresult=""
 declare spname=""
 declare kvname=""
