@@ -29,7 +29,7 @@ declare genpostman=""
 declare pmenv=""
 declare pmuuid=""
 declare pmfhirurl=""
-declare defproxySvcClient="fpsc-svc-client"$RANDOM
+declare defproxySvcClient="fpsc-client"$RANDOM
 declare kvanswer=""
 declare postman_answer=""
 declare fpscurl=""
@@ -88,9 +88,8 @@ while getopts ":k:n:p:" arg; do
 			kvname=${OPTARG}
 			;;
 		n)
-			spname=${OPTARG:0:14}
+			spname=${OPTARG:0:16}
 			spname=${spname,,}
-			spname=${spname//[^[:alnum:]]/}
 			;;
 	esac
 done
@@ -147,9 +146,8 @@ fi
 
 # Set a Default value for the App Name 
 #
-defproxySvcClient=${defproxySvcClient:0:14}
+defproxySvcClient=${defproxySvcClient:0:16}
 defproxySvcClient=${defproxySvcClient,,}
-defproxySvcClient=${defproxySvcClient//[^[:alnum:]]/}
 
 if [[ -z "$spname" ]]; then
 	echo "Enter a name for this service client [$defproxySvcClient]: "
