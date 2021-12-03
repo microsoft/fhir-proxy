@@ -25,7 +25,7 @@ declare storageSKU="Standard_LRS"
 # FHIR Proxy Default App Settings Variables 
 #########################################
 declare suffix=$RANDOM
-declare defresourceGroupLocation="eastus2"
+declare defresourceGroupLocation="westus2"
 declare defresourceGroupName="proxy-fhir-"$suffix
 declare defdeployPrefix="proxy"$suffix
 declare defAppName="sfp-"$defdeployPrefix
