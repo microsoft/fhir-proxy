@@ -18,7 +18,7 @@ The FHIR-Proxy scripts are designed for and tested from the Azure Cloud Shell - 
 
 
 ### Naming & Tagging
-All Azure resource types have a scope that defines the level that resource names must be unique.  Some resource names, such as PaaS services with public endpoints have global scopes so they must be unique across the entire Azure platform.    Our deployment scripts strive to suggest naming standards that group logial connections while aligning with Azure Best Practices.  Customers are prompted to accept a default or suppoly their own names during installation, examples include:
+All Azure resource types have a scope that defines the level that resource names must be unique.  Some resource names, such as PaaS services with public endpoints have global scopes so they must be unique across the entire Azure platform.    Our deployment scripts strive to suggest naming standards that group logial connections while aligning with Azure Best Practices.  Customers are prompted to accept a default or supply their own names during installation, examples include:
 
 Prefix      | Workload        |  Number     | Resource Type 
 ------------|-----------------|-------------|---------------
