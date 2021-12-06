@@ -1,4 +1,4 @@
-# FHIR-Proxy Getting startd scripts Readme
+# FHIR-Proxy Getting started scripts Readme
 Script purpose, order of execution and other steps necessary to get up and running with FHIR-Proxy
 
 ## Errata 
