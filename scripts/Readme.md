@@ -7,8 +7,8 @@ There are no open issues at this time.
 ## Prerequisites 
 
 These scripts will gather (and export) information necessary for the proper deployment and configuration of FHIR Proxy. In the deploy process, an Application Service Principal for RBAC will be configured. If needed, a Key Vault and Resource Group will also be deployed. All credential secrets will be stored in the Key Vault.  
- - User must have rights to deploy resources at the Subscription scope
- - User must have Application Administrator rights to assign Consent at the Service Principal scope in Step 2
+ - User must have rights to deploy resources at the Subscription scope (i.e., Contributor role).
+ - User must have Application Administrator rights in AAD to assign Consent at the Service Principal scope in Step 2.
 
 __Note__
 A Key Vault is necessary for securing Service Client Credentials used with the FHIR Service and FHIR-Proxy.  Only one Key Vault should be used as this script scans the Key Vault for FHIR Service and FHIR-Proxy values. If multiple Key Vaults have been deployed, please use the [backup and restore](https://docs.microsoft.com/en-us/azure/key-vault/general/backup?tabs=azure-cli) option to copy values to one Key Vault.
