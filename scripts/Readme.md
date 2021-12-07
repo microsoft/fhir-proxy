@@ -1,5 +1,5 @@
-# FHIR-Proxy Getting started scripts Readme
-In this document we go over the deploy scripts necessary for installing FHIR-Proxy. We cover the order of script execution and the steps necessary to get up and running.
+# FHIR-Proxy Getting Started with Deploy Scripts
+In this document we go over the deploy scripts necessary for installing FHIR-Proxy. We cover the order of script execution and the steps needed to get up and running.
 
 ## Errata 
 There are no open issues at this time. 
@@ -45,7 +45,7 @@ git clone https://github.com/microsoft/fhir-proxy
 ```
 Change working directory to the repo Scripts directory
 ```azurecli-interactive
-cd ./fhir-proxy/scripts
+cd $HOME/fhir-proxy/scripts
 ```
 
 Make the Bash Shell Scripts used for Deployment and Setup executable 
