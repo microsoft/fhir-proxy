@@ -58,7 +58,7 @@ This is the main component deployment script for the FHIR-Proxy Azure components
 
 Ensure you are in the proper directory 
 ```azurecli-interactive
-cd ./fhir-proxy/scripts
+cd $HOME/fhir-proxy/scripts
 ``` 
 
 Launch the deployfhirproxy.bash shell script 
@@ -118,7 +118,7 @@ Please review the Setup steps above and make sure that you are in the Azure Clou
 
 Ensure that you are in the proper directory 
 ```azurecli-interactive
-cd ./fhir-proxy/scripts
+cd $HOME/fhir-proxy/scripts
 ``` 
 
 Launch the createproxyserviceclient.bash shell script 
