@@ -6,7 +6,7 @@ There are no open issues at this time.
 
 ## Prerequisites 
 
-These scripts will gather (and export) information necessary for the proper deployment and configuration of FHIR Proxy, an Application Service Principal for RBAC, and if needed, a Key Vault and Resource Group. All secret credentials will be stored in the Key Vault.  
+These scripts will gather (and export) information necessary for the proper deployment and configuration of FHIR Proxy, plus an Application Service Principal for RBAC. If needed, a Key Vault and Resource Group will also be deployed. All secret credentials will be stored in the Key Vault.  
  - User must have rights to deploy resources at the Subscription scope
  - User must have Application Administrator rights to assign Consent at the Service Principal scope in Step 2
 
