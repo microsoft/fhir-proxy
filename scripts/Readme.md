@@ -1,29 +1,28 @@
 # FHIR-Proxy Getting started scripts Readme
-Script purpose, order of execution and other steps necessary to get up and running with FHIR-Proxy
+In this document we go over the deploy scripts necessary for installing FHIR-Proxy. We cover the order of script execution and the steps necessary to get up and running.
 
 ## Errata 
 There are no open issues at this time. 
 
 ## Prerequisites 
 
-These scripts will gather (and export) information necessary for the proper deployment and configuration FHIR Proxy, an Application Service Principal for RBAC, and if needed, a Key Vault and Resource Group.  All secret credentials will be stored in the KeyVault.  
- - Prerequisites:  User must have rights to deploy resources at the Subscription scope
- - Prerequisites:  User must have Application Administrator rights to assign Consent at the Service Principal scope in Step 2
+These scripts will gather (and export) information necessary for the proper deployment and configuration of FHIR Proxy, an Application Service Principal for RBAC, and if needed, a Key Vault and Resource Group. All secret credentials will be stored in the Key Vault.  
+ - User must have rights to deploy resources at the Subscription scope
+ - User must have Application Administrator rights to assign Consent at the Service Principal scope in Step 2
 
 __Note__
-A Keyvault is necessary for securing Service Client Credentials used with the FHIR Service and FHIR-Proxy.  Only 1 Keyvault should be used as this script scans the keyvault for FHIR Service and FHIR-Proxy values. If multiple Keyvaults have been used, please use the [backup and restore](https://docs.microsoft.com/en-us/azure/key-vault/general/backup?tabs=azure-cli) option to copy values to 1 keyvault.
+A Key Vault is necessary for securing Service Client Credentials used with the FHIR Service and FHIR-Proxy.  Only one Key Vault should be used as this script scans the Key Vault for FHIR Service and FHIR-Proxy values. If multiple Key Vaults have been deployed, please use the [backup and restore](https://docs.microsoft.com/en-us/azure/key-vault/general/backup?tabs=azure-cli) option to copy values to one Key Vault.
 
 __Note__ 
 The FHIR-Proxy scripts are designed for and tested from the Azure Cloud Shell - Bash Shell environment.
 
 
 ### Naming & Tagging
-All Azure resource types have a scope that defines the level that resource names must be unique.  Some resource names, such as PaaS services with public endpoints have global scopes so they must be unique across the entire Azure platform.    Our deployment scripts strive to suggest naming standards that group logial connections while aligning with Azure Best Practices.  Customers are prompted to accept a default or supply their own names during installation, examples include:
+All Azure resource types have a scope that defines the level at which resource names must be unique. Some resource names, such as PaaS services with public endpoints, have global scopes so they must be unique across the entire Azure platform. Our deployment scripts strive to suggest naming standards that group logical connections while aligning with Azure best practices. Customers are prompted to accept a default name or supply their own names during installation. See below for the FHIR-Proxy resource naming convention.
 
-Prefix      | Workload        |  Number     | Resource Type 
-------------|-----------------|-------------|---------------
-NA          | fhir            | random      | NA 
-User input  | secure function | random      | storage 
+Resource Type | Deploy App Name | Number      | Resource Name Example (automatically generated)
+------------|-----------------|-------------|------------------------------------------------
+sf-         | proxy           | random      | sf-proxy123456
 
 Resources are tagged with their deployment script and origin.  Customers are able to add Tags after installation, examples include::
 
@@ -34,7 +33,7 @@ HealthArchitectures | FHIR-Proxy
 ---
 
 ## Setup 
-Please note you should deploy these components into a tenant and subscriotion where you have appropriate permissions to create and manage Application Registrations (ie Application Adminitrator RBAC Role), and can deploy Resources at the Subscription Scope. 
+Please note you should deploy these components into a tenant and subscriotion where you have appropriate permissions to create and manage Application Registrations (ie Application Adminitrator RBAC Role in AAD), and can deploy Resources at the Subscription Scope (Contributor role or above). 
 
 Launch Azure Cloud Shell (Bash Environment)  
   
@@ -55,7 +54,7 @@ chmod +x *.bash
 ```
 
 ## Step 1.  deployFhirproxy.bash
-This is the main component deployment script for the Azure Components.    
+This is the main component deployment script for the FHIR-Proxy Azure components.    
 
 Ensure you are in the proper directory 
 ```azurecli-interactive
@@ -74,14 +73,14 @@ Optionally the deployment script can be used with command line options
 
 Azure Components installed 
  - Resource Group (if needed)
- - Key Vault if needed (customers can choose to use an existing Keyvault as long as they have Purge Secrets access)
+ - Key Vault if needed (customers can choose to use an existing Key Vault as long as they have Purge Secrets access)
  - Azure AD Application Service Principal for RBAC 
  - Function App (FHIR-Proxy) with App Insights and Storage 
- - Function App Service plan 
+ - Function App Service Plan 
 
 Information needed by this script 
  - FHIR Service Name
- - KeyVault Name 
+ - Key Vault Name 
  - Resource Group Location 
  - Resource Group Name 
 
@@ -115,7 +114,7 @@ FS-RESOURCE                        | FHIR Resource              | Keyvault refer
 
 
 ## Step 2.  createProxyServiceClient.bash
-Please review the Setup steps above and that you are in the Azure Cloud Shell (Bash Environment) from Step 1. 
+Please review the Setup steps above and make sure that you are in the Azure Cloud Shell (Bash Environment) from Step 1. 
 
 Ensure that you are in the proper directory 
 ```azurecli-interactive
@@ -144,7 +143,7 @@ FP-SC-URL                          | Proxy URL                  | Keyvault refer
 
 
 ## Step 3.  Grant Admin Access (Portal)
-We purposely do not grant Admin Access in the createProxyServiceClient script as not everyone has Application Administrator rights.  We will supply an "admin script" for this in the next release, in the meantime here are the Azure Portal steps necessary to grant admin access. 
+We purposely do not grant admin access in the createproxyservicevclient.bash script as not everyone has Application Administrator rights. We will supply an "admin script" for this in the next release. In the meantime, here are the Azure Portal steps necessary to grant admin access. 
 
 Log into the Azure Portal, and go to Azure Active Directory 
 
@@ -171,12 +170,12 @@ Complete
 ---
 
 # References 
-FHIR-Proxy serves as a middle tier application / access and authorization endpoint.  To better understand the difference in these approaches users should review 
+FHIR-Proxy serves as a middle tier application / access and authorization endpoint. To better understand the difference in these approaches users should review 
 
-- Client Credentials, or Implicit Oauth flow with token 
-- Auth clode flow with code for token exchange
+- Client Credentials, or Implicit Oauth 2.0 flow with access token
+- OAuth 2.0 Authorization code flow with access token
 
-To request an access token users make an HTTP POST to the tenant-specific Microsoft identity platform token endpoint with the following parameters.
+To request an access token, users make an HTTP POST to the tenant-specific Microsoft identity platform token endpoint with the following parameters:
 
 ```azurecli
 https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token
