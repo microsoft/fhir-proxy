@@ -22,7 +22,7 @@ All Azure resource types have a scope that defines the level at which resource n
 
 Resource Type | Deploy App Name | Number      | Resource Name Example (automatically generated)
 ------------|-----------------|-------------|------------------------------------------------
-sf-         | proxy           | random      | sf-proxy123456
+sfp-         | proxy           | random      | sfp-proxy12345
 
 Resources are tagged with their deployment script and origin.  Customers are able to add Tags after installation, examples include::
 
