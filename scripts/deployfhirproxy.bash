@@ -202,9 +202,11 @@ fi
 #
 defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
 
+echo "Checking Script execution directory..."
+
 # Test for correct directory path / destination 
-if [ -f "${script_dir}/$0" ] && [ -f "${script_dir}/fhirroles.json" ] ; then
-	echo "Checking Script execution directory..."
+if [ -f "${script_dir}/fhirroles.json" ] ; then
+	echo "Validated Script execution directory..."
 else
 	echo "Please ensure you launch this script from within the ./scripts directory"
 	usage ;
