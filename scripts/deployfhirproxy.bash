@@ -511,7 +511,7 @@ echo "Starting Deployments "
 
 	# Create Storage Account
 	echo "Creating Storage Account ["$deployPrefix$storageAccountNameSuffix"]..."
-	stepresult=$(az storage account create --name $deployPrefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku $storageSKU --encryption-services blob --tags $TAG)
+	stepresult=$(az storage account create --name $deployPrefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku $storageSKU --encryption-services blob --https-only true --tags $TAG)
 
 	echo "Retrieving Storage Account Connection String..."
 	storageConnectionString=$(az storage account show-connection-string -g $resourceGroupName -n $deployPrefix$storageAccountNameSuffix --query "connectionString" --out tsv)
@@ -575,6 +575,7 @@ echo "Starting Deployments "
 	echo "Adding Sign-in User Read Permission on Graph API..."
 	stepresult=$(az ad app permission add --id $spappid --api 00000002-0000-0000-c000-000000000000 --api-permissions 311a71cc-e848-46a1-bdf8-97ff7156d8e6=Scope)
 		
+	# Removed as this step is replaced by documentation 
 	#echo "Granting Admin Consent to Permission..."
 	#stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
 	
