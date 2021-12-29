@@ -126,7 +126,7 @@ function intro {
 	echo " - Prerequisite:  You must have rights to able to provision Function Apps and App Insights at the Subscription level"
 	echo " "
 	echo "Note: Default naming approach is (Azure component - [Deploy Prefix + Random Number] Azure type)"  
-	read -p 'Press Enter to continue, or Ctrl+C to exit'
+	read -p 'Press Enter to continue, or Ctrl+C to exit...'
 }
 
 function fail {
@@ -138,6 +138,7 @@ function retry {
   local n=1
   local max=5
   local delay=15
+  echo "Starting retry logic..."
   while true; do
     "$@" && break || {
       if [[ $n -lt $max ]]; then
@@ -149,6 +150,7 @@ function retry {
       fi
     }
   done
+  echo "Completed retry logic..."
 }
 
 function kvuri {
@@ -202,11 +204,12 @@ fi
 #
 defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
 
+echo "Checking Script Execution directory"
 # Test for correct directory path / destination 
-if [ -f "${script_dir}/$0" ] && [ -f "${script_dir}/fhirroles.json" ] ; then
-	echo "Checking Script execution directory..."
+if [ -f "${script_dir}/fhirroles.json" ] ; then
+	echo "  necessary files found, continuning..."
 else
-	echo "Please ensure you launch this script from within the ./scripts directory"
+	echo "  necessary files not found... Please ensure you launch this script from within the ./scripts directory"
 	usage ;
 fi
 
@@ -460,7 +463,7 @@ echo "  Use Existing Key Vault:.............. "$useExistingKeyVault
 echo "  Create New Key Vault:................ "$createNewKeyVault
 echo " "
 echo "Please validate the settings above before continuing"
-read -p 'Press Enter to continue, or Ctrl+C to exit'
+read -p 'Press Enter to continue, or Ctrl+C to exit...'
 
 
 #############################################################
@@ -509,7 +512,7 @@ echo "Starting Deployments "
 
 	# Create Storage Account
 	echo "Creating Storage Account ["$deployPrefix$storageAccountNameSuffix"]..."
-	stepresult=$(az storage account create --name $deployPrefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku $storageSKU --encryption-services blob --tags $TAG)
+	stepresult=$(az storage account create --name $deployPrefix$storageAccountNameSuffix --resource-group $resourceGroupName --location  $resourceGroupLocation --sku $storageSKU --encryption-services blob --https-only true --tags $TAG)
 
 	echo "Retrieving Storage Account Connection String..."
 	storageConnectionString=$(az storage account show-connection-string -g $resourceGroupName -n $deployPrefix$storageAccountNameSuffix --query "connectionString" --out tsv)
@@ -594,6 +597,11 @@ echo "Starting Deployments "
 	echo "Please note the following reference information for future use:"
 	echo "Your secure fhir proxy host is: https://"$functionAppHost
 	echo "Your app configuration settings are stored securely in KeyVault: "$keyVaultName
+	echo " "
+	echo "Next Steps:  "
+	echo " 1) You must run the ./createproxyserviceclient.bash script to create a service principal for the FHIR Proxy"
+	echo " 2) An Azure AD Application Administrator (RBAC role) must grant consent to the service principal for the FHIR Proxy"
+	echo " see ./Readme.md for more information"
 	echo "************************************************************************************************************"
 	echo " "
 )
