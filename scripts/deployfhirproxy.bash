@@ -478,7 +478,7 @@ az account set --subscription $subscriptionId
 faresourceid="/subscriptions/"$subscriptionId"/resourceGroups/"$resourceGroupName"/providers/Microsoft.Web/sites/"$proxyAppName
 
 
-echo "Starting Deployments "
+echo "Starting Azure Deployments "
 (
     if [[ "$useExistingResourceGroup" == "no" ]]; then
         echo " "
@@ -498,7 +498,10 @@ echo "Starting Deployments "
     else
         echo "Using Existing Key Vault ["$keyVaultName"]"
     fi
+)
 
+echo "Storing FHIR Service information in KeyVault ["$keyVaultName"]"
+(
 	echo "Storing FHIR Server Information in KeyVault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-URL" --value $fhirServiceUrl)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-TENANT-NAME" --value $fhirServiceTenant)
@@ -507,8 +510,19 @@ echo "Starting Deployments "
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-RESOURCE" --value $fhirServiceAudience)
 
-	echo "---"
-	echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
+)
+
+echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
+(
+	# Create App Service Plan
+	echo "Creating Secure FHIR Proxy Function App Serviceplan ["$deployPrefix$serviceplanSuffix"]..."
+	stepresult=$(az appservice plan create -g $resourceGroupName -n $deployPrefix$serviceplanSuffix --number-of-workers $functionWorkers --sku $functionSKU --tags $TAG)
+
+	if [ $?  != 0 ];
+	then
+		echo "App service plan creation failed"
+		exit 1;
+	fi
 
 	# Create Storage Account
 	echo "Creating Storage Account ["$deployPrefix$storageAccountNameSuffix"]..."
@@ -530,10 +544,6 @@ echo "Starting Deployments "
 	
 	echo "Storing Redis Connection String in KeyVault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-REDISCONNECTION" --value $redisConnectionString)
-		
-	# Create App Service Plan
-	echo "Creating Secure FHIR Proxy Function App Serviceplan ["$deployPrefix$serviceplanSuffix"]..."
-	stepresult=$(az appservice plan create -g $resourceGroupName -n $deployPrefix$serviceplanSuffix --number-of-workers $functionWorkers --sku $functionSKU --tags $TAG)
 		
 	# Create Proxy function app
 	echo "Creating Secure FHIR Proxy Function App ["$proxyAppName"]..."
