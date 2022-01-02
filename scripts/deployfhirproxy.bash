@@ -393,8 +393,8 @@ echo "accomplished with either a Service Principal or an MSI account.  Note:  th
 echo "create the Service Principal for external service (such as Postman).  For more information please see the FHIR-Proxy"
 echo "documentation at https://github.com/microsoft/fhir-proxy/blob/main/docs/Readme.md " 
 echo " "
-echo "Would you prefer an MSI Account or Service Principal for FHIR-Proxy to FHIR Service Authorization"
-echo "Press Enter to accept default of MSI or type in SP then Enter ["$defAuthType"]:"
+echo "Currently SP is the supported authentication method, when MSI is available it will be added as an option"
+echo "Press Enter to accept default of SP ["$defAuthType"]:"
 read authType
 if [ -z "$authType" ] ; then
 	authType=$defAuthType
