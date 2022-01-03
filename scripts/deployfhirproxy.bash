@@ -207,10 +207,10 @@ fi
 #
 defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
 
-echo "Checking Script Execution directory"
+echo "Checking Script Execution directory..."
 # Test for correct directory path / destination 
 if [ -f "${script_dir}/fhirroles.json" ] ; then
-	echo "  necessary files found, continuning..."
+	echo "  necessary files found, continuing..."
 else
 	echo "  necessary files not found... Please ensure you launch this script from within the ./scripts directory"
 	usage ;
@@ -393,7 +393,7 @@ echo "accomplished with either a Service Principal or an MSI account.  Note:  th
 echo "create the Service Principal for external service (such as Postman).  For more information please see the FHIR-Proxy"
 echo "documentation at https://github.com/microsoft/fhir-proxy/blob/main/docs/Readme.md " 
 echo " "
-echo "Currently SP is the supported authentication method, when MSI is available it will be added as an option"
+echo "Currently SP is the supported authentication method, when MSI is available it will be added as an option."
 echo "Press Enter to accept default of SP ["$defAuthType"]:"
 read authType
 if [ -z "$authType" ] ; then
