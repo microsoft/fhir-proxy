@@ -159,7 +159,7 @@ namespace FHIRProxy
                         try
                         {
                             if (headerKey.StartsWith("x-ms", StringComparison.InvariantCultureIgnoreCase) ||
-                                headerKey.StartsWith("prefer", StringComparison.InvariantCultureIgnoreCase) ||
+                                headerKey.StartsWith("Prefer", StringComparison.InvariantCultureIgnoreCase) ||
                                 headerKey.StartsWith("etag", StringComparison.InvariantCultureIgnoreCase) ||
                                 headerKey.StartsWith("If-", StringComparison.InvariantCultureIgnoreCase) ||
                                 headerKey.StartsWith("Accept",StringComparison.InvariantCultureIgnoreCase))
@@ -186,7 +186,7 @@ namespace FHIRProxy
                 });
             // Read Response Content (this will usually be JSON content)
             var content = await _fhirResponse.Content.ReadAsStringAsync();
-            return new FHIRResponse(content, _fhirResponse.Headers, _fhirResponse.StatusCode);
+            return new FHIRResponse(content, _fhirResponse.Headers, _fhirResponse.Content.Headers,_fhirResponse.StatusCode);
             
 
         }
@@ -198,7 +198,7 @@ namespace FHIRProxy
         {
             Headers = new Dictionary<string, HeaderParm>();
         }
-        public FHIRResponse(string content, HttpResponseHeaders respheaders, HttpStatusCode status, bool parse = false) : this()
+        public FHIRResponse(string content, HttpResponseHeaders respheaders,HttpContentHeaders contentHeaders, HttpStatusCode status, bool parse = false) : this()
         {
             string[] filterheaders = Utils.GetEnvironmentVariable("FS-RESPONSE-HEADER-NAME", "x-ms-retry-after-ms,x-ms-session-token,x-ms-request-charge,Retry-After,Date,Last-Modified,ETag,Location,Content-Location").Split(",");
             if (parse) this.Content = JObject.Parse(content);
@@ -211,6 +211,11 @@ namespace FHIRProxy
                     this.Headers.Add(head, new HeaderParm(head, values.First()));
 
                 }
+            }
+            IEnumerable<string> contentloc = null;
+            if (contentHeaders.TryGetValues("Content-Location", out contentloc))
+            {
+                this.Headers.Add("Content-Location", new HeaderParm("Content-Location",contentloc.First()));
             }
             this.StatusCode = status;
         }
@@ -234,7 +239,12 @@ namespace FHIRProxy
         }
         public JToken toJToken()
         {
-            if (Content is string) return JObject.Parse((string)Content);
+            if (Content is string)
+            {
+                var c = (string)Content;
+                if (string.IsNullOrEmpty(c)) return null;
+                return JObject.Parse(c);
+            }
             if (Content == null) return new JObject();
             return (JToken)Content;
         }

@@ -36,7 +36,8 @@ namespace FHIRProxy.postprocessors
             {
                 FHIRParsedPath pp = req.parsePath();
                 if (req.Method.Equals("GET") || (int)response.StatusCode > 299) return new ProxyProcessResult(true, "", "", response);
-
+                string source = req.Headers["X-MS-AZUREFHIR-AUDIT-SOURCE"];
+                if (string.IsNullOrEmpty(source)) source = "";
                 string ecs = Environment.GetEnvironmentVariable("FP-MOD-EVENTHUB-CONNECTION");
                 string enm = Environment.GetEnvironmentVariable("FP-MOD-EVENTHUB-NAME");
                 if (string.IsNullOrEmpty(ecs) || string.IsNullOrEmpty(enm))
@@ -74,7 +75,7 @@ namespace FHIRProxy.postprocessors
                     stub["resource"]["resourceType"] = pp.ResourceType;
                     entries.Add(stub);
                 }
-                await publishBatchEvent(ecs, enm, entries,log);
+                await publishBatchEvent(ecs, enm, source, entries,log);
 
 
 
@@ -89,7 +90,7 @@ namespace FHIRProxy.postprocessors
             return new ProxyProcessResult(true, "", "", response);
 
         }
-        private async Task publishBatchEvent(string eventHubConnectionString, string eventHubName, JArray entries,ILogger log)
+        private async Task publishBatchEvent(string eventHubConnectionString, string eventHubName, string source, JArray entries,ILogger log)
         {
             await using (var producerClient = new EventHubProducerClient(eventHubConnectionString, eventHubName))
             {
@@ -101,7 +102,7 @@ namespace FHIRProxy.postprocessors
                     foreach (JToken tok in entries)
                     {
                         string entrystatus = (string)tok["response"]["status"];
-                        EventData dta = createMsg(entrystatus, tok["resource"]);
+                        EventData dta = createMsg(entrystatus, source,tok["resource"]);
                         if (dta != null) eventBatch.TryAdd(dta);
                         
                     }
@@ -112,14 +113,14 @@ namespace FHIRProxy.postprocessors
               
             }
         }
-        private EventData createMsg(string status,JToken resource)
+        private EventData createMsg(string status,string source, JToken resource)
         {
             if (resource.IsNullOrEmpty()) return null;
             string action = "Unknown";
             if (status.StartsWith("200")) action = "Updated";
             if (status.StartsWith("201")) action = "Created";
             if (status.Contains("DELETE")) action = "Deleted";
-            string msg = "{\"action\":\"" + action + "\",\"resourcetype\":\"" + resource.FHIRResourceType() + "\",\"id\":\"" + resource.FHIRResourceId() + "\",\"version\":\"" + resource.FHIRVersionId() + "\",\"lastupdated\":\"" + resource.FHIRLastUpdated() + "\"}";
+            string msg = "{\"action\":\"" + action + "\",\"resourcetype\":\"" + resource.FHIRResourceType() + "\",\"id\":\"" + resource.FHIRResourceId() + "\",\"version\":\"" + resource.FHIRVersionId() + "\",\"lastupdated\":\"" + resource.FHIRLastUpdated() + "\",\"source\":\"" + source + "\"}";
             return new EventData(Encoding.UTF8.GetBytes(msg));
         }
     }

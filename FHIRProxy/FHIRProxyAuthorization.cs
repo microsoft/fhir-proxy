@@ -97,11 +97,13 @@ namespace FHIRProxy
                 }
                 string passheader = req.Headers["X-MS-AZUREFHIR-AUDIT-PROXY"];
                 if (string.IsNullOrEmpty(passheader)) passheader = "fhir-proxy";
+                string auditsource = req.Headers["X-MS-AZUREFHIR-AUDIT-SOURCE"];
+                if (string.IsNullOrEmpty(auditsource)) auditsource = req.HttpContext.Connection.RemoteIpAddress.ToString();
                 //Since we are proxying with service client need to ensure authenticated proxy principal is audited
                
                 req.Headers.Add("X-MS-AZUREFHIR-AUDIT-USERID", ci.ObjectId());
                 req.Headers.Add("X-MS-AZUREFHIR-AUDIT-TENANT", ci.Tenant());
-                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", req.HttpContext.Connection.RemoteIpAddress.ToString());
+                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", auditsource);
                 req.Headers.Add("X-MS-AZUREFHIR-AUDIT-PROXY", passheader);
             }
            
