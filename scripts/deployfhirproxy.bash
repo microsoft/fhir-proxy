@@ -518,7 +518,7 @@ echo "Storing FHIR Service information in KeyVault ["$keyVaultName"]"
 echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 (
 	# Create App Service Plan
-	echo "Creating Secure FHIR Proxy Function App Serviceplan ["$deployPrefix$serviceplanSuffix"]..."
+	echo "Creating Secure FHIR Proxy Function App Service Plan ["$deployPrefix$serviceplanSuffix"]..."
 	stepresult=$(az appservice plan create --subscription $subscriptionId --resource-group $resourceGroupName --name $deployPrefix$serviceplanSuffix --number-of-workers $functionWorkers --sku $functionSKU --tags $TAG)
 
 	if [ $?  != 0 ];
