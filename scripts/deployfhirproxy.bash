@@ -123,7 +123,7 @@ function intro {
 	echo " - Prerequisite:  Azure API for FHIR must be installed"
 	echo " - Prerequisite:  KeyVault containing FHIR and FHIR-Proxy settings must be available"
 	echo " - Prerequisite:  Azure CLI (bash) access from the Azure Portal"
-	echo " - Prerequisite:  You must have rights to able to provision Function Apps and App Insights at the Subscription level"
+	echo " - Prerequisite:  You must have rights to provision Function Apps and App Insights at the Subscription level"
 	echo " "
 	echo "Note: Default naming approach is (Azure component - [Deploy Prefix + Random Number] Azure type)"  
 	read -p 'Press Enter to continue, or Ctrl+C to exit...'
