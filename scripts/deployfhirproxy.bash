@@ -560,7 +560,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-HOST" --value $functionAppHost)
 	
 	echo "Creating Function App MSI for KeyVault Access..."
-	msi=$(az functionapp identity assign --subscription $subscriptionId --resouce-group $resourceGroupName --name $proxyAppName --query "principalId" --out tsv)
+	msi=$(az functionapp identity assign --subscription $subscriptionId --resource-group $resourceGroupName --name $proxyAppName --query "principalId" --out tsv)
 	
 	echo "Setting KeyVault Policy to allow Secret access..."
 	stepresult=$(az keyvault set-policy -n $keyVaultName --secret-permissions list get --object-id $msi)
