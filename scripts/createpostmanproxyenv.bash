@@ -86,7 +86,7 @@ defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g')
 
 echo "Checking Script Execution directory..."
 # Test for correct directory path / destination 
-if [ -f "${script_dir}/postmantemplate.json" ] ; then
+if [ -f "${script_dir}/postmantemplateauth.json" ] ; then
 	echo "  necessary files found, continuing..."
 else
 	echo "  necessary files not found... Please ensure you launch this script from within the ./scripts directory"
