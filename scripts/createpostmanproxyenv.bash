@@ -54,10 +54,13 @@ declare pmfhirurl=""
 declare pmstsurl=""
 declare pmscope=""
 # Initialize parameters specified from command line
-while getopts ":k:n:sp" arg; do
+while getopts ":k:" arg; do
         case "${arg}" in
                 k)
                         kvname=${OPTARG}
+                        ;;
+                *)
+                        usage
                         ;;
         esac
 done
@@ -73,7 +76,19 @@ then
         az login
 fi
 
-defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g')
+# set default subscription
+#
+defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
+
+echo "Checking Script Execution directory..."
+# Test for correct directory path / destination 
+if [ -f "${script_dir}/postmantemplate.json" ] ; then
+	echo "  necessary files found, continuing..."
+else
+	echo "  necessary files not found... Please ensure you launch this script from within the ./scripts directory"
+	usage ;
+fi
+
 
 #Prompt for parameters is some required parameters are missing
 if [[ -z "$kvname" ]]; then
