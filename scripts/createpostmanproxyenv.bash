@@ -32,6 +32,8 @@ function retry {
     }
   done
 }
+
+declare script_dir="$( cd -P -- "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd -P )"
 declare stepresult=""
 declare spname=""
 declare kvname=""
@@ -53,6 +55,8 @@ declare pmuuid=""
 declare pmfhirurl=""
 declare pmstsurl=""
 declare pmscope=""
+
+
 # Initialize parameters specified from command line
 while getopts ":k:" arg; do
         case "${arg}" in
