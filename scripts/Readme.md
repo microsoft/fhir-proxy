@@ -17,7 +17,7 @@ __Note__
 The FHIR-Proxy scripts are designed for and tested from the Azure Cloud Shell - Bash Shell environment.
 
 __Note__
-For Private Endpoint setup and configuration, see [private-endpoints.md](../docs/private-endpoints.md)
+For **Private Endpoint** setup and configuration, see [private-endpoints.md](../docs/private-endpoints.md)
 
 
 ### Naming & Tagging
