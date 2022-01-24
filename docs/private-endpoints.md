@@ -2,10 +2,40 @@
 
 The recommended approach to using FHIR-Proxy with Private Endpoints is to deploy FHIR-Proxy without the private endpoints, ensure it is working, then cut over to the Private Endpoints.  This approach allows customers to troubleshoot any potential issues as they appear. 
   
+**Prerequisites:**
+- An Azure account with an active subscription
+- An Azure Web App with a PremiumV2-tier or higher app service plan deployed in your Azure subscription.  _Note:  By default Proxy Function apps are deployed at a B1 SKU, therefore the App Service Plan must be Upgraded to a Premium V2 SKU_
 
-## Azure FHIR with Private Endpoints 
+![app-service-plan](./images/private-endpoints/app-service-plan.png) 
+
+For more information and an example, see [Quickstart: Create an ASP.NET Core web app in Azure](https://docs.microsoft.com/en-us/azure/app-service/quickstart-dotnetcore)
+  
+For a detailed tutorial on creating a web app and an endpoint, see [Tutorial: Connect to a web app using an Azure Private Endpoint](https://docs.microsoft.com/en-us/azure/private-link/tutorial-private-endpoint-webapp-portal)
+
+
+## Step 1. Create a Private Endpoint using the Azure portal 
+Get started with Azure Private Link by using a Private Endpoint to connect securely to an Azure web app.  Instructing for setting up the Private Endpoints are **[here](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal)**
+
+a) Create a Virtual Network (CIDR /16 preferred)
+
+b) Create Sub-Nets within the Virtual Network (CIDR /24 preferred)
+
+Subnet Setup 
+![subnets](./images/private-endpoints/vnet-subnets.png)
+
+
+_Note:  Customers may want to setup a VM on the vNet for testing see [create a virtual machine](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal#create-a-virtual-machine)_
+
+A private endpoint is a network interface that uses a private IP address from your virtual network. This network interface connects you privately and securely to a service powered by Azure Private Link. By enabling a private endpoint, you're bringing the service into your virtual network.    
+
+Private Endpoint properties are defined in detail [here](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-overview#private-endpoint-properties).
+
+c) Connect FHIR-Proxy to the Functions Subnet (see above for Function Subnet)
+
+## Step 2.  Configure Azure FHIR Private Link   
 Private link enables you to access Azure API for FHIR over a private endpoint, which is a network interface that connects you privately and securely using a private IP address from your virtual network. With private link, you can access our services securely from your VNet as a first party service without having to go through a public Domain Name System (DNS). This [article](https://docs.microsoft.com/en-us/azure/healthcare-apis/azure-api-for-fhir/configure-private-link) describes how to create, test, and manage your private endpoint for Azure API for FHIR.
 
+![fhir-setup](./images/private-endpoints/fhir-setup.png)
 
 
 
@@ -60,16 +90,3 @@ WEBSITE_DNS_SERVER                       | IP Address of Private DNS  | App Serv
 WEBSITE_VNET_ROUTE_ALL                   | Fixed Value of 1 or 0      | App Service Config 
 
 
-
-## Private Endpoint Information 
-A private endpoint is a network interface that uses a private IP address from your virtual network. This network interface connects you privately and securely to a service powered by Azure Private Link. By enabling a private endpoint, you're bringing the service into your virtual network.    
-
-Private Endpoint properties are defined in detail [here](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-overview#private-endpoint-properties), some key items to understand before setting up Private Endpoints are
-
-- The private endpoint must be deployed in the same region and subscription as the virtual network.
-
-- Multiple private endpoints can be created using the same private link resource. For a single network using a common DNS server configuration, the recommended practice is to use a single private endpoint for a given private link resource. Use this practice to avoid duplicate entries or conflicts in DNS resolution.
-
-- Multiple private endpoints can be created on the same or different subnets within the same virtual network. There are limits to the number of private endpoints you can create in a subscription. For details, see [Azure limits](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits#networking-limits).
-
-- The subscription from the private link resource must also be registered with Microsoft. Network resource provider. For details, see [Azure Resource Providers](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types).
