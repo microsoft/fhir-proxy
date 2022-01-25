@@ -72,11 +72,6 @@ namespace FHIRProxy
             }
 
         }
-        
-        public static bool isMSI(string resource, string tenant = null, string clientid = null, string secret = null)
-        {
-            return (!string.IsNullOrEmpty(resource) && (string.IsNullOrEmpty(tenant) && string.IsNullOrEmpty(clientid) && string.IsNullOrEmpty(secret)));
-        }
         private static string LoadJWKS(string jwksurl, ILogger log)
         {
             using (HttpClient client = new HttpClient())

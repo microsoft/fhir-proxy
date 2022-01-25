@@ -24,12 +24,12 @@ namespace FHIRProxy
             string tok = null;
             if (_tokendict.TryGetValue("fhirtoken", out tok) && !ADUtils.isTokenExpired(tok)) return tok;
             //renew
+            bool isMsi = Utils.GetBoolEnvironmentVariable("FS-ISMSI", false);
             string resource = System.Environment.GetEnvironmentVariable("FS-RESOURCE");
             string tenant = System.Environment.GetEnvironmentVariable("FS-TENANT-NAME");
             string clientid = System.Environment.GetEnvironmentVariable("FS-CLIENT-ID");
             string secret = System.Environment.GetEnvironmentVariable("FS-SECRET");
             string authority = Utils.GetEnvironmentVariable("FS-AUTHORITY", "https://login.microsoftonline.com");
-            bool isMsi = ADUtils.isMSI(resource, tenant, clientid, secret);
             log.LogInformation($"Obtaining new FHIR Access Token...Using MSI=({isMsi.ToString()})...");
             string newtok = await ADUtils.GetAADAccessToken($"{authority}/{tenant}", clientid, secret, resource, isMsi,log);
             if (newtok != null)

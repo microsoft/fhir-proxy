@@ -50,7 +50,8 @@ declare genpostman=""
 declare pmenv=""
 declare pmuuid=""
 declare pmfhirurl=""
-declare scopesdef="fhirUser launch/patient patient/Patient.read"
+declare pmproxyurl=""
+declare scopesdef="openid fhirUser launch/patient patient/Patient.read"
 declare scopes=""
 declare smartscopes=""
 declare public=""
@@ -201,22 +202,21 @@ echo "Creating SMART Client Application "$spname"..."
 			stepresult=$(az keyvault secret set --vault-name $kvname --name "SMTC-${spname^^}-RESOURCE" --value $fpclientid)
 		fi
 		if [ -n "$genpostman" ]; then
-			echo "Generating Postman environment for SMART access..."
+			echo "Generating Postman environment for access..."
 			pmuuid=$(cat /proc/sys/kernel/random/uuid)
-            pmenv=$(<../samples/postmantemplateauth.json)
+            		pmenv=$(<./postmantemplateauth.json)
 			pmscope=${scopes//./\/}
-            pmfhirurl="https://"$fphost"/fhir"
-            pmstsurl="https://"$fphost"/AadSmartOnFhirProxy"
-            pmenv=${pmenv/~guid~/$pmuuid}
-            pmenv=${pmenv/~envname~/$spname}
-            pmenv=${pmenv/~tenentid~/$sptenant}
-            pmenv=${pmenv/~stsurl~/$pmstsurl}
-            pmenv=${pmenv/~clientid~/$spappid}
-            pmenv=${pmenv/~clientsecret~/$spsecret}
-            pmenv=${pmenv/~fhirurl~/$pmfhirurl}
-            pmenv=${pmenv/~resource~/$fpclientid}
-			pmenv=${pmenv/~scope~/$pmscope}
-            echo $pmenv >> $spname".oauth2.postman_environment.json"
+            		pmfhirurl="https://"$fphost"/fhir"
+            		pmproxyurl="https://"$fphost
+            		pmenv=${pmenv/~guid~/$pmuuid}
+            		pmenv=${pmenv/~envname~/$spname}
+            		pmenv=${pmenv/~tenentid~/$sptenant}
+            		pmenv=${pmenv/~proxyurl~/$pmproxyurl}
+            		pmenv=${pmenv/~clientid~/$spappid}
+            		pmenv=${pmenv/~clientsecret~/$spsecret}
+            		pmenv=${pmenv/~fhirurl~/$pmfhirurl}
+            		pmenv=${pmenv/~scope~/$pmscope}
+            		echo $pmenv >> $spname".postman_environment.json"
 		fi
 		if [ -n "$adduserclaim" ]; then
 			echo "Looking for custom claim policy for FHIRUserClaim...(Note: This will fail if you are not a tenant administrator)"
@@ -246,7 +246,7 @@ echo "Creating SMART Client Application "$spname"..."
 		echo " "
 		echo "************************************************************************************************************"
 		echo "Registered SMART Application "$spname" on "$(date)
-		echo "This client can be used for SMART Application Launch and Context Access to FHIR Server via the SMART on FHIR Proxy"
+		echo "This client can be used for SMART Application Launch and Context Access to FHIR Server via the FHIR Proxy"
 		if [ -n "$storekv" ]; then
 			echo "Your client credentials have been securely stored as secrets in keyvault "$kvname
 			echo "The secret prefix is SMTC-${spname^^}"
@@ -260,7 +260,7 @@ echo "Creating SMART Client Application "$spname"..."
 		echo " "
 		if [ -n "$genpostman" ]; then
 			echo "For your convenience a Postman environment "$spname".postman_environment.json has been generated"
-			echo "It can imported along with the FHIR CALLS-Sample.postman_collection.json into postman to test your proxy access"
+			echo "It can imported along with the fhir-proxy-smart-client-sample.postman_collection.json into postman to test your proxy access"
 			echo "For Postman Importing help please reference the following URL:"
 			echo "https://learning.postman.com/docs/getting-started/importing-and-exporting-data/#importing-postman-data"
 		fi

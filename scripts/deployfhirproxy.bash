@@ -531,6 +531,8 @@ echo "Storing FHIR Service information in KeyVault ["$keyVaultName"]"
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-SECRET" --value $fhirServiceClientSecret)
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
+	else
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-ISMSI" --value "true")
 	fi
 	
 )
@@ -624,16 +626,18 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls --identifier-uris "api://"$functionAppHost)
 	
 	echo "Adding SMART on FHIR OAuth2 Permission Scopes..."
+	set +e
 	rm ${script_dir}"/full-smart-permissions.json" 2>/dev/null
+	set -e
 	origperm=$(az ad app show --id $spappid --query oauth2Permissions)
 	cat ${script_dir}/smart-oauth2-permissions.json | jq ". += $origperm" >> ${script_dir}/full-smart-permissions.json
 	stepresult=$(az ad app update --id $spappid --set oauth2Permissions=@${script_dir}/full-smart-permissions.json)
-
+	rm ${script_dir}"/full-smart-permissions.json" 2>/dev/null
 	echo "Adding FHIR Custom Roles to Manifest..."
 	stepresult=$(az ad app update --id $spappid --app-roles @${script_dir}/fhirroles.json)
 	
-	echo "Setting OAuth2 Login Tenant on fhir-proxy function app...."
-	stepresult=$(az functionapp config appsettings set --name $proxyAppName --resource-group $resourceGroupName --settings FP-LOGIN-TENANT=$sptenant)
+	echo "Setting OAuth2 Login Tenant/AccessTokenSecret on fhir-proxy function app...."
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --resource-group $resourceGroupName --settings FP-LOGIN-TENANT=$sptenant FP-ACCESS-TOKEN-SECRET=$(kvuri FP-RBAC-CLIENT-SECRET))
 
 	echo "Starting fhir proxy function app..."
 	stepresult=$(az functionapp start --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName)
@@ -646,10 +650,13 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Your app configuration settings are stored securely in KeyVault: "$keyVaultName
 	echo " "
 	echo "Next Steps:  "
-	echo " 1) You must run the ./createproxyserviceclient.bash script to create a service principal for the FHIR Proxy"
-	echo " 2) An Azure AD Application Administrator (RBAC role) must grant consent to the service principal for the FHIR Proxy"
-	echo " 3) You must run the ./createproxysmartclient.bash for each SMART Application you want to register for access via the FHIR Proxy"
-	echo " see ./Readme.md for more information"
+	echo " 1) You must run the ./createproxyserviceclient.bash script for each service principal you want to allow access"
+	echo "    to FHIR Service via the FHIR Proxy"
+	echo " 2) An Azure AD Application Administrator (RBAC role) must grant consent to each created service principal for the FHIR Proxy"
+	echo " 3) You must run the ./createproxysmartclient.bash for each SMART Application you want to register for access"
+	echo "    to FHIR Service via the FHIR Proxy"
+	echo " "
+	echo "  You can view the ./Readme.md for more detailed information"
 	echo "************************************************************************************************************"
 	echo " "
 )

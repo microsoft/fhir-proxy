@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "35b8b309-c326-48f9-be83-6767353ea4d2",
-		"name": "FHIRProxy",
+		"name": "fhir-proxy-smart=client-calls-sample-v2",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -22,9 +22,9 @@
 					}
 				],
 				"url": {
-					"raw": "{{proxyurl}}/Patient",
+					"raw": "{{fhirurl}}/Patient",
 					"host": [
-						"{{proxyurl}}"
+						"{{fhirurl}}"
 					],
 					"path": [
 						"Patient"
@@ -54,7 +54,7 @@
 			},
 			{
 				"key": "scope",
-				"value": "{{scope}}",
+				"value": "openid fhirUser launch/patient",
 				"type": "string"
 			},
 			{
@@ -74,17 +74,17 @@
 			},
 			{
 				"key": "accessTokenUrl",
-				"value": "{{stsURL}}/{{token}}",
+				"value": "{{proxyurl}}/oauth2/token",
 				"type": "string"
 			},
 			{
 				"key": "authUrl",
-				"value": "{{stsURL}}/{{auth}}",
+				"value": "{{stsURL}}/oauth2/authorize",
 				"type": "string"
 			},
 			{
 				"key": "tokenName",
-				"value": "fhirproxy",
+				"value": "fhirsmarttoken",
 				"type": "string"
 			},
 			{

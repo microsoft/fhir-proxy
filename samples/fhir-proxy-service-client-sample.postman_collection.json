@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "f0ad9add-7fe1-444a-976f-42925b74c2cf",
-		"name": "fhir-proxy-calls-sample",
+		"name": "fhir-proxy-service-client-calls-sample-v2",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
