@@ -21,29 +21,25 @@ namespace FHIRProxy
     {
         [FunctionName("SMARTProxyToken")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "AadSmartOnFhirProxy/token")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "oauth2/token")] HttpRequest req,
             ILogger log)
         {
-            string aadname = Utils.GetEnvironmentVariable("FP-LOGIN-AUTHORITY", "login.microsoftonline.com");
-            string aadpolicy = Utils.GetEnvironmentVariable("FP-LOGIN-POLICY", "");
-            string tenant = Utils.GetEnvironmentVariable("FP-LOGIN-TENANT", Utils.GetEnvironmentVariable("FP-RBAC-TENANT-NAME", ""));
-            if (string.IsNullOrEmpty(tenant))
-            {
-                return new ContentResult() { Content = "Login Tenant not Configured...Cannot proxy AD Token Request", StatusCode = 500, ContentType = "text/plain" };
-            }
+            var iss = ADUtils.GetIssuer();
+            var isaad = Utils.GetBoolEnvironmentVariable("FP-OIDC-ISAAD", true);
             string ct = req.Headers["Content-Type"].FirstOrDefault();
             if (string.IsNullOrEmpty(ct) || !ct.Contains("application/x-www-form-urlencoded"))
             {
                 return new ContentResult() { Content = "Content-Type invalid must be application/x-www-form-urlencoded", StatusCode = 400, ContentType = "text/plain" };
 
             }
-            string appiduri = req.Scheme + "://" + req.Host.Value;
+            string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
             string code = null;
             string redirect_uri = null;
             string client_id = null;
             string client_secret = null;
             string grant_type = null;
             string refresh_token = null;
+            string scope = null;
             //Read in Form Collection
             IFormCollection col = req.Form;
             if (col != null)
@@ -54,6 +50,7 @@ namespace FHIRProxy
                 client_secret = col["client_secret"];
                 grant_type = col["grant_type"];
                 refresh_token = col["refresh_token"];
+                scope = col["scope"];
             }
             //Check for Client Id and Secret in Basic Auth Header and use if not in POST body
             var authHeader = req.Headers["Authorization"].FirstOrDefault();
@@ -95,60 +92,107 @@ namespace FHIRProxy
             {
                 keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
             }
-
-
-            //POST to token endpoint
-            var client = new HttpClient();
-            client.BaseAddress = new Uri($"https://{aadname}");
-            string path = tenant;
-            if (!string.IsNullOrEmpty(aadpolicy)) path += $"/{aadpolicy}";
-            path += "/oauth2/v2.0/token";
-            var request = new HttpRequestMessage(HttpMethod.Post, path);
-            request.Content = new FormUrlEncodedContent(keyValues);
-            var response = await client.SendAsync(request);
-            string contresp = await response.Content.ReadAsStringAsync();
-            JObject obj = JObject.Parse(contresp);
-            //Load id_token to set fhirUser context in cache for tenant
-            if (!obj["id_token"].IsNullOrEmpty())
+            if (!string.IsNullOrEmpty(scope))
             {
-                var handler = new JwtSecurityTokenHandler();
-                var access_token = handler.ReadToken((string)obj["access_token"]) as JwtSecurityToken;
-                var id_token = handler.ReadToken((string)obj["id_token"]) as JwtSecurityToken;
-                ClaimsIdentity id_ci = new ClaimsIdentity(id_token.Claims);
-                ClaimsIdentity access_ci = new ClaimsIdentity(access_token.Claims);
-                string aadten = id_ci.Tenant();
-                string oid = id_ci.ObjectId();
-                string fhiruser = id_ci.fhirUser();
-                //No FHIR User in claims in id_token then check the mapping table
-                if (string.IsNullOrEmpty(fhiruser)) fhiruser = FHIRProxyAuthorization.GetMappedFHIRUser(id_ci, log);
-               
-                if (!string.IsNullOrEmpty(aadten) && !string.IsNullOrEmpty(oid) && !string.IsNullOrEmpty(fhiruser))
+                keyValues.Add(new KeyValuePair<string, string>("scope", scope));
+            }
+            //Load Configuration
+            JObject config = ADUtils.LoadOIDCConfiguration(iss, log);
+            if (config == null)
+            {
+                return new ContentResult() { Content = $"Error retrieving open-id configuration from {iss}", StatusCode = 500, ContentType = "text/plain" };
+
+            }
+            string tendpoint = (string)config["token_endpoint"];
+            JObject obj = null;
+            HttpResponseMessage response = null;
+            //POST to the issuer token endpoint
+            using (HttpClient client = new HttpClient())
+            {
+                // Call asynchronous network methods in a try/catch block to handle exceptions
+                try
                 {
-                    var cache = Utils.RedisConnection.GetDatabase();
-                    cache.StringSet($"usermap-{aadten}-{oid}", fhiruser);
+                    var request = new HttpRequestMessage(HttpMethod.Post, tendpoint);
+                    request.Content = new FormUrlEncodedContent(keyValues);
+                    response = await client.SendAsync(request);
+                    string contresp = await response.Content.ReadAsStringAsync();
+                    obj = JObject.Parse(contresp);
                 }
-                if (access_ci.HasScope("launch.patient") && fhiruser.StartsWith("Patient"))
+                catch (Exception re)
                 {
-                    
+                    log.LogError($"SMARTProxyToken:Error loading from {tendpoint} Message: {re.Message}");
+                    return new ContentResult() { Content = $"Error loading from {tendpoint} Message: {re.Message}", StatusCode = 500, ContentType = "text/plain" };
+                }
+                if (!response.IsSuccessStatusCode)
+                {
+                    log.LogError($"SMARTProxyToken:Error loading token {obj.ToString()}");
+                    return new ContentResult() { Content = $"{obj.ToString()}", StatusCode = (int)response.StatusCode, ContentType = "application/json" };
+                }
+
+            }
+            //Validate Token from Issuer and generate a Proxy Access Token to replace access_token in token call
+            var handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken valid_id_token = null;
+            JwtSecurityToken orig_access_token = null;
+            JwtSecurityToken proxy_access_token = null;
+            if (grant_type.ToLower().Equals("client_credentials") || grant_type.ToLower().Equals("refresh_token"))
+            {
+                try
+                {
+                    //Client Credentials or Refresh Validate Returned Access Token 
+                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value,log);
+                }
+                catch (Exception e)
+                {
+                    log.LogError($"SMARTProxyToken:Error validating issuer access token: {e.Message}");
+                    return new ContentResult() { Content = $"Error validating issuer access token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
+                }
+                var proxyAccessToken = ADUtils.GenerateFHIRProxyAccessToken(orig_access_token, orig_access_token, log);
+                obj["access_token"] = proxyAccessToken;
+            }
+            else if (grant_type.ToLower().Equals("authorization_code"))
+            {
+                //authorization_code need to validate identity from oidc issuer and produce a SMART Compliant Access token
+                try
+                {
+                    valid_id_token = ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value,log);
+                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"],(string)config["jwks_uri"], req.Host.Value, log);
+                }
+                catch (Exception e)
+                {
+                    log.LogError($"SMARTProxyToken:Error validating issuer id token: {e.Message}");
+                    return new ContentResult() { Content = $"Error validating issuer id token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
+                }
+                //Generate a Server Access Token for fhir-proxy and replace in token call.
+                var proxyAccessToken = ADUtils.GenerateFHIRProxyAccessToken(valid_id_token, orig_access_token, log);
+                obj["access_token"] = proxyAccessToken;
+                proxy_access_token = handler.ReadJwtToken(proxyAccessToken);
+                ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
+                ClaimsIdentity id_ci = new ClaimsIdentity(valid_id_token.Claims);
+                string fhiruser = access_ci.fhirUser();
+              
+                if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
+                {
+
                     var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
                     if (!string.IsNullOrEmpty(pt))
                     {
                         obj["patient"] = pt;
                     }
                 }
-
-            }
-            //Replace Scopes back to SMART from Fully Qualified AD Scopes
-            if (!obj["scope"].IsNullOrEmpty())
-            {
-                string sc = obj["scope"].ToString();
-                sc = sc.Replace(appiduri + "/", "");
-                sc = sc.Replace("patient.", "patient/");
-                sc = sc.Replace("user.", "user/");
-                sc = sc.Replace("launch.", "launch/");
-                if (!sc.Contains("openid")) sc = sc + " openid";
-                if (!sc.Contains("offline_access")) sc = sc + " offline_access";
-                obj["scope"] = sc;
+                //Replace Scopes back to SMART from Fully Qualified AD Scopes
+                if (!obj["scope"].IsNullOrEmpty())
+                {
+                    string sc = obj["scope"].ToString();
+                    sc = sc.Replace(appiduri + "/", "");
+                    sc = sc.Replace("patient.", "patient/");
+                    sc = sc.Replace("user.", "user/");
+                    sc = sc.Replace("system.", "system/");
+                    sc = sc.Replace("launch.", "launch/");
+                    if (!sc.Contains("openid")) sc = sc + " openid";
+                    if (!sc.Contains("offline_access")) sc = sc + " offline_access";
+                    obj["scope"] = sc;
+                }
             }
             req.HttpContext.Response.Headers.Add("Cache-Control","no-store");
             req.HttpContext.Response.Headers.Add("Pragma", "no-cache");

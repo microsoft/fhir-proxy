@@ -23,8 +23,8 @@ namespace FHIRProxy
             //Reverse proxy content string 
             nextresult = Utils.reverseProxyResponse(nextresult, req);
             //Replace SMARTonFHIR Proxy endpoints
-            string aauth = req.Scheme + "://" + req.Host.Value + "/AadSmartOnFhirProxy/authorize";
-            string atoken = req.Scheme + "://" + req.Host.Value + "/AadSmartOnFhirProxy/token";
+            string aauth = req.Scheme + "://" + req.Host.Value + "/oauth2/authorize";
+            string atoken = req.Scheme + "://" + req.Host.Value + "/oauth2/token";
             var md = nextresult.toJToken();
             var rest = md["rest"];
             if (!rest.IsNullOrEmpty())

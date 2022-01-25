@@ -23,15 +23,21 @@
 			"enabled": true
 		},
 		{
+			"key": "proxyurl",
+			"value": "~proxyurl~",
+			"enabled": true
+		},
+		{
 			"key": "fhirurl",
 			"value": "~fhirurl~",
 			"enabled": true
 		},
 		{
-			"key": "resource",
-			"value": "~resource~",
+			"key": "scope",
+			"value": "~scope~",
 			"enabled": true
 		}
+		
 	],
 	"_postman_variable_scope": "environment",
 	"_postman_exported_using": "Postman/8.0.6"

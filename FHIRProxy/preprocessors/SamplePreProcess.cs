@@ -34,7 +34,7 @@ namespace FHIRProxy.preprocessors
              */
 
             //TODO: Modify/Augment the requestBody as needed then return it in the Request member of the ProxyProcessResult Object
-
+            await Task.Delay(0);
             return new ProxyProcessResult(true,"",requestBody,null);
         }
     }

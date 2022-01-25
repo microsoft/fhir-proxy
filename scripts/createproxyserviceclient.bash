@@ -26,13 +26,16 @@ declare sptenant=""
 declare spsecret=""
 declare storekv=""
 declare genpostman=""
+declare owner=""
 declare pmenv=""
 declare pmuuid=""
 declare pmfhirurl=""
+declare proxyurl=""
 declare defproxySvcClient="fpsc-client"$RANDOM
 declare kvanswer=""
 declare postman_answer=""
 declare fpscurl=""
+declare apiiduri=""
 
 
 # Script Functions
@@ -183,13 +186,18 @@ echo "Creating Service Client Principal "$spname"..."
 	fi
 
 	echo "Creating FHIR Proxy Client Service Principal for AAD Auth"
-	stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors)
+	stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors --skip-assignment)
 	spappid=$(echo $stepresult | jq -r '.appId')
 	sptenant=$(echo $stepresult | jq -r '.tenant')
 	spsecret=$(echo $stepresult | jq -r '.password')
 
+	echo "Adding Reader/Writer Roles to Service Client..."
 	stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role)
 	stepresult=$(az ad app permission grant --id $spappid --api $fpclientid)
+	
+	echo "Setting app owner to signed-in user..."
+	owner=$(az ad signed-in-user show --query objectId --output tsv)
+	stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner)
 
 	echo "Updating Keyvault with new Service Client Settings..."
 	stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-TENANT-NAME" --value $sptenant)
@@ -203,14 +211,17 @@ echo "Creating Service Client Principal "$spname"..."
 	rm $spname".postman_environment.json" 2>/dev/null
 	pmuuid=$(cat /proc/sys/kernel/random/uuid)
 	pmenv=$(<postmantemplate.json)
+	proxyurl="https://"$fphost
 	pmfhirurl="https://"$fphost"/fhir"
+	apiiduri="api://"$fphost"/.default"
 	pmenv=${pmenv/~guid~/$pmuuid}
 	pmenv=${pmenv/~envname~/$spname}
 	pmenv=${pmenv/~tenentid~/$sptenant}
 	pmenv=${pmenv/~clientid~/$spappid}
 	pmenv=${pmenv/~clientsecret~/$spsecret}
 	pmenv=${pmenv/~fhirurl~/$pmfhirurl}
-	pmenv=${pmenv/~resource~/$fpclientid}
+	pmenv=${pmenv/~proxyurl~/$proxyurl}
+	pmenv=${pmenv/~scope~/$apiiduri}
 	echo $pmenv >> $spname".postman_environment.json"
 
 	echo " "
@@ -222,7 +233,7 @@ echo "Creating Service Client Principal "$spname"..."
 	echo "The secret prefix is FP-SC-"
 	echo " "
 	echo "For your convenience a Postman environment "$spname".postman_environment.json has been generated"
-	echo "It can imported along with the FHIR CALLS-Sample.postman_collection.json into postman to test your proxy access"
+	echo "It can imported along with the fhir-proxy-calls-sample.postman_collection.json into postman to test your proxy access"
 	echo "For Postman Importing help please reference the following URL:"
 	echo "https://learning.postman.com/docs/getting-started/importing-and-exporting-data/#importing-postman-data"
 	echo "You will need to access Azure portal and grant admin consent to "$spname" API Permissions"

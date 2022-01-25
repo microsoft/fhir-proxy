@@ -135,6 +135,7 @@ namespace FHIRProxy
                                              return GetServerRetryAfter(response.Result, log);
                                          },
                                          onRetryAsync: async (response, timespan, retryCount, context) => {
+                                             await Task.Delay(0);
                                              log.LogWarning($"FHIR Request failed. Waiting {timespan} before next retry. Retry attempt {retryCount}");
                                          }
                    );
@@ -245,7 +246,7 @@ namespace FHIRProxy
                 if (string.IsNullOrEmpty(c)) return null;
                 return JObject.Parse(c);
             }
-            if (Content == null) return new JObject();
+            if (Content == null) return null;
             return (JToken)Content;
         }
 

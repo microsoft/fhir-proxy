@@ -49,7 +49,7 @@ namespace FHIRProxy
         [FunctionName("ProxyFunction")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{*restOfPath}")] HttpRequest req, string restOfPath,
-                         ILogger log, ClaimsPrincipal principal)
+                         ILogger log)
         {
             //Parse Path
             FHIRParsedPath parsedPath = req.parsePath();
@@ -57,15 +57,18 @@ namespace FHIRProxy
             if (req.Headers.ContainsKey("x-ms-service-request-id"))
             {
                 coid = req.Headers["x-ms-service-request-id"].First();
+            } else
+            {
+                coid = Guid.NewGuid().ToString();
             }
             using (log.BeginScope(
                     new Dictionary<string, object> { { "CorrelationId", coid } }))
             {
                 if (!Utils.isServerAccessAuthorized(req))
                 {
-                    return new ContentResult() { Content = Utils.genOOErrResponse("auth-access", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
+                    return new ContentResult() { Content = Utils.genOOErrResponse("security", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
                 }
-
+                ClaimsPrincipal principal = ADUtils.BearerToClaimsPrincipal(req);
                 //Load Request Body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
               
@@ -115,8 +118,11 @@ namespace FHIRProxy
                 if (!scoperesult.Result)
                 {
                     postrslt.Response = new FHIRResponse();
-                    postrslt.Response.StatusCode = System.Net.HttpStatusCode.Unauthorized;
-                    postrslt.Response.Content = Utils.genOOErrResponse("authorization-denied", scoperesult.Message);
+                    postrslt.Response.StatusCode = System.Net.HttpStatusCode.Forbidden;
+                    postrslt.Response.Content = Utils.genOOErrResponse("forbidden", scoperesult.Message);
+                } else
+                {
+                    postrslt.Response.Content = scoperesult.ResponseContent;
                 }
                 //Reverse Proxy Response
                 postrslt.Response = Utils.reverseProxyResponse(postrslt.Response, req);

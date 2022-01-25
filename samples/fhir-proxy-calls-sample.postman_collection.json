@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "f0ad9add-7fe1-444a-976f-42925b74c2cf",
-		"name": "FHIR CALLS-Sample",
+		"name": "fhir-proxy-calls-sample",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -47,22 +47,18 @@
 							"type": "text"
 						},
 						{
-							"key": "resource",
-							"value": "{{resource}}",
+							"key": "scope",
+							"value": "{{scope}}",
 							"type": "text"
 						}
 					]
 				},
 				"url": {
-					"raw": "https://login.microsoftonline.com/{{tenantId}}/oauth2/token",
-					"protocol": "https",
+					"raw": "https://{{proxyurl}}/oauth2/token",
 					"host": [
-						"login",
-						"microsoftonline",
-						"com"
+						"{{proxyurl}}"
 					],
 					"path": [
-						"{{tenantId}}",
 						"oauth2",
 						"token"
 					]

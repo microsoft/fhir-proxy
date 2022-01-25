@@ -59,7 +59,7 @@ declare distribution="distribution/publish.zip"
 declare postmanTemplate="postmantemplate.json"
 
 # FHIR
-declare defAuthType="SP"
+declare defAuthType="MSI"
 declare authType=""
 declare fhirServiceUrl=""
 declare fhirServiceClientId=""
@@ -107,13 +107,14 @@ declare tokeniss=""
 declare preprocessors=""
 declare postprocessors=""
 declare msi=""
+declare owner=""
+declare origperm=""
+declare msifhirserverdefault=""
+declare msifhirservername=""
+declare msifhirserverrg=""
+declare msifhirserverrid=""
+declare msirolename="FHIR Data Contributor"
 
-
-
-
-#########################################
-#  Script Functions 
-#########################################
 
 function intro {
 	# Display the intro - give the user a chance to cancel 
@@ -389,19 +390,18 @@ fi
 echo " "
 echo "FHIR-Proxy works with two (2) connections, one to the FHIR Service, the other to external services (such as Postman)"
 echo "This script creates the connection from FHIR-Proxy to the FHIR Service for Authorization.  This Authentication can be"
-echo "accomplished with either a Service Principal or an MSI account.  Note:  the ./createproxyserviceclient.bash script will"
+echo "accomplished with either a Service Principal (SP) or a Managed Service Identity (MSI) account.  Note:  the ./createproxyserviceclient.bash script will"
 echo "create the Service Principal for external service (such as Postman).  For more information please see the FHIR-Proxy"
 echo "documentation at https://github.com/microsoft/fhir-proxy/blob/main/docs/Readme.md " 
 echo " "
-echo "Currently SP is the supported authentication method, when MSI is available it will be added as an option."
-echo "Press Enter to accept default of SP ["$defAuthType"]:"
-read authType
-if [ -z "$authType" ] ; then
-	authType=$defAuthType
-fi
-[[ "${authType:?}" ]]
-
-
+until [[ "$authType" == "MSI" ]] || [[ "$authType" == "SP" ]]; do
+	echo "Which authentication method should be used internally to connect from the fhir-proxy to the FHIR Service MSI or SP? ["$defAuthType"]:"
+	read authType
+	if [ -z "$authType" ] ; then
+		authType=$defAuthType
+	fi
+	authType=${authType^^}
+done
 # Setup Auth type based on input 
 # 
 if [[ "$authType" == "SP" ]] ; then 
@@ -446,6 +446,23 @@ if [[ "$authType" == "SP" ]] ; then
 		fi
 	fi 
 	[[ "${fhirServiceAudience:?}" ]]
+else
+		echo "Auth Type is set to Managed Service Identity (MSI)"		
+		echo "Note: API for FHIR Server must be in same tenant as fhir-proxy for MSI..."
+		msifhirserverdefault=${fhirServiceUrl#https://}
+		msifhirserverdefault=${msifhirserverdefault%%.*}
+		echo "For MSI Token, enter the API for FHIR Server Name ["$msifhirserverdefault"]: "
+		read msifhirservername
+		if [ -z "$msifhirservername" ] ; then
+			msifhirservername=$msifhirserverdefault
+		fi
+		[[ "${msifhirservername:?}" ]]
+		echo "For MSI Token, enter the resource group of the API for FHIR Server: ["$resourceGroupName"]: "
+		read msifhirserverrg
+		if [ -z "$msifhirserverrg" ] ; then
+			msifhirserverrg=$resourceGroupName
+		fi
+		fhirServiceAudience=${fhirServiceUrl}
 fi
 
 
@@ -479,6 +496,7 @@ az account set --subscription $subscriptionId
 
 # Set up variables
 faresourceid="/subscriptions/"$subscriptionId"/resourceGroups/"$resourceGroupName"/providers/Microsoft.Web/sites/"$proxyAppName
+msifhirserverrid="/subscriptions/"$subscriptionId"/resourceGroups/"$msifhirserverrg"/providers/Microsoft.HealthcareApis/services/"$msifhirservername
 
 
 echo "Starting Azure Deployments "
@@ -507,12 +525,14 @@ echo "Storing FHIR Service information in KeyVault ["$keyVaultName"]"
 (
 	echo "Storing FHIR Server Information in KeyVault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-URL" --value $fhirServiceUrl)
-	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-TENANT-NAME" --value $fhirServiceTenant)
-	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
-	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-SECRET" --value $fhirServiceClientSecret)
-	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-RESOURCE" --value $fhirServiceAudience)
-
+	if [[ "$authType" == "SP" ]] ; then 
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-TENANT-NAME" --value $fhirServiceTenant)
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-SECRET" --value $fhirServiceClientSecret)
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
+	fi
+	
 )
 
 echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
@@ -565,12 +585,18 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Setting KeyVault Policy to allow Secret access..."
 	stepresult=$(az keyvault set-policy -n $keyVaultName --secret-permissions list get --object-id $msi)
 		
+	#If using MSI set fhir-proxy function app role assignment on FHIR Server
+	if [[ "$authType" == "MSI" ]] ; then 
+		echo "Setting fhir-proxy function app role assignment on FHIR Server..."
+		stepresult=$(retry az role assignment create --assignee "${msi}" --role "${msirolename}" --scope "${msifhirserverrid}")
+	fi
+		
 	# Add App Settings
 	echo "Configuring Secure FHIR Proxy App ["$proxyAppName"]..."
-	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess FP-REDISCONNECTION=$(kvuri FP-REDISCONNECTION) FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE))
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess FP-REDISCONNECTION=$(kvuri FP-REDISCONNECTION) FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE) FP-OIDC-VALID-AUDIENCES=api://$functionAppHost)
 	
 	echo "Deploying Secure FHIR Proxy Function App from source repo to ["$functionAppHost"]..."
-	stepresult=$(retry az functionapp deployment source config --branch main --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --subscription $subscriptionId --resource-group $resourceGroupName)
+	stepresult=$(retry az functionapp deployment source config --branch v2.0 --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --subscription $subscriptionId --resource-group $resourceGroupName)
 	
 	echo "Creating Service Principal for AAD Auth"
 	stepresult=$(az ad sp create-for-rbac -n "https://"$functionAppHost --skip-assignment --only-show-errors)
@@ -580,6 +606,11 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	spreplyurls="https://"$functionAppHost"/.auth/login/aad/callback"
 	tokeniss="https://sts.windows.net/"$sptenant
 	
+	echo "Setting app owner to signed-in user..."
+	owner=$(az ad signed-in-user show --query objectId --output tsv)
+	stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner)
+	
+	
 	echo "Storing FHIR Proxy Client Information in Vault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-RBAC-NAME" --value "https://"$functionAppHost)
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-RBAC-TENANT-NAME" --value $sptenant)
@@ -587,20 +618,23 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-RBAC-CLIENT-SECRET" --value $spsecret)
 	
 	echo "Adding Sign-in User Read Permission on Graph API..."
-	stepresult=$(az ad app permission add --id $spappid --api 00000002-0000-0000-c000-000000000000 --api-permissions 311a71cc-e848-46a1-bdf8-97ff7156d8e6=Scope)
-		
-	#echo "Granting Admin Consent to Permission..."
-	#stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
+	stepresult=$(az ad app permission add --id $spappid --api 00000003-0000-0000-c000-000000000000 --api-permissions e1fe6dd8-ba31-4d61-89e7-88639da4683d=Scope)
 	
-	echo "Configuring reply urls for app..."
-	stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls)
+	echo "Configuring reply urls and app identfier uri..."
+	stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls --identifier-uris "api://"$functionAppHost)
 	
+	echo "Adding SMART on FHIR OAuth2 Permission Scopes..."
+	rm ${script_dir}"/full-smart-permissions.json" 2>/dev/null
+	origperm=$(az ad app show --id $spappid --query oauth2Permissions)
+	cat ${script_dir}/smart-oauth2-permissions.json | jq ". += $origperm" >> ${script_dir}/full-smart-permissions.json
+	stepresult=$(az ad app update --id $spappid --set oauth2Permissions=@${script_dir}/full-smart-permissions.json)
+
 	echo "Adding FHIR Custom Roles to Manifest..."
 	stepresult=$(az ad app update --id $spappid --app-roles @${script_dir}/fhirroles.json)
 	
-	echo "Enabling AAD Authorization and Securing the FHIR Proxy"
-	stepresult=$(az webapp auth update --subscription $subscriptionId --resource-group $resourceGroupName --name $proxyAppName --enabled true --action AllowAnonymous --aad-allowed-token-audiences $functionAppHost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss)
-	
+	echo "Setting OAuth2 Login Tenant on fhir-proxy function app...."
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --resource-group $resourceGroupName --settings FP-LOGIN-TENANT=$sptenant)
+
 	echo "Starting fhir proxy function app..."
 	stepresult=$(az functionapp start --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName)
 	
@@ -614,6 +648,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Next Steps:  "
 	echo " 1) You must run the ./createproxyserviceclient.bash script to create a service principal for the FHIR Proxy"
 	echo " 2) An Azure AD Application Administrator (RBAC role) must grant consent to the service principal for the FHIR Proxy"
+	echo " 3) You must run the ./createproxysmartclient.bash for each SMART Application you want to register for access via the FHIR Proxy"
 	echo " see ./Readme.md for more information"
 	echo "************************************************************************************************************"
 	echo " "

@@ -60,7 +60,7 @@ namespace FHIRProxy.preprocessors
                         var r = await FHIRClient.CallFHIRServer($"{resource}?{query}",null,"GET",req.Headers,log);
                         if (r.StatusCode == System.Net.HttpStatusCode.OK)
                         {
-                            var rs = (JObject)r.Content;
+                            var rs = r.toJToken();
                             if (!rs.IsNullOrEmpty() && ((string)rs["resourceType"]).Equals("Bundle") && !rs["entry"].IsNullOrEmpty())
                             {
                                 JArray respentries = (JArray)rs["entry"];

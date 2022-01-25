@@ -22,8 +22,9 @@ namespace FHIRProxy
         {
             try
             {
-
+#nullable enable
                 Stream? stream1 = Assembly.GetExecutingAssembly().GetManifestResourceStream("FHIRProxy.patient_comp.json");
+#nullable disable
                 StreamReader reader = new StreamReader(stream1);
                 JObject _compobj = JObject.Parse(reader.ReadToEnd());
                 JArray arr = (JArray)_compobj["resource"];

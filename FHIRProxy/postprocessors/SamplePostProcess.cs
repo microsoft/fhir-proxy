@@ -27,6 +27,8 @@ namespace FHIRProxy.postprocessors
         //Returns Unmodified Response
         public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
+            //Task Warning
+            await Task.Delay(0);
             ProxyProcessResult rslt = new ProxyProcessResult();
             /* Use the passed response to modify/filter then return modified results in Response member of ProxyProcessResult Object 
                Remember to return an error or exception OperationOutcome Response and to prevent further processing set Continue member to False and Response to a valida OperationOutcome resource*/

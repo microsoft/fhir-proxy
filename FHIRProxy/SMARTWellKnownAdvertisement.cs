@@ -12,14 +12,14 @@ namespace FHIRProxy
 {
     public static class SMARTWellKnownAdvertisement
     {
-        [FunctionName("MARTWellKnownAdvertisement")]
+        [FunctionName("SMARTWellKnownAdvertisement")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "fhir/.well-known/smart-configuration")] HttpRequest req,
             ILogger log)
         {
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-            string aauth = req.Scheme + "://" + req.Host.Value + "/AadSmartOnFhirProxy/authorize";
-            string atoken = req.Scheme + "://" + req.Host.Value + "/AadSmartOnFhirProxy/token";
+            string aauth = req.Scheme + "://" + req.Host.Value + "/oauth2/authorize";
+            string atoken = req.Scheme + "://" + req.Host.Value + "/oauth2/token";
             JObject obj = new JObject();
             obj["token_endpoint"] = atoken;
             JArray arr = new JArray();
@@ -39,9 +39,6 @@ namespace FHIRProxy
             arr3.Add("client-public");
             arr3.Add("Patient Access for Standalone Apps");
             arr3.Add("Patient Access for EHR Launch");
-            arr3.Add("Clinician Access for Standalone Apps");
-            arr3.Add("Clinician Access for EHR Launch");
-            arr3.Add("client-confidential-symmetric");
             arr3.Add("sso-openid-connect");
             arr3.Add("context-standalone-patient");
             arr3.Add("permission-offline");

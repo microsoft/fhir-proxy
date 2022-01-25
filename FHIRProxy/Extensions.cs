@@ -121,15 +121,17 @@ namespace FHIRProxy
             }
             return o;
         }
-        public static string fhirUser(this ClaimsIdentity ci)
+        public static Claim fhirUserClaim(this ClaimsIdentity ci)
         {
             IEnumerable<Claim> claims = ci.Claims;
-            string fhiruser = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser")).Select(c => c.Value).SingleOrDefault();
-            if (string.IsNullOrEmpty(fhiruser))
-            {
-                return null;
-            }
+            var fhiruser = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser")).Select(c => c).SingleOrDefault();
             return fhiruser;
+        }
+        public static string fhirUser(this ClaimsIdentity ci)
+        {
+            Claim fhiruserclaim = ci.fhirUserClaim();
+            if (fhiruserclaim == null) return null;
+            return fhiruserclaim.Value;
         }
         public static bool HasScope(this ClaimsIdentity identity, string scope)
         {
@@ -155,12 +157,82 @@ namespace FHIRProxy
             }
             return false;
         }
+        public static string ConvertSMARTScopeToAADScope(this string scope, string aud = null)
+        {
+            string scopeString = "";
+            if (!string.IsNullOrEmpty(scope))
+            {
+                string[] scopes = scope.Split(' ');
+                foreach (var s in scopes)
+                {
+                    if (!string.IsNullOrEmpty(scopeString)) scopeString += " ";
+                    if (s.StartsWith("system/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("launch", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("patient/", System.StringComparison.InvariantCultureIgnoreCase) || s.StartsWith("user/", System.StringComparison.InvariantCultureIgnoreCase) ||
+                        s.Equals("fhirUser"))
+                    {
+                        var newScope = s.Replace("/", ".");
+                        if (string.IsNullOrEmpty(aud))
+                        {
+                            scopeString += newScope;
+                        }
+                        else
+                        {
+                            scopeString += $"{aud}/{newScope}";
+                        }
+                    }
+                    else
+                    {
+                        scopeString += s;
+                    }
+                }
+            }
+            return scopeString;
+        }
+        public static string Issuer(this ClaimsIdentity identity)
+        {
+            return SingleClaimValue(identity, "iss");
+        }
+        public static string Subject(this ClaimsIdentity identity)
+        {
+            return SingleClaimValue(identity, "sub");
+        }
+        public static string SingleClaimValue(this ClaimsIdentity identity, string type)
+        {
+            return identity.Claims
+                           .Where(c => c.Type == type)
+                           .Select(c => c.Value)
+                           .FirstOrDefault();
+        }
+        public static Claim SingleClaim(this ClaimsIdentity identity, string type)
+        {
+            return identity.Claims
+                           .Where(c => c.Type == type)
+                           .FirstOrDefault();
+        }
+        public static string ScopeString(this ClaimsIdentity identity)
+        {
+            string retVal = "";
+            IEnumerable<Claim> claims = identity.Claims.Where(x => x.Type == "scope");
+            if (claims == null || claims.Count() == 0) claims = identity.Claims.Where(x => x.Type == "scp");
+            foreach(Claim c in claims)
+            {
+                if (retVal.Length == 0) retVal = c.Value;
+                else retVal = retVal + " " + c.Value;
+            }
+            return retVal;
+        }
         public static List<string> Roles(this ClaimsIdentity identity)
         {
 
             return identity.Claims
-                           .Where(c => c.Type == "roles")
+                           .Where(c => c.Type.Contains("role"))
                            .Select(c => c.Value)
+                           .ToList();
+        }
+        public static List<Claim> RoleClaims(this ClaimsIdentity identity)
+        {
+            
+            return identity.Claims
+                           .Where(c => c.Type.Contains("role"))
                            .ToList();
         }
         public static string ObjectId(this ClaimsIdentity identity)

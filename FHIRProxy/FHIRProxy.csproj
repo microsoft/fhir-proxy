@@ -23,6 +23,7 @@
     <PackageReference Include="Azure.Messaging.EventHubs" Version="5.2.0" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.1.2" />
     <PackageReference Include="Hl7.Fhir.Specification.R4" Version="2.0.3" />
+    <PackageReference Include="Hl7.FhirPath" Version="3.8.0" />
     <PackageReference Include="LazyCache" Version="2.1.2" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.8" />
     <PackageReference Include="Microsoft.Azure.Services.AppAuthentication" Version="1.6.0" />
@@ -33,9 +34,6 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.8.0" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="authorization.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="host.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

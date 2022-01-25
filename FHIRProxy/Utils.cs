@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Security.Claims;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using StackExchange.Redis;
@@ -21,6 +22,7 @@ namespace FHIRProxy
             string cacheConnection = GetEnvironmentVariable("FP-REDISCONNECTION");
             return ConnectionMultiplexer.Connect(cacheConnection);
         });
+
         public static ConnectionMultiplexer RedisConnection
         {
             get
@@ -28,10 +30,11 @@ namespace FHIRProxy
                 return lazyConnection.Value;
             }
         }
-        public static string genOOErrResponse(string code, string desc)
+       
+        public static string genOOErrResponse(string code, string desc,string severity=null)
         {
-
-            return $"{{\"resourceType\": \"OperationOutcome\",\"id\": \"{Guid.NewGuid().ToString()}\",\"issue\": [{{\"severity\": \"error\",\"code\": \"{code ?? ""}\",\"diagnostics\": \"{desc ?? ""}\"}}]}}";
+            var sev = (string.IsNullOrEmpty(severity) ? "error" : severity);
+            return $"{{\"resourceType\": \"OperationOutcome\",\"id\": \"{Guid.NewGuid().ToString()}\",\"issue\": [{{\"severity\": \"{sev}\",\"code\": \"{code ?? ""}\",\"diagnostics\": \"{desc ?? ""}\"}}]}}";
 
         }
         //Server Roles are "A"dmin,"R"eader,"W"riter
@@ -45,7 +48,7 @@ namespace FHIRProxy
         }
         public static bool isServerAccessAuthorized(HttpRequest req)
         {
-            if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("FP-AUTHFREEPASS"))) return true;
+            if (Utils.GetBoolEnvironmentVariable("FP-AUTHFREEPASS",false)) return true;
             if (req.Headers.ContainsKey(AUTH_STATUS_HEADER))
             {
                 var h = req.Headers[AUTH_STATUS_HEADER];

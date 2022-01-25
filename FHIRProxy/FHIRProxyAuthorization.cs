@@ -25,68 +25,124 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.IO;
 using Newtonsoft.Json.Linq;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Net.Http;
 
 namespace FHIRProxy
 {
     class FHIRProxyAuthorization : FunctionInvocationFilterAttribute
-    {
+    {   
+        
+        public static ClaimsPrincipal ValidateFPToken(string authToken,ILogger log)
+        {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = GetFPValidationParameters(log);
+                SecurityToken validatedToken;
+                var principal = tokenHandler.ValidateToken(authToken, validationParameters, out validatedToken);
+                ClaimsIdentity ci = new ClaimsIdentity(principal.Claims,"ExternalOIDC");
+                ClaimsPrincipal user = new ClaimsPrincipal(ci);
+                return user;
+         
+        }
+        private static TokenValidationParameters GetFPValidationParameters(ILogger log)
+        {
+            var secret = Utils.GetEnvironmentVariable("FP-ACCESS-TOKEN-SECRET");
+            var key = Encoding.ASCII.GetBytes(secret);
+            var retVal = new TokenValidationParameters()
+            {
+                
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidIssuer = "https://fhir-proxy.azurehealthcareapis.com",
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                RequireSignedTokens = true
+            };
+            return retVal;
+        }
         public override Task OnExecutingAsync(FunctionExecutingContext executingContext, CancellationToken cancellationToken)
         {
             var req = executingContext.Arguments.First().Value as HttpRequest;
-          
             ILogger log = executingContext.Arguments["log"] as ILogger;
-           
-            ClaimsPrincipal principal = executingContext.Arguments["principal"] as ClaimsPrincipal;
-            ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
-           
-            bool admin = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-ADMIN-ROLE"));
-            bool reader = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-READER-ROLE"));
-            bool writer = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-WRITER-ROLE"));
-            
+            ClaimsPrincipal principal = null;
+            ClaimsIdentity ci = null;
+            bool admin = false;
+            bool reader = false;
+            bool writer = false;
             string inroles = "";
-            if (admin) inroles += "A";
-            if (reader) inroles += "R";
-            if (writer) inroles += "W";
+            //remove local headers 
             req.Headers.Remove(Utils.AUTH_STATUS_HEADER);
             req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
             req.Headers.Remove(Utils.FHIR_PROXY_ROLES);
             req.Headers.Remove(Utils.FHIR_PROXY_SMART_SCOPE);
-   
-          
+            //Allow use of trusted IDP must be configured
+            var jwtstr = req.Headers["Authorization"].First();
+            jwtstr = jwtstr.Split(" ")[1];
+            try
+            {
+                principal = ValidateFPToken(jwtstr, log);
+            }
+            catch(Exception e)
+            {
+                string msg = $"Error validating Access Token: {e.Message}";
+                log.LogError(msg + $" Stack:{e.StackTrace}");
+                req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
+                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, msg);
+                goto leave;
+            }
+            if (principal != null)
+            {
+                    ci = (ClaimsIdentity)principal.Identity;
+                    admin = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-ADMIN-ROLE"));
+                    reader = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-READER-ROLE"));
+                    writer = ci.IsInFHIRRole(Environment.GetEnvironmentVariable("FP-WRITER-ROLE"));
+                    if (admin) inroles += "A";
+                    if (reader) inroles += "R";
+                    if (writer) inroles += "W";
+                   
+            }
+           
+            if (principal==null)
+            {
+                req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
+                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Security Principal is invalid or not present in token");
+                goto leave;
+            }
             if (!principal.Identity.IsAuthenticated)
             {
                 req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
-                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal is not Authenticated");
+                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Security Principal is not Authenticated");
                 goto leave;
-            }//
+            }
             //Set Authentication Status/Roles
             req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.OK).ToString());
             req.Headers.Add(Utils.FHIR_PROXY_ROLES, inroles);
             //Access checks for /fhir proxy endpoint
             if (executingContext.FunctionName.Equals("ProxyFunction"))
             {
+                //SMART Scope checking for FHIR Calls
                 FHIRParsedPath pp = req.parsePath();
                 string id = pp.ResourceId;
                 string res = pp.ResourceType;
                 if (id == null) id = "";
-               
                 //Claims Trump Role Access if scope claims are present then request must pass scope check
                 List<string> smartClaims = ExtractSmartScopeClaims(ci);
                 if (smartClaims.Count > 0)
                 {
-                    if (!PassedScopeCheck(req, smartClaims, res, id, log))
+                    var message = "";
+                    if (!PassedScopeCheck(req, smartClaims, res, id, out message, log))
                     {
                         req.Headers.Remove(Utils.AUTH_STATUS_HEADER);
                         req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
-                        req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
-                        req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, "Principal did not pass claims scope for this request.");
+                        req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Forbidden).ToString());
+                        req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, message);
                         goto leave;
                     }
                 }
                 else
                 {
                     //No smart claims present use role access
-                    if (!PassedRoleCheck(isFHIRGet(req,id), reader, writer, admin))
+                    if (!PassedRoleCheck(req, reader, writer, admin,id))
                     {
                         req.Headers.Remove(Utils.AUTH_STATUS_HEADER);
                         req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
@@ -96,31 +152,47 @@ namespace FHIRProxy
                     }
                 }
                 string passheader = req.Headers["X-MS-AZUREFHIR-AUDIT-PROXY"];
-                if (string.IsNullOrEmpty(passheader)) passheader = "fhir-proxy";
+                if (string.IsNullOrEmpty(passheader))
+                {
+                    passheader = "fhir-proxy";
+                    req.Headers.Add("X-MS-AZUREFHIR-AUDIT-PROXY", passheader);
+                }
                 string auditsource = req.Headers["X-MS-AZUREFHIR-AUDIT-SOURCE"];
-                if (string.IsNullOrEmpty(auditsource)) auditsource = req.HttpContext.Connection.RemoteIpAddress.ToString();
+                if (string.IsNullOrEmpty(auditsource))
+                {
+                    auditsource = req.HttpContext.Connection.RemoteIpAddress.ToString();
+                    req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", auditsource);
+                }
                 //Since we are proxying with service client need to ensure authenticated proxy principal is audited
-               
                 req.Headers.Add("X-MS-AZUREFHIR-AUDIT-USERID", ci.ObjectId());
                 req.Headers.Add("X-MS-AZUREFHIR-AUDIT-TENANT", ci.Tenant());
-                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", auditsource);
-                req.Headers.Add("X-MS-AZUREFHIR-AUDIT-PROXY", passheader);
+                
             }
            
           leave:
             return base.OnExecutingAsync(executingContext, cancellationToken);
         }
-        public static bool isFHIRGet(HttpRequest req,string resourceid)
+        public static bool isFHIRSearch(HttpRequest req,string resourceid)
         {
             string r = "";
             if (!string.IsNullOrEmpty(resourceid)) r = resourceid;
-            return req.Method.Equals("GET") || (req.Method.Equals("POST") && r.Equals("_search"));
+            return (req.Method.Equals("GET") && req.QueryString.HasValue) || (req.Method.Equals("POST") && r.Equals("_search"));
         }
-        private bool PassedRoleCheck(bool isGet,bool reader, bool writer, bool admin)
+        private bool PassedRoleCheck(HttpRequest req,bool reader, bool writer, bool admin,string id)
         {
-            if (isGet && (admin || reader)) return true;
-            if (!isGet && (admin || writer)) return true;
-            return false;
+            switch (req.Method)
+            {
+                case "PUT":
+                case "PATCH":
+                case "DELETE":
+                    return (admin || writer);
+                case "GET":
+                case "POST":
+                    if (isFHIRSearch(req, id)) return (reader || admin);
+                    return (admin || writer);
+                default:
+                    return false;
+            }
         }
         public static List<string> ExtractSmartScopeClaims(ClaimsIdentity ci)
         {
@@ -145,41 +217,87 @@ namespace FHIRProxy
             }
             return retVal;
         }
-        private bool PassedScopeCheck(HttpRequest req, List<string> smartClaims,string res,string resid, ILogger log)
+        private bool PassedScopeCheck(HttpRequest req, List<string> smartClaims,string res,string resid, out string message, ILogger log)
         {
-                bool isGet = isFHIRGet(req, resid);
-                //Check for SMART Scopes (e.g. <system/patient/user>.<resource>|*.Read|Write|*)
-                foreach (string claim in smartClaims)
+            var arr = smartClaims.ToArray();
+            message = "";
+            var results = Array.FindAll(arr, s => s.Contains("." + res +"."));
+            var wild = Array.FindAll(arr, s => s.Contains(".*."));
+            List<string> prunedClaims = new List<string>(results);
+            prunedClaims.AddRange(wild);
+            //Resource not specified then check bundle write
+            if (string.IsNullOrEmpty(res))
+            {
+                var ba = Array.FindAll(arr, s => s.Contains(".Bundle."));
+                prunedClaims.AddRange(ba);
+            }
+            //Check for SMART Scopes (e.g. <system/patient/user>.<resource>|*.Read|Write|*)
+            foreach (string claim in prunedClaims)
                 {
                     string[] s = claim.Split(".");
                     log.LogInformation($"FHIRProxyAuthorization: Checking scope: {claim}");
                     if (s.Length > 2 && !string.IsNullOrEmpty(s[0]) && !string.IsNullOrEmpty(s[1]) && !string.IsNullOrEmpty(s[2]))
                     {
+                    //Convert to v2 claims
+                        if (s[2].ToLower().Equals("read")) s[2] = "rs";
+                        if (s[2].ToLower().Equals("write")) s[2] = "cud";
+                        if (s[2].Equals("*")) s[2] = "cruds"; 
                         if (s[0].StartsWith("launch")) continue; //Getting to access claims
-                        bool canread = (s[2].Equals("read", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
-                        bool canwrite = (s[2].Equals("write", StringComparison.InvariantCultureIgnoreCase) || s[2].Equals("*", StringComparison.InvariantCultureIgnoreCase));
-                        log.LogInformation($"FHIRProxyAuthorization: Checking request {res} against claim scope {s[1]} CanRead:{canread} CanWrite{canwrite}");
-                        if ((s[1].Equals(res) || s[1].Equals("*")) && isGet && canread)
+                        bool canread =   (s[2].Contains("r", StringComparison.InvariantCultureIgnoreCase));
+                        bool cancreate = (s[2].Contains("c", StringComparison.InvariantCultureIgnoreCase));
+                        bool canupdate = (s[2].Contains("u", StringComparison.InvariantCultureIgnoreCase));
+                        bool candelete = (s[2].Contains("d", StringComparison.InvariantCultureIgnoreCase));
+                        bool cansearch = (s[2].Contains("s", StringComparison.InvariantCultureIgnoreCase));
+                        log.LogInformation($"FHIRProxyAuthorization: Checking request {res} against claim scope {s[1]} CanRead:{canread} CanCreate:{cancreate} CanUpdate:{canupdate} CanDelete: {candelete}");
+                        switch (req.Method)
                         {
-                            return true;
+                            case "PUT":
+                            case "PATCH":
+                                message = $"Must have Update or Write Permissions on resource type {res}";
+                                return ((s[1].Equals(res) || s[1].Equals("*")) && canupdate);
+                            case "GET":
+                                if (req.QueryString.HasValue)
+                                {
+                                    message = $"Must have Read/Search Permissions on resource type {res}";
+                                    return ((s[1].Equals(res) || s[1].Equals("*")) && cansearch && canread);
+                                }
+                                else
+                                {
+                                    message = $"Must have Read Permissions on resource type {res}";
+                                    return ((s[1].Equals(res) || s[1].Equals("*")) && canread);
+                                }
+                            case "DELETE":
+                                message = $"Must have Delete/Write Permissions on resource type {res}";
+                                return ((s[1].Equals(res) || s[1].Equals("*")) && candelete);
+                            case "POST":
+                                if (string.IsNullOrEmpty(res) && s[1].Equals("Bundle"))
+                                {
+                                    message = $"Must have Create/Write Permissions on resource type Bundle";
+                                    return cancreate;
+                                }
+                                if (isFHIRSearch(req, resid))
+                                {
+                                    message = $"Must have Read/Search Permissions on resource type {res}";
+                                    return ((s[1].Equals(res) || s[1].Equals("*")) && cansearch && canread);
+                                }
+                                message = $"Must have Create/Write Permissions on resource type {res}";
+                                return ((s[1].Equals(res) || s[1].Equals("*")) && cancreate);
+                            default:
+                                message = $"Unsupported HTTP Verb {req.Method}";
+                                return false;
                         }
-                        else if ((s[1].Equals(res) || s[1].Equals("*")) && !isGet && canwrite)
-                        {
-                            return true;
-                        } else if (s[1].Equals("Bundle") && string.IsNullOrEmpty(res) && req.Method.Equals("POST") && canwrite)
-                        {
-                            return true;
-                        }
+                       
                     }
                     else
                     {
-                        log.LogWarning($"FHIRProxyAuthorization:Claim {claim} is not a SMART claim. Will not match a scope. Expected format is [patient|user].[resourceType|*].[read|write|*]");
+                        message = $"FHIRProxyAuthorization: Scope {claim} is not a SMART scope. Will not match a scope.Expected format is [patient | user | system].[resourceType | *].[read | write | *] or [cruds | *]";
+                        log.LogWarning(message);
                     }
                 }
-            
+
                 //didn't pass basic scope checks
-            
-            return false;
+                message = $"Access scopes not defined or granted for resource {res}";
+                return false;
            
         }
         public static UserScopeResult ResultAllowedForUserScope(JToken tok, ClaimsPrincipal principal, ILogger log)
@@ -189,17 +307,17 @@ namespace FHIRProxy
         }
         public static UserScopeResult ResultAllowedForUserScope(JToken tok, ClaimsIdentity ci, ILogger log)
         {
-            if (tok == null) return new UserScopeResult(true);
-            if (tok.FHIRResourceType().Equals("OperationOutcome")) return new UserScopeResult(true);
+            if (tok == null) return new UserScopeResult(true,tok);
+            if (tok.FHIRResourceType().Equals("OperationOutcome")) return new UserScopeResult(true,tok);
             List<string> smartClaims = ExtractSmartScopeClaims(ci);
             //No Claims in token then pass scope context by default
-            if (smartClaims == null || smartClaims.Count == 0) return new UserScopeResult(true);
+            if (smartClaims == null || smartClaims.Count == 0) return new UserScopeResult(true,tok);
             string claimstring = String.Join(" ", smartClaims);
             //Load fhirUser placed in cache by SMARTProxyToken issuer.
-            string fhiruser = GetCachedFHIRUser(ci);
+            string fhiruser = ci.fhirUser();
             if (string.IsNullOrEmpty(fhiruser))
             {
-                return new UserScopeResult(false, $"fhirUser is not in context...SMART Scopes require a fhirUser claim see fhir proxy documentation");
+                return new UserScopeResult(false, tok, $"fhirUser is not in principal claims...SMART Scopes require a fhirUser claim see fhir proxy documentation");
             }
             PatientCompartment comp = PatientCompartment.Instance();
             if (!tok.FHIRResourceType().Equals("Bundle"))
@@ -209,26 +327,39 @@ namespace FHIRProxy
             else
             {
                 var resourcesToCheck = (JArray)tok["entry"];
+                JArray resourcesToReturn = new JArray();
                 if (!resourcesToCheck.IsNullOrEmpty())
                 {
-                    //Any entry not related to patient in bundle will cause scope reject for entire query
+                    //Any entry not related to patient in bundle will not be redacted
                     foreach (JToken t in resourcesToCheck)
                     {
                         JToken resource = t["resource"];
-                        var rslt = CheckResourceUserScope(resource, ci, comp, claimstring, log);
-                        if (!rslt.Result) return rslt;
+                        if (resource != null)
+                        {
+                            var rslt = CheckResourceUserScope(resource, ci, comp, claimstring, log);
+                            if (!rslt.Result) {
+                                t["resource"] = JObject.Parse(Utils.genOOErrResponse("forbidden", rslt.Message,"warning"));
+                                if (t["search"] != null)
+                                {
+                                    t["search"]["mode"] = "outcome";
+                                }
+                            }
+                        }
+                        resourcesToReturn.Add(t);
                     }
+                    tok["entry"] = resourcesToReturn;
                     
                 }
-                return new UserScopeResult(true);
+               
             }
+            return new UserScopeResult(true, tok);
         }
         public static UserScopeResult CheckResourceUserScope(JToken resource,ClaimsIdentity ci, PatientCompartment comp,string claimstring,  ILogger log)
         {
-            string fhiruser = GetCachedFHIRUser(ci);
+            string fhiruser = ci.fhirUser();
             if (string.IsNullOrEmpty(fhiruser))
             {
-                return new UserScopeResult(false, $"fhirUser is not in access_token claims...SMART Scopes require a fhirUser claim see fhir proxy documentation");
+                return new UserScopeResult(false, resource,$"fhirUser is not in access_token claims...SMART Scopes require a fhirUser claim see fhir proxy documentation");
             }
             string resourceType = resource.FHIRResourceType();
                 if (fhiruser.StartsWith("Patient/"))
@@ -246,8 +377,8 @@ namespace FHIRProxy
                     //If Patient resource must have Patient Identity Claim for FHIR Logical Id in Token and must match id parameter
                     if (resourceType.Equals("Patient"))
                     {
-                        if (fhiruser.Contains(resource.FHIRResourceId())) return new UserScopeResult(true);
-                        else return new UserScopeResult(false, $"Patient resource does not match patient context scope Context: {fhiruser} Resource: {resource.FHIRResourceId()}");
+                        if (fhiruser.Contains(resource.FHIRResourceId())) return new UserScopeResult(true,resource);
+                        else return new UserScopeResult(false, resource, $"Patient resource does not match patient context scope Context: {fhiruser} Resource: {resource.FHIRResourceId()}");
                     }
                     //Get the list of parms to check for patient scope
                     string[] parms = comp.GetPatientParametersForResourceType(resourceType);
@@ -262,76 +393,67 @@ namespace FHIRProxy
                         }
                         if (!hasPatientRef)
                         {
-                            return new UserScopeResult(false, $"Could not find Patient Reference {fhiruser} in reference fields {String.Join(",", parms)} of resource {resource.FHIRResourceType()}/{resource.FHIRResourceId()}");
+                            return new UserScopeResult(false, resource,$"Could not find Patient Reference {fhiruser} in reference fields {String.Join(",", parms)} of resource {resource.FHIRResourceType()}/{resource.FHIRResourceId()}");
                         }
                     }
                 }
                 else if (fhiruser.StartsWith("Practitioner/"))
                 {
                     //Will pass on user context scope but will need to be filtered by Pre/Post Module Logic
-                    if (!claimstring.Contains($"user.{resourceType}.read") &&
-                       !claimstring.Contains($"user.{resourceType}.*") &&
-                       !claimstring.Contains($"user.*.*"))
+                    if (!claimstring.Contains($"user.{resourceType}"))
                     {
-                        return new UserScopeResult(false, $"User in context {fhiruser} does not have scope permission to read resource {resourceType} contained in this result");
+                        return new UserScopeResult(false, resource,$"User in context {fhiruser} does not have scope permission to resource {resourceType} contained in this result");
                     }
                 }
                 else if (fhiruser.StartsWith("System/"))
                 {
                     //Will pass on system scope but will need to be filtered by Pre/Post Module Logic
-                    if (!claimstring.Contains($"system.{resourceType}.read") &&
-                      !claimstring.Contains($"system.{resourceType}.*") &&
-                      !claimstring.Contains($"system.*.*"))
+                    if (!claimstring.Contains($"system.{resourceType}"))
                     {
-                        return new UserScopeResult(false, $"User in context {fhiruser} does not have scope permission to read resource {resourceType} contained in this result");
+                        return new UserScopeResult(false, resource, $"User in context {fhiruser} does not have scope permission to resource {resourceType} contained in this result");
                     }
                 }
                 //All Checks Passed
-                return new UserScopeResult(true);
+                return new UserScopeResult(true,resource);
         }
         public static string GetFHIRIdFromFHIRUser(string fhiruser)
         {
             if (fhiruser == null || !fhiruser.Contains("/")) return fhiruser;
             return fhiruser.Substring(fhiruser.LastIndexOf("/") +1);
         }
-        public static string GetCachedFHIRUser(ClaimsIdentity ci)
-        {
-            var cache = Utils.RedisConnection.GetDatabase();
-            string aadten = ci.Tenant();
-            string oid = ci.ObjectId();
-            if (string.IsNullOrEmpty(aadten) || string.IsNullOrEmpty(oid)) return null;
-            return cache.StringGet($"usermap-{aadten}-{oid}");
-        }
-        public static string GetMappedFHIRUser(ClaimsIdentity ci,ILogger log)
+        public static string GetMappedFHIRUser(string tenant, string oid, ILogger log)
         {
             //Check the fhirUser claim
-            string aadten = (string.IsNullOrEmpty(ci.Tenant()) ? "Unknown" : ci.Tenant());
-            string oid = ci.ObjectId();
+            if (string.IsNullOrEmpty(tenant))
+            {
+                log.LogWarning("GetMappedFHIRUser: No Tenant(tid) specified!");
+                return null;
+            }
             if (string.IsNullOrEmpty(oid))
             {
-                log.LogWarning("GetMappedFHIRUser: No OID claim found in Claims Identity!");
+                log.LogWarning("GetMappedFHIRUser: No OID specified!");
                 return null;
             }
             var table = Utils.getTable();
             //Check for Patient Association
-            var entity = Utils.getLinkEntity(table, "Patient", aadten + "-" + oid);
+            var entity = Utils.getLinkEntity(table, "Patient", tenant + "-" + oid);
             if (entity != null)
             {
                 return $"Patient/{entity.LinkedResourceId}";
             }
             //Check for Practitioner Association
-            entity = Utils.getLinkEntity(table, "Practitioner", aadten + "-" + oid);
+            entity = Utils.getLinkEntity(table, "Practitioner", tenant + "-" + oid);
             if (entity != null)
             {
                 return $"Practitioner/{entity.LinkedResourceId}";
             }
             //Check for Practitioner Association
-             entity = Utils.getLinkEntity(table, "RelatedPerson", aadten + "-" + oid);
+             entity = Utils.getLinkEntity(table, "RelatedPerson", tenant + "-" + oid);
             if (entity != null)
             {
                 return $"RelatedPerson/{entity.LinkedResourceId}";
             }
-            log.LogInformation($"FHIRProxyAuthorization: No linked FHIR Resource for oid:{oid}");
+            log.LogInformation($"FHIRProxyAuthorization: No linked FHIR Resource for tenant {tenant} and oid:{oid}");
             return null;
         }
 

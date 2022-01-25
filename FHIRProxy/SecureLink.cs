@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
@@ -25,8 +24,6 @@ using Newtonsoft.Json.Linq;
 using System.Security.Claims;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.AspNetCore.Mvc.Formatters.Internal;
-using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using System.Text;
 
@@ -43,38 +40,33 @@ namespace FHIRProxy
         [FHIRProxyAuthorization]
         [FunctionName("SecureLink")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "manage/{cmd}/{res}/{id}/{oid}")] HttpRequest req,
-            ILogger log, ClaimsPrincipal principal, string cmd, string res, string id,string oid)
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "manage/{cmd}/{res}/{id}/{tid}/{oid}")] HttpRequest req,
+            ILogger log, string cmd, string res, string id, string tid, string oid)
         {
+
             log.LogInformation("SecureLink Function Invoked");
+            ClaimsPrincipal principal = ADUtils.BearerToClaimsPrincipal(req);
             //Is the principal authenticated
             if (!Utils.isServerAccessAuthorized(req))
             {
                 return new ContentResult() { Content = "User is not Authenticated", StatusCode = (int)System.Net.HttpStatusCode.Unauthorized };
             }
-            
+            if (string.IsNullOrEmpty(cmd) || !validcmds.Any(cmd.Contains))
+            {
+                return new BadRequestObjectResult($"Invalid Command....Valid commands are: {String.Join(",",validcmds)}");
+            }
             if (!Utils.inServerAccessRole(req,"A")) 
             {
                 return new ContentResult() { Content = "User does not have suffiecient rights (Administrator required)", StatusCode = (int)System.Net.HttpStatusCode.Unauthorized };
             }
-            if (string.IsNullOrEmpty(cmd) || !validcmds.Any(cmd.Contains))
-            {
-                return new BadRequestObjectResult("Invalid Command....Valid commands are find, link, unlink and list");
-            }
             //Are we linking the correct resource type
             if (string.IsNullOrEmpty(res) || !allowedresources.Any(res.Contains))
             {
-                return new BadRequestObjectResult("Resource must be Patient,Practitioner or RelatedPerson");
+                return new BadRequestObjectResult($"Resource must be one of: {String.Join(",", allowedresources)}");
             }
-            
-            ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
-            string aadten = (string.IsNullOrEmpty(ci.Tenant()) ? "Unknown" : ci.Tenant());
-            //Get a FHIR Client so we can talk to the FHIR Server
-            log.LogInformation($"Instanciating FHIR Client Proxy");
             int i_link_days = 0;
             int.TryParse(System.Environment.GetEnvironmentVariable("FP-LINK-DAYS"), out i_link_days);
             if (i_link_days == 0) i_link_days = 365;
-           
             CloudTable table = Utils.getTable();
             switch (cmd)
             {
@@ -91,7 +83,7 @@ namespace FHIRProxy
                     JArray entries = (JArray) o["entry"];
                     if (entries != null)
                     {
-                        LinkEntity alreadylink = Utils.getLinkEntity(table, res, aadten + "-" + oid);
+                        LinkEntity alreadylink = Utils.getLinkEntity(table, res, tid + "-" + oid);
                         sb.Append("<table>");
                         sb.Append("<tr><th>FHIR Id</th><th>Name</th><th>DOB</th><th>Gender</th><th>Link URL</th></tr>");
                         foreach (JToken tok in entries)
@@ -102,11 +94,11 @@ namespace FHIRProxy
                             sb.Append(getDemog(tok["resource"]));
                             if (alreadylink!=null && alreadylink.LinkedResourceId.Equals(fhirid))
                             {
-                                string unlinkurl = $"{req.Scheme}://{req.Host.Value}/manage/unlink/{res}/{fhirid}/{oid}";
+                                string unlinkurl = $"{req.Scheme}://{req.Host.Value}/manage/unlink/{res}/{fhirid}/{tid}/{oid}";
                                 sb.Append($"<td>Already Linked! <a href='{unlinkurl}' target='_blank'>Unlink</a></td>");
                             } else
                             {
-                                string linkurl = $"{req.Scheme}://{req.Host.Value}/manage/link/{res}/{fhirid}/{oid}";
+                                string linkurl = $"{req.Scheme}://{req.Host.Value}/manage/link/{res}/{fhirid}/{tid}/{oid}";
                                 sb.Append($"<td><a href='{linkurl}' target='_blank'> Link</a></td>");
                             }
                             sb.Append("</tr>");
@@ -116,22 +108,22 @@ namespace FHIRProxy
                     sb.Append(htmltemplatefoot);
                     return new ContentResult() { Content = sb.ToString(), StatusCode = 200, ContentType = "text/html" };
                 case "link":
-                    LinkEntity linkentity = new LinkEntity(res, aadten + "-" + oid);
+                    LinkEntity linkentity = new LinkEntity(res, tid + "-" + oid);
                     linkentity.ValidUntil = DateTime.Now.AddDays(i_link_days);
                     linkentity.LinkedResourceId = id;
                     Utils.setLinkEntity(table, linkentity);
-                    return new OkObjectResult($"Identity: {oid} in directory {aadten} is now linked to {res}/{id}");
+                    return new OkObjectResult($"Identity: {oid} in directory {tid} is now linked to FHIR {res}/{id}");
                 case "unlink":
-                    LinkEntity delentity = Utils.getLinkEntity(table, res, aadten + "-" + oid);
-                    if (delentity==null) return new OkObjectResult($"Resource {res}/{id} has no links to Identity {oid} in directory {aadten}");
+                    LinkEntity delentity = Utils.getLinkEntity(table, res, tid + "-" + oid);
+                    if (delentity==null) return new OkObjectResult($"Resource {res}/{id} in FHIR has no links to Identity {oid} in directory {tid}");
                     Utils.deleteLinkEntity(table,delentity);
-                    return new OkObjectResult($"Identity: {oid} in directory {aadten} has been unlinked from {res}/{id}");
+                    return new OkObjectResult($"Identity: {oid} in directory {tid} has been unlinked from FHIR {res}/{id}");
                 case "list":
-                    LinkEntity entity = Utils.getLinkEntity(table, res, aadten + "-" + oid);
+                    LinkEntity entity = Utils.getLinkEntity(table, res, tid + "-" + oid);
                     if (entity != null)
-                        return new OkObjectResult($"Resource {res}/{id} is linked to Identity: {oid} in directory {aadten}");
+                        return new OkObjectResult($"Resource {res}/{id} is linked to Identity: {oid} in directory {tid}");
                     else
-                        return new OkObjectResult($"Resource {res}/{id} has no links to Identity {oid} in directory {aadten}");
+                        return new OkObjectResult($"Resource {res}/{id} has no links to Identity {oid} in directory {tid}");
             }
             return new OkObjectResult($"No action taken Identity: {oid}");
 
