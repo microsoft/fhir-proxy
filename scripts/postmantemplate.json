@@ -36,6 +36,11 @@
 			"key": "scope",
 			"value": "~scope~",
 			"enabled": true
+		},
+		{
+			"key": "callbackurl",
+			"value": "~callbackurl~",
+			"enabled": true
 		}
 		
 	],

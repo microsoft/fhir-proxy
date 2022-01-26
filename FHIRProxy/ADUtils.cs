@@ -197,7 +197,7 @@ namespace FHIRProxy
         public static List<string> GetValidAudiences(string hostname)
         {
             List<string> retVal = new List<string>();
-            var validaud = Utils.GetEnvironmentVariable("FP-OIDC-VALID-AUDIENCES");
+            var validaud = Utils.GetEnvironmentVariable("FP-OIDC-VALID-AUDIENCES","api://"+hostname);
             if (string.IsNullOrEmpty(validaud)) return null;
             var s = validaud.Split(",");
             foreach (string a in s)

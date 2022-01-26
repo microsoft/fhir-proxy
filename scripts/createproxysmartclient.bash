@@ -190,7 +190,7 @@ echo "Creating SMART Client Application "$spname"..."
 			if [ -n "$stepresult" ]; then
 				stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions $stepresult"=Scope" 2> /dev/null)
 			else 
-				echo "Scope "$var" was not found in allowed scopes for app"
+				echo "Scope "$var" was not found in SMART scopes for app"
 			fi
 		done
 		stepresult=$(az ad app permission grant --id $spappid --api $fpclientid)
@@ -203,20 +203,25 @@ echo "Creating SMART Client Application "$spname"..."
 		fi
 		if [ -n "$genpostman" ]; then
 			echo "Generating Postman environment for access..."
+			set +e
+			rm $spname".postman_environment.json" 2>/dev/null
+			set -e
 			pmuuid=$(cat /proc/sys/kernel/random/uuid)
-            		pmenv=$(<./postmantemplateauth.json)
-			pmscope=${scopes//./\/}
-            		pmfhirurl="https://"$fphost"/fhir"
-            		pmproxyurl="https://"$fphost
-            		pmenv=${pmenv/~guid~/$pmuuid}
-            		pmenv=${pmenv/~envname~/$spname}
-            		pmenv=${pmenv/~tenentid~/$sptenant}
-            		pmenv=${pmenv/~proxyurl~/$pmproxyurl}
-            		pmenv=${pmenv/~clientid~/$spappid}
-            		pmenv=${pmenv/~clientsecret~/$spsecret}
-            		pmenv=${pmenv/~fhirurl~/$pmfhirurl}
-            		pmenv=${pmenv/~scope~/$pmscope}
-            		echo $pmenv >> $spname".postman_environment.json"
+			pmenv=$(<./postmantemplate.json)
+			pmscope=${scopes/patient./patient\/}
+			pmscope=${pmscope/launch./launch\/}
+			pmfhirurl="https://"$fphost"/fhir"
+			pmproxyurl="https://"$fphost
+			pmenv=${pmenv/~guid~/$pmuuid}
+			pmenv=${pmenv/~envname~/$spname}
+			pmenv=${pmenv/~tenentid~/$sptenant}
+			pmenv=${pmenv/~proxyurl~/$pmproxyurl}
+			pmenv=${pmenv/~clientid~/$spappid}
+			pmenv=${pmenv/~clientsecret~/$spsecret}
+			pmenv=${pmenv/~fhirurl~/$pmfhirurl}
+			pmenv=${pmenv/~scope~/$pmscope}
+			pmenv=${pmenv/~callbackurl~/$postmanreply}
+			echo $pmenv >> $spname".postman_environment.json"
 		fi
 		if [ -n "$adduserclaim" ]; then
 			echo "Looking for custom claim policy for FHIRUserClaim...(Note: This will fail if you are not a tenant administrator)"

@@ -54,7 +54,7 @@
 			},
 			{
 				"key": "scope",
-				"value": "openid fhirUser launch/patient",
+				"value": "{{scope}}",
 				"type": "string"
 			},
 			{
@@ -79,7 +79,7 @@
 			},
 			{
 				"key": "authUrl",
-				"value": "{{stsURL}}/oauth2/authorize",
+				"value": "{{proxyurl}}/oauth2/authorize",
 				"type": "string"
 			},
 			{
