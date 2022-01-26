@@ -4,26 +4,26 @@
 				"User",
 				"Application"
 			],
-			"description": "Writer of the FHIR Server",
-			"displayName": "Resource Writer",
+			"description": "FHIR Proxy Resource Writer",
+			"displayName": "FHIR Proxy Writer",
 			"id": "2d1c681b-71e0-4f12-9040-d0f42884be86",
 			"isEnabled": true,
 			"lang": null,
 			"origin": "Application",
-			"value": "Writer"
+			"value": "FHIRProxyWriter"
 		},
 		{
 			"allowedMemberTypes": [
 				"User",
 				"Application"
 			],
-			"description": "Reader of the FHIR Server",
-			"displayName": "Resource Reader",
+			"description": "FHIR Proxy Resource Reader",
+			"displayName": "FHIR Proxy Reader",
 			"id": "24c50db1-1e11-4273-b6a0-b697f734bcb4",
 			"isEnabled": true,
 			"lang": null,
 			"origin": "Application",
-			"value": "Reader"
+			"value": "FHIRProxyReader"
 		},
 		{
 			"allowedMemberTypes": [
@@ -77,12 +77,12 @@
 			"allowedMemberTypes": [
 				"User"
 			],
-			"description": "Administrator of the FHIR Server",
-			"displayName": "Administrator",
+			"description": "FHIR Proxy Administrator",
+			"displayName": "FHIR Proxy Administrator",
 			"id": "ef3fd1c8-82cc-4619-a484-2cbcf97eefc1",
 			"isEnabled": true,
 			"lang": null,
 			"origin": "Application",
-			"value": "Administrator"
+			"value": "FHIRProxyAdministrator"
 		}
 	]
