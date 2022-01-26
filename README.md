@@ -4,10 +4,14 @@ Secure FHIR Gateway and Proxy is an Azure Function based solution that:
  + Acts as an intelligent and secure gateway to FHIR Servers
  + Allows multi-tenant access and purpose driven security policies specialized access to a common FHIR Server
  + Provides a consolidated approach to pre and post processing of FHIR Server Calls to support various access and result filtering or actions.</br>
- + Is integrated with Azure Active Directory for authentication and to provide Role based access control.</br>
+ + Is integrated with Azure Active Directory or potentially any [OpenID Connect](https://openid.net/connect/) compliant identity provider for authentication/authorization.</br>
+ + Support for SMART App Launch, Patient Context Scopes(v1 and v2), traditional RBAC and Symmetric Authentication</br> 
  + Acts as a FHIR specific reverse proxy rewriting responses and brokering requests to FHIR Servers</br>
+
 ## Authentication and RBAC Authorization
-By default the proxy will configure and use Azure Active Directory (Azure AD) as an authentication provider.  You will also need to assign users/groups and/or service principals into specific server access roles in order to access the FHIR Server via the proxy.  You can also offload this responsibility to [API Management](https://azure.microsoft.com/en-us/services/api-management/)
+By default the proxy will configure and use Azure Active Directory (Azure AD) as the OpenID Connect authentication/authorization provider.
+You will also need to assign service principals (users or applications) into specific proxy access roles and/or define SMART Scopes in delegated application registrations in order to access the FHIR Server via the proxy.
+You can also offload authentication/authorization responsibility to any trusted OpenID Connect provider
 
 ## Pre and Post Processing Support
 The proxy can be configured to execute any number of logic processing modules to support a variety of pre/post conditional actions on a per call basis. You can create custom processors by implementing the ```IProxyPreProcess``` or ```IProxyPostProcess``` interfaces in a thread safe class.
@@ -33,53 +37,68 @@ All FHIR Server responses are re-written to include the proxy address as the app
 
 
 ## Deploying your own FHIR Proxy
+
 Please note you should deploy this proxy into a tenant that you have appropriate permissions to create and manage Application Registrations, Enterprise Applications, Permissions and Role Definitions Assignments
 
-_For detailed instructions please read this document_ **[./scripts/Readme.md](./scripts/Readme.md)**
-
-Launch Azure Cloud Shell (Bash Environment)  
-  
-[![Launch Azure Shell](/docs/images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
-
-Clone the repo to your Bash Shell (CLI) environment 
-```azurecli-interactive
-git clone https://github.com/microsoft/fhir-proxy 
+1. [Get or Obtain a valid Azure Subscription](https://azure.microsoft.com/en-us/free/)</br>
+   _Skip to Step 5 if you already have a FHIR Server/Service Client deployed_
+2. [Deploy an Azure API for FHIR instance](https://docs.microsoft.com/en-us/azure/healthcare-apis/fhir-paas-portal-quickstart)</br>
+   _Skip to Step 5 if you are going to be using [Managed Service Identity (MSI)](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) to connect the proxy to the FHIR Server_
+3. [Register a Service Client to Access the FHIR Server](https://docs.microsoft.com/en-us/azure/healthcare-apis/register-service-azure-ad-client-app).
+4. [Find the Object Id for the Service Client and Register it with the FHIR Server](https://docs.microsoft.com/en-us/azure/healthcare-apis/find-identity-object-ids)
+5. You will need the following information to configure the FHIR Proxy to connect to the FHIR Server:
+   + The full URL for the FHIR Server typically https://<I>[yourfhirservername]</I>.azurehealthcareapis.com for Azure API for FHIR
+   
+   If you will be using Managed Service Identity to access the FHIR Server you will also need:
+   + The resource group name that contains the Azure API for FHIR Server
+   
+   If you will be using a service client to access the FHIR Server you will also need:
+   + Client/Application ID for the FHIR Service Client
+   + The Client Secret for the FHIR Service Client
+   + The AAD Tenant ID for the FHIR Server/Service Client
+   + The Audience/Resource for the FHIR Server/Service Client typically https://<I>[yourfhirservername]</I>.azurehealthcareapis.com for Azure API for FHIR
+6. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
+7. Select Bash Shell 
+8. Clone this repo 
+```bash
+git clone --branch v2.0 https://github.com/microsoft/fhir-proxy
 ```
-Change working directory to the repo Scripts directory
-```azurecli-interactive
-cd ./fhir-proxy/scripts
-```
 
-Make the Bash Shell Scripts used for Deployment and Setup executable 
-```azurecli-interactive
-chmod +x *.bash 
+9. Switch to the scripts subdirectory of this repo 
+```bash 
+cd ./fhir-proxy/scripts/
 ```
-
-Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
-```azurecli
+10. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
+```bash
 ./deployfhirproxy.bash 
 ```
+11. Create application service clients using the <b>```createproxyserviceclient.bash```</b> script for services to access the proxy without a user or for users in proxy roles.
+12. Register SMART Application clients using the <b>```createporxysmartclient.bash```</b> script for users that will be restricted by SMART scoping.
+13. Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
 
-Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
-```azurecli
-./createProxyServiceClient.bash
-```
-
-Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
-
-## Proxy Endpoint
+## Proxy Endpoints
+### FHIR Server
 The new endpoint for your FHIR Server should now be: <b>```https://<secure proxy url from above>/fhir/```</b>. You can use any supported FHIR HTTP verb and any FHIR compliant request/query
 For example to see conformance statement for the FHIR Server, use your browser and access the proxy endpoint:</br>
 <b>```https://<secure proxy url from above>/fhir/metadata```</b>
+### OAuth2
+The proxy also exposes oauth2 authorization and token endpoints for authentication/authorization.</br></br>
+Authorization endpoint: <b>```https://<secure proxy url from above>/oauth2/authorize```</b></br>
+Token endpoint: <b>```https://<secure proxy url from above>/oauth2/token```</b></br>
 
-Proxy endpoints will authenticate/authorize your access to the FHIR server will execute configured pre-processing routines, pass the modified request on to the FHIR Server via the configured service client, execute configured post-processing routines on the result and rewrite the server response to the client. 
-The original user principal name and tenant are passed in custom headers to the FHIR server for accurate security and compliance auditing.  
+<b>You must use these endpoints in your authentication flows to obtain a valid access token to the proxy.</b> These endpoints will forward oauth2 requests to your configured OpenID connect provider, validate the token(s) from the issuer and then construct a proxy access token using the claims of the issuer. This token will be substituted in the reply to your client allowing access to the proxy. 
+
+The original principal oid (identifier claim) and tenant/issuer claim are extracted and automatically passed in custom headers to the FHIR server for accurate security and compliance auditing.  
+
+### SMART Well-Known Advertisement
+As required by SMART specification and similar to OpenID requirements, any SMART client can call the well-known advertisement endpoint to obtain details about SMART support, authorization endpoints and other SMART configurations support.
+Well-Known endpoint: <b>```https://<secure proxy url from above>/fhir/.well-known/smart-configuration```</b></br>
 
 
 ## Additional Documentation 
 
 ### [Adding Users/Groups to the FHIR Server Proxy](docs/addingusers.md)
-At a minimum users must be placed in one or more FHIR server roles in order to access the FHIR Server via the Proxy. The Access roles are Administrator, Resource Reader and Resource Writer 
+If you will be using RBAC instead of SMART scoping, users must be placed in one or more FHIR proxy roles in order to access the FHIR Server via the Proxy. The Access roles are Administrator, Resource Reader and Resource Writer 
 
 ### [Adding Application Service Principals to the FHIR Server Proxy](docs/addingappsvcprincipals.md)
 You can create service client principals and register for Application API Access to the proxy. This is useful for using the proxy in machine driven service workflows where a human cannot sign-in. </br>
