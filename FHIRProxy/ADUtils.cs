@@ -129,15 +129,15 @@ namespace FHIRProxy
 
 
         }
-        public static JwtSecurityToken ValidateToken(string authToken, string jwksurl, string hostname, ILogger log)
+        public static JwtSecurityToken ValidateToken(string authToken, string jwksurl, string hostname, bool validateAudience, ILogger log)
         {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var validationParameters = GetValidationParameters(jwksurl,hostname,log);
+                var validationParameters = GetValidationParameters(jwksurl,hostname,validateAudience,log);
                 SecurityToken validatedToken;
                 var principal = tokenHandler.ValidateToken(authToken, validationParameters, out validatedToken);
                 return (JwtSecurityToken)validatedToken;      
         }
-        private static TokenValidationParameters GetValidationParameters(string jwksurl, string hostname,ILogger log)
+        private static TokenValidationParameters GetValidationParameters(string jwksurl, string hostname,bool validateAudience, ILogger log)
         {
             var jwks = Utils.GetEnvironmentVariable("FP-OIDC-JWKS");
             if (string.IsNullOrEmpty(jwks))
@@ -147,13 +147,17 @@ namespace FHIRProxy
             var signingKeys = new JsonWebKeySet(jwks).GetSigningKeys();
             var retVal = new TokenValidationParameters()
             {
-                ValidateAudience = true,
-                ValidAudiences = GetValidAudiences(hostname),
+                ValidateAudience = false,
                 ValidateLifetime = true,
                 ValidIssuers = GetValidIssuers(),
                 IssuerSigningKeys = signingKeys,
                 RequireSignedTokens = true
             };
+            if (validateAudience)
+            {
+                retVal.ValidateAudience = true;
+                retVal.ValidAudiences = GetValidAudiences(hostname);
+            }
             return retVal;
         }
         public static string GetIssuer()

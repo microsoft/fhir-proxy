@@ -140,7 +140,7 @@ namespace FHIRProxy
                 try
                 {
                     //Client Credentials or Refresh Validate Returned Access Token 
-                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value,log);
+                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value,true,log);
                 }
                 catch (Exception e)
                 {
@@ -155,8 +155,8 @@ namespace FHIRProxy
                 //authorization_code need to validate identity from oidc issuer and produce a SMART Compliant Access token
                 try
                 {
-                    valid_id_token = ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value,log);
-                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"],(string)config["jwks_uri"], req.Host.Value, log);
+                    valid_id_token = ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value,false,log);
+                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"],(string)config["jwks_uri"], req.Host.Value, true,log);
                 }
                 catch (Exception e)
                 {
