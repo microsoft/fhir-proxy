@@ -190,7 +190,8 @@ echo "Creating Service Client Principal "$spname"..."
 	spappid=$(echo $stepresult | jq -r '.appId')
 	sptenant=$(echo $stepresult | jq -r '.tenant')
 	spsecret=$(echo $stepresult | jq -r '.password')
-
+	echo "Setting Reply URL..."
+	stepresult=$(az ad app update --id $spappid --reply-urls "https://"$fphost"/fhir/metadata")
 	echo "Adding Reader/Writer Roles to Service Client..."
 	stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role)
 	stepresult=$(az ad app permission grant --id $spappid --api $fpclientid)
@@ -232,8 +233,12 @@ echo "Creating Service Client Principal "$spname"..."
 	echo "Your client credentials have been securely stored as secrets in keyvault "$kvname
 	echo "The secret prefix is FP-SC-"
 	echo " "
+	echo "If you are a Directory Admin you can grant Admin Consent for the roles assigned to this application by following"
+	echo "this URL: https://login.microsoftonline.com/"$sptenant"/adminconsent?client_id="$spappid
+	echo " "
 	echo "For your convenience a Postman environment "$spname".postman_environment.json has been generated"
-	echo "It can imported along with the fhir-proxy-service-client-sample.postman_collection.json into postman to test your proxy access"
+	echo "It can imported along with the fhir-proxy-service-client-sample.postman_collection.json into postman to test your"
+	echo "proxy access."
 	echo "For Postman Importing help please reference the following URL:"
 	echo "https://learning.postman.com/docs/getting-started/importing-and-exporting-data/#importing-postman-data"
 	echo "You will need to access Azure portal and grant admin consent to "$spname" API Permissions"
