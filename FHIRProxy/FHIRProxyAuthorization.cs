@@ -76,10 +76,18 @@ namespace FHIRProxy
             req.Headers.Remove(Utils.FHIR_PROXY_ROLES);
             req.Headers.Remove(Utils.FHIR_PROXY_SMART_SCOPE);
             //Allow use of trusted IDP must be configured
-            var jwtstr = req.Headers["Authorization"].First();
-            jwtstr = jwtstr.Split(" ")[1];
+            var jwtstr = req.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(jwtstr))
+            {
+                string msg = $"No acccess token found in Authorization Header";
+                log.LogError(msg);
+                req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
+                req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, msg);
+                goto leave;
+            }
             try
             {
+                jwtstr = jwtstr.Split(" ")[1];
                 principal = ValidateFPToken(jwtstr, log);
             }
             catch(Exception e)
