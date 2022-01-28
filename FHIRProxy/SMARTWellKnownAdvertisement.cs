@@ -12,7 +12,7 @@ namespace FHIRProxy
 {
     public static class SMARTWellKnownAdvertisement
     {
-        [FunctionName("SMARTWellKnownAdvertisement")]
+        [FunctionName("KnownAdvertisementSMART")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "fhir/.well-known/smart-configuration")] HttpRequest req,
             ILogger log)
