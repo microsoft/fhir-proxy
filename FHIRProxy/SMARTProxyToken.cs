@@ -170,33 +170,36 @@ namespace FHIRProxy
                 //Generate a Server Access Token for fhir-proxy and replace in token call.
                 proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(valid_id_token, orig_access_token, log);
             }
-            //substitute our access token
-            obj["access_token"] = proxyAccessTokenString;
-            proxy_access_token = handler.ReadJwtToken(proxyAccessTokenString);
-            ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
-            string fhiruser = access_ci.fhirUser();
-
-            if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
+            //substitute our access token if created
+            if (!string.IsNullOrEmpty(proxyAccessTokenString))
             {
+                obj["access_token"] = proxyAccessTokenString;
+                proxy_access_token = handler.ReadJwtToken(proxyAccessTokenString);
+                ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
+                string fhiruser = access_ci.fhirUser();
 
-                var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
-                if (!string.IsNullOrEmpty(pt))
+                if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
                 {
-                    obj["patient"] = pt;
+
+                    var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
+                    if (!string.IsNullOrEmpty(pt))
+                    {
+                        obj["patient"] = pt;
+                    }
                 }
-            }
-            //Replace Scopes back to SMART from Fully Qualified AD Scopes
-            if (!obj["scope"].IsNullOrEmpty())
-            {
-                string sc = obj["scope"].ToString();
-                sc = sc.Replace(appiduri + "/", "");
-                sc = sc.Replace("patient.", "patient/");
-                sc = sc.Replace("user.", "user/");
-                sc = sc.Replace("system.", "system/");
-                sc = sc.Replace("launch.", "launch/");
-                if (!sc.Contains("openid")) sc = sc + " openid";
-                if (!sc.Contains("offline_access")) sc = sc + " offline_access";
-                obj["scope"] = sc;
+                //Replace Scopes back to SMART from Fully Qualified AD Scopes
+                if (!obj["scope"].IsNullOrEmpty())
+                {
+                    string sc = obj["scope"].ToString();
+                    sc = sc.Replace(appiduri + "/", "");
+                    sc = sc.Replace("patient.", "patient/");
+                    sc = sc.Replace("user.", "user/");
+                    sc = sc.Replace("system.", "system/");
+                    sc = sc.Replace("launch.", "launch/");
+                    if (!sc.Contains("openid")) sc = sc + " openid";
+                    if (!sc.Contains("offline_access")) sc = sc + " offline_access";
+                    obj["scope"] = sc;
+                }
             }
             req.HttpContext.Response.Headers.Add("Cache-Control","no-store");
             req.HttpContext.Response.Headers.Add("Pragma", "no-cache");
