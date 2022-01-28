@@ -94,7 +94,10 @@ namespace FHIRProxy
             }
             if (!string.IsNullOrEmpty(scope))
             {
-                keyValues.Add(new KeyValuePair<string, string>("scope", scope));
+                //Convert SMART on FHIR Scopes to Fully Qualified AAD Scopes
+                string scopeString = scope;
+                if (isaad) scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
+                keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
             }
             //Load Configuration
             JObject config = ADUtils.LoadOIDCConfiguration(iss, log);
