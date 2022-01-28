@@ -139,7 +139,7 @@ namespace FHIRProxy
             JwtSecurityToken orig_access_token = null;
             JwtSecurityToken proxy_access_token = null;
             string proxyAccessTokenString = null;
-            if (grant_type.ToLower().Equals("client_credentials") || grant_type.ToLower().Equals("refresh_token"))
+            if (grant_type.ToLower().Equals("client_credentials"))
             {
                 try
                 {
@@ -154,7 +154,7 @@ namespace FHIRProxy
                 proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_access_token, orig_access_token, log);
                 
             }
-            else if (grant_type.ToLower().Equals("authorization_code"))
+            else if (grant_type.ToLower().Equals("authorization_code") || grant_type.ToLower().Equals("refresh_token"))
             {
                 //authorization_code need to validate identity from oidc issuer and produce a SMART Compliant Access token
                 try
@@ -194,6 +194,8 @@ namespace FHIRProxy
                 sc = sc.Replace("user.", "user/");
                 sc = sc.Replace("system.", "system/");
                 sc = sc.Replace("launch.", "launch/");
+                if (!sc.Contains("openid")) sc = sc + " openid";
+                if (!sc.Contains("offline_access")) sc = sc + " offline_access";
                 obj["scope"] = sc;
             }
             req.HttpContext.Response.Headers.Add("Cache-Control","no-store");

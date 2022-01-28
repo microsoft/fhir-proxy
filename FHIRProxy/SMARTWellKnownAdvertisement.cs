@@ -43,6 +43,7 @@ namespace FHIRProxy
             arr3.Add("context-standalone-patient");
             arr3.Add("permission-offline");
             arr3.Add("permission-patient");
+            arr3.Add("client-confidential-symmetric");
             obj["capabilities"] = arr3;
             return new JsonResult(obj);
         }
