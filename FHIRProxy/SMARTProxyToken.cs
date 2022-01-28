@@ -138,6 +138,7 @@ namespace FHIRProxy
             JwtSecurityToken valid_id_token = null;
             JwtSecurityToken orig_access_token = null;
             JwtSecurityToken proxy_access_token = null;
+            string proxyAccessTokenString = null;
             if (grant_type.ToLower().Equals("client_credentials") || grant_type.ToLower().Equals("refresh_token"))
             {
                 try
@@ -150,8 +151,8 @@ namespace FHIRProxy
                     log.LogError($"SMARTProxyToken:Error validating issuer access token: {e.Message}");
                     return new ContentResult() { Content = $"Error validating issuer access token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
                 }
-                var proxyAccessToken = ADUtils.GenerateFHIRProxyAccessToken(orig_access_token, orig_access_token, log);
-                obj["access_token"] = proxyAccessToken;
+                proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_access_token, orig_access_token, log);
+                
             }
             else if (grant_type.ToLower().Equals("authorization_code"))
             {
@@ -167,35 +168,33 @@ namespace FHIRProxy
                     return new ContentResult() { Content = $"Error validating issuer id token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
                 }
                 //Generate a Server Access Token for fhir-proxy and replace in token call.
-                var proxyAccessToken = ADUtils.GenerateFHIRProxyAccessToken(valid_id_token, orig_access_token, log);
-                obj["access_token"] = proxyAccessToken;
-                proxy_access_token = handler.ReadJwtToken(proxyAccessToken);
-                ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
-                ClaimsIdentity id_ci = new ClaimsIdentity(valid_id_token.Claims);
-                string fhiruser = access_ci.fhirUser();
-              
-                if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
-                {
+                proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(valid_id_token, orig_access_token, log);
+            }
+            //substitute our access token
+            obj["access_token"] = proxyAccessTokenString;
+            proxy_access_token = handler.ReadJwtToken(proxyAccessTokenString);
+            ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
+            string fhiruser = access_ci.fhirUser();
 
-                    var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
-                    if (!string.IsNullOrEmpty(pt))
-                    {
-                        obj["patient"] = pt;
-                    }
-                }
-                //Replace Scopes back to SMART from Fully Qualified AD Scopes
-                if (!obj["scope"].IsNullOrEmpty())
+            if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
+            {
+
+                var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
+                if (!string.IsNullOrEmpty(pt))
                 {
-                    string sc = obj["scope"].ToString();
-                    sc = sc.Replace(appiduri + "/", "");
-                    sc = sc.Replace("patient.", "patient/");
-                    sc = sc.Replace("user.", "user/");
-                    sc = sc.Replace("system.", "system/");
-                    sc = sc.Replace("launch.", "launch/");
-                    if (!sc.Contains("openid")) sc = sc + " openid";
-                    if (!sc.Contains("offline_access")) sc = sc + " offline_access";
-                    obj["scope"] = sc;
+                    obj["patient"] = pt;
                 }
+            }
+            //Replace Scopes back to SMART from Fully Qualified AD Scopes
+            if (!obj["scope"].IsNullOrEmpty())
+            {
+                string sc = obj["scope"].ToString();
+                sc = sc.Replace(appiduri + "/", "");
+                sc = sc.Replace("patient.", "patient/");
+                sc = sc.Replace("user.", "user/");
+                sc = sc.Replace("system.", "system/");
+                sc = sc.Replace("launch.", "launch/");
+                obj["scope"] = sc;
             }
             req.HttpContext.Response.Headers.Add("Cache-Control","no-store");
             req.HttpContext.Response.Headers.Add("Pragma", "no-cache");
