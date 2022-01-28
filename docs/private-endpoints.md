@@ -1,7 +1,14 @@
 # Private Endpoint Setup 
 
 The recommended approach to using FHIR-Proxy with Private Endpoints is to deploy FHIR-Proxy without the private endpoints, ensure it is working, then cut over to the Private Endpoints.  This approach allows customers to troubleshoot any potential issues as they appear. 
+
+_Sample VNet configuration with FHIR and Proxy_
+
+![network-diagram](./images/private-endpoints/network-diagram.png)
   
+## Getting Started 
+This setup expects customers already have an Azure FHIR Service along with FHIR Proxy up and running.  This setup will support additional components that work with VNet's and VNet Peering
+
 **Prerequisites:**
 - An Azure account with an active subscription
 - An Azure Web App with a PremiumV2-tier or higher app service plan deployed in your Azure subscription.  _Note:  By default Proxy Function apps are deployed at a B1 SKU, therefore the App Service Plan must be Upgraded to a Premium V2 SKU_
@@ -13,31 +20,43 @@ For more information and an example, see [Quickstart: Create an ASP.NET Core web
 For a detailed tutorial on creating a web app and an endpoint, see [Tutorial: Connect to a web app using an Azure Private Endpoint](https://docs.microsoft.com/en-us/azure/private-link/tutorial-private-endpoint-webapp-portal)
 
 
-## Step 1. Create a Private Endpoint using the Azure portal 
+## Step 1. Creating a Virtual Network and Private Endpoint using the Azure portal 
 Get started with Azure Private Link by using a Private Endpoint to connect securely to an Azure web app.  Instructing for setting up the Private Endpoints are **[here](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal)**
 
-a) Create a Virtual Network (CIDR /16 preferred)
-
-b) Create Sub-Nets within the Virtual Network (CIDR /24 preferred)
-
-Subnet Setup 
-![subnets](./images/private-endpoints/vnet-subnets.png)
-
-
-_Note:  Customers may want to setup a VM on the vNet for testing see [create a virtual machine](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal#create-a-virtual-machine)_
+**a) Create a Virtual Network and Bastion Host [link](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal#create-a-virtual-network-and-bastion-host)**  
 
 A private endpoint is a network interface that uses a private IP address from your virtual network. This network interface connects you privately and securely to a service powered by Azure Private Link. By enabling a private endpoint, you're bringing the service into your virtual network.    
 
 Private Endpoint properties are defined in detail [here](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-overview#private-endpoint-properties).
 
-c) Connect FHIR-Proxy to the Functions Subnet (see above for Function Subnet)
+
+**b) Create Sub-Nets within the Virtual Network (CIDR /24 preferred)**
+
+Subnet Setup 
+![subnets](./images/private-endpoints/vnet-subnets.png)
+
+**c) Create a Virtual Machine for testing [example](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal#create-a-virtual-machine)**
+
+  
+_Note:  It is recommended that customers setup a VM with [Postman](https://www.postman.com/) on the vNet for testing see [create a virtual machine](https://docs.microsoft.com/en-us/azure/private-link/create-private-endpoint-portal#create-a-virtual-machine)_
+
+
 
 ## Step 2.  Configure Azure FHIR Private Link   
-Private link enables you to access Azure API for FHIR over a private endpoint, which is a network interface that connects you privately and securely using a private IP address from your virtual network. With private link, you can access our services securely from your VNet as a first party service without having to go through a public Domain Name System (DNS). This [article](https://docs.microsoft.com/en-us/azure/healthcare-apis/azure-api-for-fhir/configure-private-link) describes how to create, test, and manage your private endpoint for Azure API for FHIR.
+Private link enables you to access Azure API for FHIR over a private endpoint, which is a network interface that connects you privately and securely using a private IP address from your virtual network. With private link, you can access our services securely from your VNet as a first party service without having to go through a public Domain Name System (DNS). This **[article](https://docs.microsoft.com/en-us/azure/healthcare-apis/azure-api-for-fhir/configure-private-link)** describes how to create, test, and manage your private endpoint for Azure API for FHIR.
 
 ![fhir-setup](./images/private-endpoints/fhir-setup.png)
 
 
+At this point you should be able to test your private endpoint using either your VM with Postman - or - a PC connected to the VPN Gateway (above).  Connections from the VNet should work, connections outside the VNet should fail.
+
+Example using Postman on a VM connected via a Bastion Host.  Use these links for sample Postman [Environment](../samples/private_endpoint.postman_environment.json) and [Collection](../samples/FHIR_Commands.postman_collection.json) files. 
+
+![fhir-test1](./images/private-endpoints/test-fhir1.png)
+
+## Step 3.  Configure FHIR Proxy to work with the Virtual Network
+   
+Private link enables you to access Azure API for FHIR over a private endpoint, which is a network interface that connects you pr
 
 
 ### Private Endpoint Application Configuration settings 
