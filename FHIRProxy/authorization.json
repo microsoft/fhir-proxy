@@ -1,0 +1,28 @@
+{
+  "routes": [
+    {
+      "path_prefix": "/fhir/metadata",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/fhir/.well-known/smart-configuration",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/oauth2/authorize",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/oauth2/token",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/fhir",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
+      "path_prefix": "/manage",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    }
+  ]
+}
