@@ -2,6 +2,8 @@
 
 The recommended approach to using FHIR-Proxy with Private Endpoints is to deploy FHIR-Proxy without the private endpoints, ensure it is working, then cut over to the Private Endpoints.  This approach allows customers to troubleshoot any potential issues as they appear. 
 
+[Read More about Private Endpoints](https://docs.microsoft.com/en-us/azure/private-link/private-endpoint-overview)
+
 _Sample VNet configuration with FHIR and Proxy_
 
 ![network-diagram](./images/private-endpoints/network-diagram.png)
@@ -125,7 +127,9 @@ If you want to make calls to Private Endpoints, then you must make sure that you
 ![app-private-endpoint](./images/private-endpoints/proxy-app-private-endpoint.png)
 
  
+## Step 4.  Configure Redis Cache 
 
+## Step 5.  Configure KeyVault 
 
 ## References 
 
