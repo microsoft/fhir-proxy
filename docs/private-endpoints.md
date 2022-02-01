@@ -127,9 +127,42 @@ If you want to make calls to Private Endpoints, then you must make sure that you
 ![app-private-endpoint](./images/private-endpoints/proxy-app-private-endpoint.png)
 
  
+__The Private Endpoint setup for Redis Cache and Keyvault follow the same pattern - create hte private endpoint and connect to DNS__ 
+
 ## Step 4.  Configure Redis Cache 
 
+[Azure Document Reference](https://docs.microsoft.com/en-us/azure/azure-cache-for-redis/cache-private-link#create-a-private-endpoint-with-an-existing-azure-cache-for-redis-instance)
+
+To create a virtual network, follow these steps.
+
+Sign in to the Azure portal and select Create a resource.
+
+On the New page, select Networking and then select Virtual network.
+
+Select Add to create a virtual network.
+
+
 ## Step 5.  Configure KeyVault 
+[Azure Document Reference](https://docs.microsoft.com/en-us/azure/key-vault/general/private-link-service?tabs=portal#establish-a-private-link-connection-to-an-existing-key-vault)
+
+Sign in to the Azure portal.
+
+In the search bar, type in "key vaults"
+
+Select the key vault from the list to which you want to add a private endpoint.
+
+Select the "Networking" tab under Settings
+
+Select the Private endpoint connections tab at the top of the page
+
+Select the "+ Private Endpoint" button at the top of the page.
+
+
+
+![kv-private-endpoint](./images/private-endpoints/kv-private-endpoint.png)
+
+---
+
 
 ## References 
 
