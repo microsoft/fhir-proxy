@@ -70,9 +70,6 @@ Azure Functions offer multiple networking features with different hosting option
 
 **a) Virtual network integration**  
 
-<<<<<<< HEAD
-Virtual network integration gives your app access to resources in your virtual network while restricting inbound private access to your app from the virtual network. Virtual network integration is used only to make outbound calls from your app into your virtual network. The VNet integration feature behaves differently when it's used with virtual networks in the same region as opposed to virtual networks in other regions. [Read more](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#virtual-network-integration).
-=======
 
 **a) Lock down your storage account** 
 Create the private endpoints for Azure Files Storage, Azure Blob Storage and Azure Table Storage by using your storage account.  
@@ -86,7 +83,6 @@ In the Function storage account create a File Share - remember the name as it ha
 
 **c) Virtual network integration**
 Virtual network integration gives your app access to resources in your virtual network, but it doesn't grant inbound private access to your app from the virtual network.  Virtual network integration is used only to make outbound calls from your app into your virtual network. The VNet integration feature behaves differently when it's used with virtual networks in the same region and with virtual networks in other regions.  [Read more](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#virtual-network-integration)
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
 
 **[Enable VNet Integration](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#enable-vnet-integration)**
 
@@ -95,12 +91,7 @@ Virtual network integration gives your app access to resources in your virtual n
 At this point, the FHIR-Proxy acts as an application gateway, as it is the only external entry point to your Azure API for FHIR.
   
   
-<<<<<<< HEAD
-**b) Private Endpoint Connections**  
-
-=======
 **d) Private Endpoint Connections**
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
 When creating an inbound private endpoint connection for functions, you will also need a DNS record to resolve the private address. By default a private DNS record will be created for you when creating a private endpoint using the Azure portal.
 
 To learn more, see [using Private Endpoints for Web Apps](https://docs.microsoft.com/en-us/azure/app-service/networking/private-endpoint).
@@ -109,15 +100,9 @@ To learn more, see [using Private Endpoints for Web Apps](https://docs.microsoft
 
 **Tutorial:** Integrate Azure Functions with an Azure virtual network by using private endpoints ([link](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-vnet)).
 
-<<<<<<< HEAD
-**b-1)** Stop the FHIR-Proxy App.
- 
-**b-2)** [Create private endpoints for Azure Files Storage](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-vnet#lock-down-your-storage-account).
-=======
 **d-1)** Stop the FHIR Proxy App
  
 **d-2)** [Create the private endpoints for Azure Files Storage](https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-vnet#lock-down-your-storage-account)
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
 
 ![storage-private-endpoint](./images/private-endpoints/storage-private-endpoint.png)
 
@@ -134,11 +119,7 @@ _Note: The private DNS update may fail due to dynamic IP addresses on the functi
 ```
 To correct this, customers must add the Storage Private endpoint to the Private DNS setup. 
 
-<<<<<<< HEAD
-**b-3)** Configure Function App Settings  
-=======
 **d-3)** Congirure Function App Settings  
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
 
 https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-vnet#configure-your-function-app-settings
 
@@ -148,11 +129,7 @@ https://docs.microsoft.com/en-us/azure/azure-functions/functions-create-vnet#con
 Connection string for storage account where the function app code and configuration are stored in event-driven scaling plans running on Windows. 
 
 [WEBSITE_CONTENTSHARE](https://docs.microsoft.com/en-us/azure/azure-functions/functions-app-settings#website_contentshare)
-<<<<<<< HEAD
-The file path to the function app code and configuration in an event-driven scaling plan on Windows. Used with ```WEBSITE_CONTENTAZUREFILECONNECTIONSTRING```. Default is a unique string that begins with the function app name.
-=======
 The file path to the function app code and configuration in an event-driven scaling plan on Windows. Used with ```WEBSITE_CONTENTAZUREFILECONNECTIONSTRING```. __Use the File Share created above from step 3B__
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
 
 [WEBSITE_CONTENTOVERVNET](https://docs.microsoft.com/en-us/azure/azure-functions/functions-app-settings#website_contentovervnet)
 A value of ```1``` enables your function app to scale when you have your storage account restricted to a virtual network. You should enable this setting when restricting your storage account to a virtual network. To learn more, see [Restrict your storage account to a virtual network](https://docs.microsoft.com/en-us/azure/azure-functions/configure-networking-how-to#restrict-your-storage-account-to-a-virtual-network).
@@ -160,24 +137,14 @@ A value of ```1``` enables your function app to scale when you have your storage
 [WEBSITE_DNS_SERVER](https://docs.microsoft.com/en-us/azure/azure-functions/functions-app-settings#website_dns_server)
 Sets the DNS server used by an app when resolving IP addresses. This setting is often required when using certain networking functionality, such as [Azure DNS private zones](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#azure-dns-private-zones) and [private endpoints](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#restrict-your-storage-account-to-a-virtual-network).
 
-<<<<<<< HEAD
-_Note: the VNET_Route_All setting has been replaced with a switch in the VNET Configuration blade, however it can still be used in the Application Configuration._
-=======
 Leave the Setting "blank" which should pickup the default 168.x.x.x address. 
 
 _Note:  the VNET_Route_All setting has been replaced with a switch in the VNET Configuration blade, however it can still be used in the Application Configuration_
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
   
 [WEBSITE_VNET_ROUTE_ALL](https://docs.microsoft.com/en-us/azure/azure-functions/functions-app-settings#website_vnet_route_all)
 Indicates whether all outbound traffic from the app is routed through the virtual network. A setting value of ```1``` indicates that all traffic is routed through the virtual network. You need this setting when a [virtual network NAT gateway is used to define a static outbound IP address](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-nat-gateway).
 
-**b-4)** Start the FHIR-Proxy App
-
-<<<<<<< HEAD
-**b-5)** Configure the Function App Private Endpoint  
-=======
-**d-5)** Start the FHIR Proxy App
->>>>>>> 0a51a2244ec781b108255178e77d2953df91cb72
+**d-4)** Start the FHIR Proxy App
 
 If you want to make calls to Private Endpoints, then you must make sure that your DNS lookups resolve to the private endpoint. You can enforce this behavior by integrating with the Azure DNS private zone setup with Azure API for FHIR above ([link](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options#private-endpoints)).
 
