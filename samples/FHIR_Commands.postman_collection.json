@@ -1,0 +1,978 @@
+{
+	"info": {
+		"_postman_id": "3f253d3d-a30f-4d9f-890b-4bdb8f3c4ba8",
+		"name": "FHIR Commands",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Metadata",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{fhirurl}}/Metadata",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Metadata"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AuthorizeGetToken",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var jsonData = JSON.parse(responseBody);\r",
+							"postman.setEnvironmentVariable(\"bearerToken\", jsonData.access_token);\r",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "oauth2",
+					"oauth2": [
+						{
+							"key": "accessToken",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkN0VHVoTUptRDVNN0RMZHpEMnYyeDNRS1NSWSIsImtpZCI6IkN0VHVoTUptRDVNN0RMZHpEMnYyeDNRS1NSWSJ9.eyJhdWQiOiJodHRwczovL3BhYzJmaGlyLmF6dXJlaGVhbHRoY2FyZWFwaXMuY29tIiwiaXNzIjoiaHR0cHM6Ly9zdHMud2luZG93cy5uZXQvNmE3MTQ1NzktYWIyYS00ZDk4LTliMzktOTNhMjFlZjRlYmYyLyIsImlhdCI6MTU4ODc4NjU2MywibmJmIjoxNTg4Nzg2NTYzLCJleHAiOjE1ODg3OTA0NjMsImFjciI6IjEiLCJhaW8iOiI0MmRnWUtoaVpsUTcrS250VUtYUUttWE93THJEb2JOVXVSTFAxYjFlT0xVcmRwcEw2VllBIiwiYW1yIjpbInB3ZCJdLCJhcHBpZCI6IjcxZjU1ZDI3LWU5NzUtNDc4Mi05YWE3LTMyMGNlZWIwNDJhZiIsImFwcGlkYWNyIjoiMSIsImZhbWlseV9uYW1lIjoiQ29ubmVjdG9yIiwiZ2l2ZW5fbmFtZSI6IlB3ckFwcCIsImlwYWRkciI6IjI0LjEyNi4xNzUuMTk4IiwibmFtZSI6IlB3ckFwcCBDb25uZWN0b3IiLCJvaWQiOiI3NzA3MTJmMS0wNDA2LTQ5MmUtYTNhNC0yYmY5OTAyYWQxMGIiLCJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLCJzdWIiOiJDMkhIUlBYNkllYUo1Z0twOEZNTEFNTkVrT2k3bUtRZWdyOGdYeldnaHBrIiwidGlkIjoiNmE3MTQ1NzktYWIyYS00ZDk4LTliMzktOTNhMjFlZjRlYmYyIiwidW5pcXVlX25hbWUiOiJQd3JBcHBDb25uZWN0b3JAZGVuZXh0Lm9ubWljcm9zb2Z0LmNvbSIsInVwbiI6IlB3ckFwcENvbm5lY3RvckBkZW5leHQub25taWNyb3NvZnQuY29tIiwidXRpIjoiZWo2WlF5aGY4a0t6Uk5fbFRrUnNBQSIsInZlciI6IjEuMCJ9.X_qZuyv5Pmtjgc83WkR14ks140bwIPoYOTE9JF5MFx5TG8FINByq019WfXTRyKGiMo91heJkQgOQJ46Wo9Mo4OFg_Cr_RgoP4eENuZlGa8lBUckJiZ4BY0APjfVRO7icgbSYir-5UI_--3pabudDcW0BD2eS6GBCG4efKyZScTyshMhrhTXPv0RB8aKo20SCXtVnGrK6oa_LGjwq6Dwrx_LmrMrqTw60MUHCqKs0RooIc9QaLNrvqC9O1AdptrdX8zJU-PauKzCaUCdkQLI2HYtHVSqo7yQp1AU-LHuRKwISYgOw2x1G7DIAcATF9O0mUV3Vq_-VvbwNJQsiDyiCzQ",
+							"type": "string"
+						},
+						{
+							"key": "tokenType",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						},
+						{
+							"key": "client_id",
+							"value": "{{clientId}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{clientSecret}}",
+							"type": "text"
+						},
+						{
+							"key": "resource",
+							"value": "{{resource}}",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://login.microsoftonline.com/{{tenantId}}/oauth2/token",
+					"protocol": "https",
+					"host": [
+						"login",
+						"microsoftonline",
+						"com"
+					],
+					"path": [
+						"{{tenantId}}",
+						"oauth2",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Kim Possible",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"WDT000000001\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Minnie Mouse</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"F\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/daisy\",\r\n            \"value\": \"WDT000000001\",\r\n            \"period\": {\r\n                \"start\": \"2002-06-07\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Kim Possible\",\r\n            \"family\": \"Possible\",\r\n            \"given\": [\r\n                \"Kim\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"kimP@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"female\",\r\n    \"birthDate\": \"2002-06-07\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/WDT000000001",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"WDT000000001"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Ron Stoppable",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"WDT000000002\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Minnie Mouse</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"M\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/daisy\",\r\n            \"value\": \"WDT000000002\",\r\n            \"period\": {\r\n                \"start\": \"2002-06-07\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Ron Stoppable\",\r\n            \"family\": \"Stoppable\",\r\n            \"given\": [\r\n                \"Ron\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"ronS@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"male\",\r\n    \"birthDate\": \"2002-06-07\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/WDT000000002",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"WDT000000002"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Donald Duck",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"D000000003\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Donald Duck</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"M\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"MI\",\r\n                        \"display\": \"Military ID number\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://va.gov/fhir/NamingSystem/identifier\",\r\n            \"value\": \"VA-103\",\r\n            \"assigner\": {\r\n                \"display\": \"Veterans Affairs\"\r\n            },\r\n            \"period\": {\r\n                \"start\": \"2012-01-01\"\r\n            }\r\n        },\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/donald\",\r\n            \"value\": \"D000000003\",\r\n            \"period\": {\r\n                \"start\": \"1931-06-09\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Donald Duck\",\r\n            \"family\": \"Duck\",\r\n            \"given\": [\r\n                \"Donald\"\r\n            ],\r\n            \"prefix\": [\r\n                \"Mr.\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"dd@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"male\",\r\n    \"birthDate\": \"1931-06-09\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ],\r\n    \"maritalStatus\": {\r\n        \"coding\": [\r\n            {\r\n                \"system\": \"http://terminology.hl7.org/CodeSystem/v3-MaritalStatus\",\r\n                \"code\": \"M\",\r\n                \"display\": \"M\"\r\n            }\r\n        ],\r\n        \"text\": \"M\"\r\n    },\r\n    \"multipleBirthBoolean\": false,\r\n    \"communication\": [\r\n        {\r\n            \"language\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"urn:ietf:bcp:47\",\r\n                        \"code\": \"en-US\",\r\n                        \"display\": \"English\"\r\n                    }\r\n                ],\r\n                \"text\": \"English\"\r\n            }\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/D000000003",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"D000000003"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Daisy Duck",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"D000000004\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Daisy Duck</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"F\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/daisy\",\r\n            \"value\": \"D000000004\",\r\n            \"period\": {\r\n                \"start\": \"1940-06-07\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Daisy Duck\",\r\n            \"family\": \"Duck\",\r\n            \"given\": [\r\n                \"Daisy\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"dd2@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"female\",\r\n    \"birthDate\": \"1940-06-07\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/D000000004",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"D000000004"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Minnie Mouse",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"D000000002\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Minnie Mouse</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"F\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/daisy\",\r\n            \"value\": \"D000000002\",\r\n            \"period\": {\r\n                \"start\": \"1928-05-15\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Minnie Mouse\",\r\n            \"family\": \"Mouse\",\r\n            \"given\": [\r\n                \"Minnie\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"mm2@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"female\",\r\n    \"birthDate\": \"1928-05-15\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/D000000002",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"D000000002"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Mickey Mouse",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"D000000001\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Mickey Mouse</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"M\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/mickey\",\r\n            \"value\": \"D000000001\",\r\n            \"period\": {\r\n                \"start\": \"1928-05-15\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Mickey Mouse\",\r\n            \"family\": \"Mouse\",\r\n            \"given\": [\r\n                \"Mickey\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"mm@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"male\",\r\n    \"birthDate\": \"1928-05-15\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/D000000001",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"D000000001"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Patient - Mortimer Mouse",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Patient\",\r\n    \"id\": \"D000000001-1\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient\"\r\n        ]\r\n    },\r\n    \"text\": {\r\n        \"status\": \"generated\",\r\n        \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">Mortimer Mouse</div>\"\r\n    },\r\n    \"extension\": [\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-race\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Race\",\r\n                        \"code\": \"2106-3\",\r\n                        \"display\": \"White\"\r\n                    }\r\n                ],\r\n                \"text\": \"race\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity\",\r\n            \"valueCodeableConcept\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://hl7.org/fhir/v3/Ethnicity\",\r\n                        \"code\": \"2186-5\",\r\n                        \"display\": \"Nonhispanic\"\r\n                    }\r\n                ],\r\n                \"text\": \"ethnicity\"\r\n            }\r\n        },\r\n        {\r\n            \"url\": \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex\",\r\n            \"valueCode\": \"M\"\r\n        }\r\n    ],\r\n    \"identifier\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"type\": {\r\n                \"coding\": [\r\n                    {\r\n                        \"system\": \"http://terminology.hl7.org/CodeSystem/v2-0203\",\r\n                        \"code\": \"PI\",\r\n                        \"display\": \"Patient internal identifier\"\r\n                    }\r\n                ]\r\n            },\r\n            \"system\": \"http://mickey.disney.com/mickey\",\r\n            \"value\": \"D000000001-1\",\r\n            \"period\": {\r\n                \"start\": \"1928-05-15\"\r\n            },\r\n            \"assigner\": {\r\n                \"display\": \"EMPI - Enterprise ID system\"\r\n            }\r\n        }\r\n    ],\r\n    \"name\": [\r\n        {\r\n            \"use\": \"official\",\r\n            \"text\": \"Mortimer Mouse\",\r\n            \"family\": \"Mouse\",\r\n            \"given\": [\r\n                \"Mortimer\"\r\n            ]\r\n        }\r\n    ],\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"615-871-6779\",\r\n            \"use\": \"mobile\"\r\n        },\r\n        {\r\n            \"system\": \"email\",\r\n            \"value\": \"mm@disney.com\"\r\n        }\r\n    ],\r\n    \"gender\": \"male\",\r\n    \"birthDate\": \"1928-05-15\",\r\n    \"address\": [\r\n        {\r\n            \"use\": \"home\",\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"USA\"\r\n        }\r\n    ],\r\n    \"link\": [\r\n        {\r\n            \"other\": {\r\n                \"reference\": \"Patient/D000000001\"\r\n            },\r\n            \"type\": \"replaced-by\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/D000000001-1",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"D000000001-1"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Group Disney",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Group\",\r\n    \"id\": \"Disney-G-01\",\r\n    \"text\": {\r\n      \"status\": \"additional\",\r\n      \"div\": \"<div xmlns=\\\"http://www.w3.org/1999/xhtml\\\">\\n  <p>All Disney Patients</p>\\n   </div>\"\r\n    },\r\n    \"type\": \"person\",\r\n    \"actual\": true,\r\n    \"member\": [\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/WDT000000001\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"2002-06-07\"\r\n        }\r\n      },\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/WDT000000002\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"2002-06-07\"\r\n        }\r\n      },\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/D000000003\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"1931-06-09\"\r\n        }\r\n      },\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/D000000004\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"1940-06-07\"\r\n        }\r\n      },\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/D000000002\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"1928-05-15\"\r\n        }\r\n      },\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/D000000001\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"1928-05-15\"\r\n        }\r\n      },\r\n      {\r\n        \"entity\": {\r\n          \"reference\": \"Patient/D000000001-1\"\r\n        },\r\n        \"period\": {\r\n          \"start\": \"1928-05-15\"\r\n        },\r\n        \"inactive\": \"true\"\r\n      }\r\n    ]\r\n  }"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Group/Disney-G-01",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Group",
+						"Disney-G-01"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save Organization Disney",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"resourceType\": \"Organization\",\r\n    \"id\": \"Disney02\",\r\n    \"meta\": {\r\n        \"profile\": [\r\n            \"http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization\"\r\n        ]\r\n    },\r\n    \"active\": true,\r\n    \"type\": [\r\n        {\r\n            \"coding\": [\r\n                {\r\n                    \"system\": \"http://terminology.hl7.org/CodeSystem/organization-type\",\r\n                    \"code\": \"bus\",\r\n                    \"display\": \"Non-Healthcare Business or Corporation\"\r\n                }\r\n            ],\r\n            \"text\": \"Non-Healthcare Business or Corporation\"\r\n        }\r\n    ],\r\n    \"name\": \"Walt Disney World\",\r\n    \"telecom\": [\r\n        {\r\n            \"system\": \"phone\",\r\n            \"value\": \"4079395277\"\r\n        }\r\n    ],\r\n    \"address\": [\r\n        {\r\n            \"line\": [\r\n                \"1500 Epcot Resorts Blvd\"\r\n            ],\r\n            \"city\": \"Bay Lake\",\r\n            \"state\": \"FL\",\r\n            \"postalCode\": \"32830\",\r\n            \"country\": \"US\"\r\n        }\r\n    ]\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Organization/Disney02",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Organization",
+						"Disney02"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List All Patients",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "X-MS-AZUREFHIR-AUDIT-USERID",
+						"value": "Dale",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Count All Patients",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "X-MS-AZUREFHIR-AUDIT-USERID",
+						"value": "Dale",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient?_total=accurate",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient"
+					],
+					"query": [
+						{
+							"key": "_total",
+							"value": "accurate"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Organization",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "X-MS-AZUREFHIR-AUDIT-USERID",
+						"value": "Dale",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Organization",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Organization"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Practitioner",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "X-MS-AZUREFHIR-AUDIT-USERID",
+						"value": "Dale",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Practitioner",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Practitioner"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List MedicationRequest",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "X-MS-AZUREFHIR-AUDIT-USERID",
+						"value": "Dale",
+						"type": "text",
+						"disabled": true
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/MedicationRequest",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"MedicationRequest"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List Devices",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n  \"resourceType\": \"Device\",\r\n  \"identifier\": [\r\n    {\r\n      \"system\": \"http://azure/device/registration\",\r\n      \"value\": \"12345\"\r\n    }\r\n  ],\r\n  \"patient\":{\r\n  \t\"reference\":\"Patient/\"\r\n  }\r\n}"
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Device",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Device"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Schedule",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Schedule",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Schedule"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Export Patients",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/fhir+json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Prefer",
+						"value": "respond-async",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/$export",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"$export"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Export Patients Group",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/fhir+json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Prefer",
+						"value": "respond-async",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Group/Disney-G-01/$export",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Group",
+						"Disney-G-01",
+						"$export"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Export Everything",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/fhir+json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Prefer",
+						"value": "respond-async",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/$export",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"$export"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Patient",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bearerToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{fhirurl}}/Patient/<Id>",
+					"host": [
+						"{{fhirurl}}"
+					],
+					"path": [
+						"Patient",
+						"<Id>"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
