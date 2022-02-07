@@ -68,9 +68,6 @@ Below is an example using Postman on a VM connected via a Bastion Host. Click on
 ## Step 3.  Configure FHIR-Proxy to work with the Virtual Network and Private Links
 Azure Functions offer multiple networking features with different hosting options. Azure Function networking options give customers the ability to access resources without using internet-routable addresses. Moreover, it is possible to restrict internet access to a function app - see this **[link](https://docs.microsoft.com/en-us/azure/azure-functions/functions-networking-options)** for information about these options. 
 
-**a) Virtual network integration**  
-
-
 **a) Lock down your storage account** 
 Create the private endpoints for Azure Files Storage, Azure Blob Storage and Azure Table Storage by using your storage account.  
 
