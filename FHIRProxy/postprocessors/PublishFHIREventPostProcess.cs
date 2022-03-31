@@ -29,6 +29,34 @@ namespace FHIRProxy.postprocessors
     /* Proxy Post Process to publish events for CUD events to FHIR Server */
     class PublishFHIREventPostProcess : IProxyPostProcess
     {
+        private EventHubProducerClient _producerClient = null;
+        private Object lockobj = new object();
+        private bool initializationfailed = false;
+        public bool InitHubClient(string eventHubConnectionString, string eventHubName,ILogger log)
+        {
+
+            if (_producerClient != null || initializationfailed) return true;
+            lock (lockobj)
+            {
+                if (_producerClient == null)
+                {
+                    try
+                    {
+                        _producerClient = new EventHubProducerClient(eventHubConnectionString, eventHubName);
+                      
+                    }
+                    catch (Exception e)
+                    {
+                        _producerClient = null;
+                        log.LogError($"PublishFHIREventPostProcess: Failed to initialize ServiceBusClient:{e.Message}->{e.StackTrace}");
+                        initializationfailed = true;
+                      
+                    }
+                }
+            }
+            return _producerClient != null;
+
+        }
         public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             
@@ -75,7 +103,10 @@ namespace FHIRProxy.postprocessors
                     stub["resource"]["resourceType"] = pp.ResourceType;
                     entries.Add(stub);
                 }
-                await publishBatchEvent(ecs, enm, source, entries,log);
+                if (InitHubClient(ecs, enm, log))
+                {
+                    await publishBatchEvent(source, entries, log);
+                }
 
 
 
@@ -90,12 +121,10 @@ namespace FHIRProxy.postprocessors
             return new ProxyProcessResult(true, "", "", response);
 
         }
-        private async Task publishBatchEvent(string eventHubConnectionString, string eventHubName, string source, JArray entries,ILogger log)
+        private async Task publishBatchEvent(string source, JArray entries,ILogger log)
         {
-            await using (var producerClient = new EventHubProducerClient(eventHubConnectionString, eventHubName))
-            {
                 // Create a batch of events 
-                using Azure.Messaging.EventHubs.Producer.EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
+                using Azure.Messaging.EventHubs.Producer.EventDataBatch eventBatch = await _producerClient.CreateBatchAsync();
 
                 if (!entries.IsNullOrEmpty())
                 {
@@ -109,9 +138,9 @@ namespace FHIRProxy.postprocessors
 
                 }
                 // Use the producer client to send the batch of events to the event hub
-                await producerClient.SendAsync(eventBatch);
+                await _producerClient.SendAsync(eventBatch);
               
-            }
+            
         }
         private EventData createMsg(string status,string source, JToken resource)
         {
