@@ -172,6 +172,12 @@ namespace FHIRProxy
                 }
                 
             }
+            //Undo AAD Scopes
+            if (isaad)
+            {
+                string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                tokenscope = tokenscope.Replace(appiduri, "");
+            }
             //Generate a Server Access Token for fhir-proxy and replace in token call.
             proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log);
             //substitute our access token if created
