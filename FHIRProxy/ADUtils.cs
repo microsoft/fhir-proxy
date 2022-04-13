@@ -13,13 +13,16 @@ using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using System.Security.Cryptography;
 
 namespace FHIRProxy
 {
     public static class ADUtils
     {
+        public static string[] clientidclaims = { "appId","client_id","clientID" };
         public static ClaimsPrincipal BearerToClaimsPrincipal(HttpRequest req)
         {
+            if (!req.Headers.ContainsKey("Authorization")) return null;
             var jwtstr = req.Headers["Authorization"].First();
             if (jwtstr == null) return null;
             jwtstr = jwtstr.Split(" ")[1];
@@ -72,14 +75,14 @@ namespace FHIRProxy
             }
 
         }
-        private static string LoadJWKS(string jwksurl, ILogger log)
+        private static async Task<string> LoadJWKS(string jwksurl, ILogger log)
         {
             using (HttpClient client = new HttpClient())
             {
                 // Call asynchronous network methods in a try/catch block to handle exceptions
                 try
                 {
-                        var keys = client.GetStringAsync(jwksurl).GetAwaiter().GetResult();
+                        var keys = await client.GetStringAsync(jwksurl);
                         return keys;
                     
                 }
@@ -91,7 +94,7 @@ namespace FHIRProxy
             }
 
         }
-        public static JObject LoadOIDCConfiguration(string iss, ILogger log)
+        public static async Task<JObject> LoadOIDCConfiguration(string iss, ILogger log)
         {
             if (string.IsNullOrEmpty(iss))
             {
@@ -106,7 +109,7 @@ namespace FHIRProxy
                 // Call asynchronous network methods in a try/catch block to handle exceptions
                 try
                 {
-                    string responseBody = client.GetStringAsync(url).GetAwaiter().GetResult();
+                    string responseBody = await client.GetStringAsync(url);
                     JObject obj = JObject.Parse(responseBody);
                     return obj;
                 }
@@ -129,30 +132,73 @@ namespace FHIRProxy
 
 
         }
-        public static JwtSecurityToken ValidateToken(string authToken, string jwksurl, string hostname, bool validateAudience, ILogger log)
+        public static async Task<JwtSecurityToken> ValidateToken(string authToken, string jwksurl, string hostname, bool validateAudience, ILogger log)
         {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var validationParameters = GetValidationParameters(jwksurl,hostname,validateAudience,log);
+                var validationParameters = await GetValidationParameters(jwksurl,hostname,validateAudience,log);
                 SecurityToken validatedToken;
-                var principal = tokenHandler.ValidateToken(authToken, validationParameters, out validatedToken);
-                return (JwtSecurityToken)validatedToken;      
-        }
-        private static TokenValidationParameters GetValidationParameters(string jwksurl, string hostname,bool validateAudience, ILogger log)
-        {
-            var jwks = Utils.GetEnvironmentVariable("FP-OIDC-JWKS");
-            if (string.IsNullOrEmpty(jwks))
+            if (!validationParameters.RequireSignedTokens)
             {
-                jwks = LoadJWKS(jwksurl, log);
+                validatedToken = tokenHandler.ReadToken(authToken);
+
             }
-            var signingKeys = new JsonWebKeySet(jwks).GetSigningKeys();
-            var retVal = new TokenValidationParameters()
+            else
             {
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidIssuers = GetValidIssuers(),
-                IssuerSigningKeys = signingKeys,
-                RequireSignedTokens = true
-            };
+                var principal = tokenHandler.ValidateToken(authToken, validationParameters, out validatedToken);
+            }
+            return (JwtSecurityToken)validatedToken;      
+        }
+        private static async Task<TokenValidationParameters> GetValidationParameters(string jwksurl, string hostname,bool validateAudience, ILogger log)
+        {
+            TokenValidationParameters retVal = null;
+            var sk = Utils.GetEnvironmentVariable("FP-OIDC-SECRETKEY");
+          
+            if (!string.IsNullOrEmpty(sk))
+            {
+                if (sk.Equals("FP-NOVALIDATION"))
+                {
+                    retVal = new TokenValidationParameters()
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateLifetime = true,
+                        RequireSignedTokens = false
+                    };
+                }
+                else
+                {
+                    //var t = new HMACSHA256(Encoding.UTF8.GetBytes(sk));
+                    var t = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(sk));
+
+                    retVal = new TokenValidationParameters()
+                    {
+                        ValidateIssuerSigningKey = true,
+                        ValidateAudience = false,
+                        ValidateLifetime = true,
+                        ValidIssuer = GetValidIssuers()[0],
+                        IssuerSigningKey = t,
+                        RequireSignedTokens = true
+                    };
+                }
+
+            }
+            else
+            {
+                var jwks = Utils.GetEnvironmentVariable("FP-OIDC-JWKS");
+                if (string.IsNullOrEmpty(jwks))
+                {
+                    jwks = await LoadJWKS(jwksurl, log);
+                }
+                var signingKeys = new JsonWebKeySet(jwks).GetSigningKeys();
+                retVal = new TokenValidationParameters()
+                {
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidIssuers = GetValidIssuers(),
+                    IssuerSigningKeys = signingKeys,
+                    RequireSignedTokens = true
+                };
+            }
             if (validateAudience)
             {
                 retVal.ValidateAudience = true;
@@ -211,24 +257,23 @@ namespace FHIRProxy
             return retVal;
 
         }
-        public static string GenerateFHIRProxyAccessToken(JwtSecurityToken validatedIdentityToken,JwtSecurityToken sourceaccessToken,ILogger log)
+        public static string GenerateFHIRProxyAccessToken(JwtSecurityToken validatedIdentityToken,string accessscopes,ILogger log)
         {
             var secret = Utils.GetEnvironmentVariable("FP-ACCESS-TOKEN-SECRET");
-            //generate token that is valid for 7 days
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secret);
-            ClaimsIdentity access_ci = new ClaimsIdentity(sourceaccessToken.Claims);
             ClaimsIdentity id_ci = new ClaimsIdentity(validatedIdentityToken.Claims);
             List<Claim> fpAccessClaims = new List<Claim>();
             string oidclaimkey = Utils.GetEnvironmentVariable("FP-OIDC-TOKEN-IDENTITY-CLAIM", "oid");
-            var oid = access_ci.SingleClaim(oidclaimkey);
-            if (oid == null) throw new Exception($"Cannot find oid claim {oidclaimkey} in original access token");
+            var oid = id_ci.SingleClaim(oidclaimkey);
+            if (oid == null) throw new Exception($"Cannot find oid claim {oidclaimkey} in original token");
             fpAccessClaims.Add(new Claim("oid", oid.Value));
-            var tid = access_ci.Tenant();
+            var tid = id_ci.Tenant();
             if (string.IsNullOrEmpty(tid))
             {
-                tid = access_ci.SingleClaim("iss").Value;
+                tid = id_ci.SingleClaim("iss").Value;
                 tid = tid.Replace("https://", "").Replace("http://", "").Replace("api://","");
+                tid = tid.Trim('/');
             }
             fpAccessClaims.Add(new Claim("tid", tid));
             var fhiruserclaim = id_ci.fhirUserClaim();
@@ -247,19 +292,25 @@ namespace FHIRProxy
                     }
                 }
             }
-            var roles = access_ci.RoleClaims();
+            var roles = id_ci.RoleClaims();
             if (roles != null) fpAccessClaims.AddRange(roles);
-            var scopes = access_ci.ScopeString();
+            var scopes = id_ci.ScopeString();
+            if (string.IsNullOrEmpty(scopes)) scopes = accessscopes;
             if (scopes != null)
             {
                 scopes = scopes.Replace("/", ".");
                 fpAccessClaims.Add(new Claim("scp", scopes));
             }
-            var appid = access_ci.SingleClaim("appId");
-            if (appid != null) fpAccessClaims.Add(appid);
-            fpAccessClaims.Add(access_ci.SingleClaim("iss"));
-            fpAccessClaims.Add(access_ci.SingleClaim("aud"));
-            fpAccessClaims.Add(access_ci.SingleClaim("sub"));
+            Claim appid = null;
+            foreach (string s1 in clientidclaims)
+            {
+                appid = id_ci.SingleClaim(s1);
+                if (appid != null) break;
+            }
+            if (appid != null) fpAccessClaims.Add(new Claim("appId",appid.Value));
+            fpAccessClaims.Add(id_ci.SingleClaim("iss"));
+            fpAccessClaims.Add(id_ci.SingleClaim("aud"));
+            fpAccessClaims.Add(id_ci.SingleClaim("sub"));
             var now = DateTime.UtcNow;
             var tokenDescriptor = new SecurityTokenDescriptor
             {

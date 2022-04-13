@@ -23,6 +23,7 @@ namespace FHIRProxy
         public ProxyProcessResult()
         {
             Continue = true;
+            DirectReply = false;
         }
         public ProxyProcessResult(bool cont,string errmsg,string requestBody, FHIRResponse resp)
         {
@@ -30,8 +31,10 @@ namespace FHIRProxy
             ErrorMsg = errmsg;
             Request = requestBody;
             Response = resp;
+            DirectReply = false;
         }
         public bool Continue { get; set; }
+        public bool DirectReply { get; set; }
         public string ErrorMsg { get; set; }
         public string Request { get; set; }
         public FHIRResponse Response { get; set; }

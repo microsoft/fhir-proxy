@@ -442,24 +442,31 @@ namespace FHIRProxy
                 log.LogWarning("GetMappedFHIRUser: No OID specified!");
                 return null;
             }
-            var table = Utils.getTable();
-            //Check for Patient Association
-            var entity = Utils.getLinkEntity(table, "Patient", tenant + "-" + oid);
-            if (entity != null)
+            try
             {
-                return $"Patient/{entity.LinkedResourceId}";
+                var table = Utils.getTable();
+                //Check for Patient Association
+                var entity = Utils.getLinkEntity(table, "Patient", tenant + "-" + oid);
+                if (entity != null)
+                {
+                    return $"Patient/{entity.LinkedResourceId}";
+                }
+                //Check for Practitioner Association
+                entity = Utils.getLinkEntity(table, "Practitioner", tenant + "-" + oid);
+                if (entity != null)
+                {
+                    return $"Practitioner/{entity.LinkedResourceId}";
+                }
+                //Check for Practitioner Association
+                entity = Utils.getLinkEntity(table, "RelatedPerson", tenant + "-" + oid);
+                if (entity != null)
+                {
+                    return $"RelatedPerson/{entity.LinkedResourceId}";
+                }
             }
-            //Check for Practitioner Association
-            entity = Utils.getLinkEntity(table, "Practitioner", tenant + "-" + oid);
-            if (entity != null)
+            catch (Exception e)
             {
-                return $"Practitioner/{entity.LinkedResourceId}";
-            }
-            //Check for Practitioner Association
-             entity = Utils.getLinkEntity(table, "RelatedPerson", tenant + "-" + oid);
-            if (entity != null)
-            {
-                return $"RelatedPerson/{entity.LinkedResourceId}";
+                log.LogError($"FHIRProxyAuthorization:Cannot access linked FHIR Resources table:{e.Message}");
             }
             log.LogInformation($"FHIRProxyAuthorization: No linked FHIR Resource for tenant {tenant} and oid:{oid}");
             return null;

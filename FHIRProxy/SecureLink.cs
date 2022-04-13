@@ -34,33 +34,23 @@ namespace FHIRProxy
         public static string _bearerToken;
         private static object _lock = new object();
         private static string[] allowedresources = { "Patient", "Practitioner", "RelatedPerson" };
-        private static string[] validcmds = { "find","link", "unlink", "list" };
-        private static string htmltemplatehead = "<html><head><style>table {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}td, th {border: 1px solid #dddddd;text-align: left;padding: 8px;}tr:nth-child(even){background-color: #dddddd;}</style></head><body>";
+        private static string[] validcmds = { "find","link", "unlink", "list","usage" };
+        private static string htmltemplatehead = "<html><head><style>body {font-family: arial, sans-serif;} table {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}td, th {border: 1px solid #dddddd;text-align: left;padding: 8px;}tr:nth-child(even){background-color: #dddddd;}</style></head><body>";
         private static string htmltemplatefoot = "</body></html>";
         [FHIRProxyAuthorization]
         [FunctionName("SecureLink")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "manage/{cmd}/{res}/{id}/{tid}/{oid}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "manage/{cmd}/{res?}/{id?}/{tid?}/{oid?}")] HttpRequest req,
             ILogger log, string cmd, string res, string id, string tid, string oid)
         {
 
-            log.LogInformation("SecureLink Function Invoked");
-            ClaimsPrincipal principal = ADUtils.BearerToClaimsPrincipal(req);
-            //Is the principal authenticated
-            if (!Utils.isServerAccessAuthorized(req))
-            {
-                return new ContentResult() { Content = "User is not Authenticated", StatusCode = (int)System.Net.HttpStatusCode.Unauthorized };
-            }
+            
             if (string.IsNullOrEmpty(cmd) || !validcmds.Any(cmd.Contains))
             {
                 return new BadRequestObjectResult($"Invalid Command....Valid commands are: {String.Join(",",validcmds)}");
             }
-            if (!Utils.inServerAccessRole(req,"A")) 
-            {
-                return new ContentResult() { Content = "User does not have suffiecient rights (Administrator required)", StatusCode = (int)System.Net.HttpStatusCode.Unauthorized };
-            }
             //Are we linking the correct resource type
-            if (string.IsNullOrEmpty(res) || !allowedresources.Any(res.Contains))
+            if (!cmd.ToLower().Equals("usage") && (string.IsNullOrEmpty(res) || !allowedresources.Any(res.Contains)))
             {
                 return new BadRequestObjectResult($"Resource must be one of: {String.Join(",", allowedresources)}");
             }
@@ -70,7 +60,16 @@ namespace FHIRProxy
             CloudTable table = Utils.getTable();
             switch (cmd)
             {
+                case "usage":
+                    StringBuilder sb0 = new StringBuilder();
+                    sb0.Append(htmltemplatehead);
+                    sb0.Append($"<h2>SecureLink Usage</h2>");
+                    sb0.Append($"<p align=left>{req.Scheme + "://" + req.Host.Value}/manage/[{String.Join("|", validcmds)}]/[{String.Join("|", allowedresources)}]/[fhir logical id | name to find]/[tenant id | OIDC Issuer]/[oid | unique user id]</br>");
+                    sb0.Append($"This proxy instance is connect to FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")}</p>");
+                    sb0.Append(htmltemplatefoot);
+                    return new ContentResult() { Content = sb0.ToString(), StatusCode = 200, ContentType = "text/html" };
                 case "find":
+                    
                     StringBuilder sb = new StringBuilder();
                     var fhirresp = await FHIRClient.CallFHIRServer($"{res}?name={id}", null, "GET", req.Headers, log);
                     if (!fhirresp.IsSuccess())
@@ -78,7 +77,7 @@ namespace FHIRProxy
                         return ProxyFunction.genContentResult(fhirresp, log);
                     }
                     sb.Append(htmltemplatehead);
-                    sb.Append($"<h2>{res} resources matching {id}</h2>");
+                    sb.Append($"<h2>{res} resources matching {id} on FHIR Server {Utils.GetEnvironmentVariable("FS-URL","")} </h2>");
                     var o = fhirresp.toJToken();
                     JArray entries = (JArray) o["entry"];
                     if (entries != null)
@@ -112,18 +111,18 @@ namespace FHIRProxy
                     linkentity.ValidUntil = DateTime.Now.AddDays(i_link_days);
                     linkentity.LinkedResourceId = id;
                     Utils.setLinkEntity(table, linkentity);
-                    return new OkObjectResult($"Identity: {oid} in directory {tid} is now linked to FHIR {res}/{id}");
+                    return new OkObjectResult($"Identity: {oid} in directory {tid} is now linked to FHIR {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")}");
                 case "unlink":
                     LinkEntity delentity = Utils.getLinkEntity(table, res, tid + "-" + oid);
                     if (delentity==null) return new OkObjectResult($"Resource {res}/{id} in FHIR has no links to Identity {oid} in directory {tid}");
                     Utils.deleteLinkEntity(table,delentity);
-                    return new OkObjectResult($"Identity: {oid} in directory {tid} has been unlinked from FHIR {res}/{id}");
+                    return new OkObjectResult($"Identity: {oid} in directory {tid} has been unlinked from FHIR {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")}");
                 case "list":
                     LinkEntity entity = Utils.getLinkEntity(table, res, tid + "-" + oid);
                     if (entity != null)
-                        return new OkObjectResult($"Resource {res}/{id} is linked to Identity: {oid} in directory {tid}");
+                        return new OkObjectResult($"Resource {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")} is linked to Identity: {oid} in directory {tid}");
                     else
-                        return new OkObjectResult($"Resource {res}/{id} has no links to Identity {oid} in directory {tid}");
+                        return new OkObjectResult($"Resource {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")} has no links to Identity {oid} in directory {tid}");
             }
             return new OkObjectResult($"No action taken Identity: {oid}");
 

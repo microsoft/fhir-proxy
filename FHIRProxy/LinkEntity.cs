@@ -1,4 +1,4 @@
-﻿using Hl7.Fhir.Rest;
+﻿
 using Microsoft.WindowsAzure.Storage.Table;
 using System;
 using System.Collections.Generic;

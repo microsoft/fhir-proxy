@@ -59,6 +59,7 @@ declare scopearr
 declare permissions=""
 declare owner=""
 declare replyurls=""
+declare replyurlsarray
 declare adduserclaim=""
 declare fhiruserclaimid=""
 declare spobjectid=""
@@ -127,7 +128,8 @@ read replyurls
 if [ -z "$replyurls" ]; then
 	replyurls=$postmanreply
 fi
-
+IFS=" " read -a replyurlsarray <<< $replyurls
+IFS=$'\n\t'
 echo "Enter SMART Scopes required for this application (scopes seperated by spaces) ["$scopesdef"]:"
 read scopes
 if [ -z "$scopes" ]; then
@@ -168,11 +170,18 @@ echo "Creating SMART Client Application "$spname"..."
 			echo "Enabling public client access..."
 			stepresult=$(az ad app update  --id $spappid  --set publicClient=true)
 		fi
+		
+		#Iterate replyurls and add to app registration
 		echo "Setting reply-urls ["$replyurls"]..."
+		for var in "${replyurlsarray[@]}"
+		do
+			stepresult=$(az ad app update --id $spappid --reply-urls $var)
+		done
 		stepresult=$(az ad app update --id $spappid --reply-urls $replyurls)
 		#Delegate openid, profile and offline_access permissions from MS Graph
 		echo "Loading MS Graph OAuth2 openid permissions..."
-		msggraphid=$(az ad sp list --query "[?appDisplayName=='Microsoft Graph'].appId | [0]" --all --out tsv)	
+		#msggraphid=$(az ad sp list --query "[?appDisplayName=='Microsoft Graph'].appId | [0]" --all --out tsv)	
+		msggraphid="00000003-0000-0000-c000-000000000000"
 		msgopenid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='openid'].id | [0]" --out tsv)
 		msgprofileid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='profile'].id | [0]" --out tsv)
 		msgofflineaccessid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='offline_access'].id | [0]" --out tsv)

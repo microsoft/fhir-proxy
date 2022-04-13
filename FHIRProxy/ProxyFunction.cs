@@ -89,6 +89,10 @@ namespace FHIRProxy
                         fer.Content = Utils.genOOErrResponse("internalerror", $"A Proxy Pre-Processor halted execution for an unknown reason. Check logs. Message is {errmsg}");
                         return genContentResult(fer, log);
                     }
+                    if (prerslt.DirectReply)
+                    {
+                        return genContentResult(preresp, log);
+                    }
                     //Do not continue, so no call to the fhir server go directly to post processing with the response from the pre-preprocessor
                     serverresponse = preresp;
                     goto PostProcessing;

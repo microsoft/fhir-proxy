@@ -1,5 +1,4 @@
-﻿using Hl7.Fhir.Model;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.IO;

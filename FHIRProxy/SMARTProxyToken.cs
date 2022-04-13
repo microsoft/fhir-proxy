@@ -32,7 +32,7 @@ namespace FHIRProxy
                 return new ContentResult() { Content = "Content-Type invalid must be application/x-www-form-urlencoded", StatusCode = 400, ContentType = "text/plain" };
 
             }
-            string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+           
             string code = null;
             string redirect_uri = null;
             string client_id = null;
@@ -96,11 +96,15 @@ namespace FHIRProxy
             {
                 //Convert SMART on FHIR Scopes to Fully Qualified AAD Scopes
                 string scopeString = scope;
-                if (isaad) scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
+                if (isaad)
+                {
+                    string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                    scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
+                }
                 keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
             }
             //Load Configuration
-            JObject config = ADUtils.LoadOIDCConfiguration(iss, log);
+            JObject config = await ADUtils.LoadOIDCConfiguration(iss, log);
             if (config == null)
             {
                 return new ContentResult() { Content = $"Error retrieving open-id configuration from {iss}", StatusCode = 500, ContentType = "text/plain" };
@@ -135,23 +139,23 @@ namespace FHIRProxy
             }
             //Validate Token from Issuer and generate a Proxy Access Token to replace access_token in token call
             var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken valid_id_token = null;
-            JwtSecurityToken orig_access_token = null;
+            JwtSecurityToken orig_token = null;
             JwtSecurityToken proxy_access_token = null;
             string proxyAccessTokenString = null;
+            string tokenscope = (string)obj["scope"];
             if (grant_type.ToLower().Equals("client_credentials"))
             {
                 try
                 {
                     //Client Credentials or Refresh Validate Returned Access Token 
-                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value,true,log);
+                    orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value,true,log);
                 }
                 catch (Exception e)
                 {
                     log.LogError($"SMARTProxyToken:Error validating issuer access token: {e.Message}");
                     return new ContentResult() { Content = $"Error validating issuer access token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
                 }
-                proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_access_token, orig_access_token, log);
+               
                 
             }
             else if (grant_type.ToLower().Equals("authorization_code") || grant_type.ToLower().Equals("refresh_token"))
@@ -159,17 +163,17 @@ namespace FHIRProxy
                 //authorization_code need to validate identity from oidc issuer and produce a SMART Compliant Access token
                 try
                 {
-                    valid_id_token = ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value,false,log);
-                    orig_access_token = ADUtils.ValidateToken((string)obj["access_token"],(string)config["jwks_uri"], req.Host.Value, true,log);
+                    orig_token = await ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value,false,log);
                 }
                 catch (Exception e)
                 {
                     log.LogError($"SMARTProxyToken:Error validating issuer id token: {e.Message}");
                     return new ContentResult() { Content = $"Error validating issuer id token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
                 }
-                //Generate a Server Access Token for fhir-proxy and replace in token call.
-                proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(valid_id_token, orig_access_token, log);
+                
             }
+            //Generate a Server Access Token for fhir-proxy and replace in token call.
+            proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log);
             //substitute our access token if created
             if (!string.IsNullOrEmpty(proxyAccessTokenString))
             {
@@ -188,8 +192,9 @@ namespace FHIRProxy
                     }
                 }
                 //Replace Scopes back to SMART from Fully Qualified AD Scopes
-                if (!obj["scope"].IsNullOrEmpty())
+                if (!obj["scope"].IsNullOrEmpty() && isaad)
                 {
+                    string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                     string sc = obj["scope"].ToString();
                     sc = sc.Replace(appiduri + "/", "");
                     sc = sc.Replace("patient.", "patient/");

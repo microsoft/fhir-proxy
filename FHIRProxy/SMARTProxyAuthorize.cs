@@ -14,19 +14,19 @@ namespace FHIRProxy
     public static class SMARTProxyAuthorize
     {
         [FunctionName("SMARTProxyAuthorize")]
-        public static IActionResult Run(
+        public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "oauth2/authorize")] HttpRequest req,
             ILogger log)
         {
             var iss = ADUtils.GetIssuer();
             var isaad = Utils.GetBoolEnvironmentVariable("FP-OIDC-ISAAD", true);
-            JObject config = ADUtils.LoadOIDCConfiguration(iss,log);
+            JObject config = await ADUtils.LoadOIDCConfiguration(iss,log);
             if (config==null)
             {
                 return new ContentResult() { Content = $"Error retrieving open-id configuration from {iss}", StatusCode = 500, ContentType = "text/plain" };
 
             }
-            string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+            
             string response_type = req.Query["response_type"];
             string client_id = req.Query["client_id"];
             string redirect_uri = req.Query["redirect_uri"];
@@ -47,7 +47,11 @@ namespace FHIRProxy
             }
             //Convert SMART on FHIR Scopes to Fully Qualified AAD Scopes
             string scopeString = scope;
-            if (isaad) scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
+            if (isaad)
+            {
+                string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
+            }
             if (!string.IsNullOrEmpty(scopeString))
             {
                 newQueryString += $"&scope={HttpUtility.UrlEncode(scopeString)}";

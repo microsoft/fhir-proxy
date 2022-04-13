@@ -51,6 +51,7 @@ declare resourceGroupLocation=""
 declare storageAccountNameSuffix="store"
 declare storageConnectionString=""
 declare serviceplanSuffix="asp"
+declare deployredis=""
 declare redisAccountNameSuffix="cache"
 declare redisConnectionString=""
 declare redisKey=""
@@ -73,6 +74,7 @@ declare fhirServiceProperties=""
 declare fhirServiceClientAppName=""
 declare fhirServiceClientObjectId=""
 declare fhirServiceClientRoleAssignment=""
+declare fhirServiceWorkspace=""
 
 # KeyVault 
 declare keyVaultName=""
@@ -114,7 +116,7 @@ declare msifhirservername=""
 declare msifhirserverrg=""
 declare msifhirserverrid=""
 declare msirolename="FHIR Data Contributor"
-
+declare workspaces=""
 
 function intro {
 	# Display the intro - give the user a chance to cancel 
@@ -158,7 +160,7 @@ function kvuri {
 	echo "@Microsoft.KeyVault(SecretUri=https://"$keyVaultName".vault.azure.net/secrets/"$@"/)"
 }
 
-usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -k <keyVaultName> -n <deployPrefix>" 1>&2; exit 1; }
+usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -k <keyVaultName> -n <deployPrefix> -w using workspaces" 1>&2; exit 1; }
 
 
 #########################################
@@ -167,7 +169,7 @@ usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -l <resourc
 #
 # Initialize parameters specified from command line
 #
-while getopts ":i:g:l:k:n:" arg; do
+while getopts ":i:g:l:k:n:w" arg; do
 	case "${arg}" in
 		n)
 			deployPrefix=${OPTARG:0:14}
@@ -185,6 +187,9 @@ while getopts ":i:g:l:k:n:" arg; do
 			;;
 		l)
 			resourceGroupLocation=${OPTARG}
+			;;
+		w)
+			workspaces="yes"
 			;;
 		*)
 			usage
@@ -462,6 +467,8 @@ else
 		if [ -z "$msifhirserverrg" ] ; then
 			msifhirserverrg=$resourceGroupName
 		fi
+		echo "For MSI Token, enter the workspace name that contains the API for FHIR Server (leave blank for API for FHIR): "
+		read fhirServiceWorkspace
 		fhirServiceAudience=${fhirServiceUrl}
 fi
 
@@ -496,9 +503,11 @@ az account set --subscription $subscriptionId
 
 # Set up variables
 faresourceid="/subscriptions/"$subscriptionId"/resourceGroups/"$resourceGroupName"/providers/Microsoft.Web/sites/"$proxyAppName
-msifhirserverrid="/subscriptions/"$subscriptionId"/resourceGroups/"$msifhirserverrg"/providers/Microsoft.HealthcareApis/services/"$msifhirservername
-
-
+if [[ -z "$fhirServiceWorkspace" ]]; then
+	msifhirserverrid="/subscriptions/"$subscriptionId"/resourceGroups/"$msifhirserverrg"/providers/Microsoft.HealthcareApis/services/"$msifhirservername
+else
+	msifhirserverrid="/subscriptions/"$subscriptionId"/resourceGroups/"$msifhirserverrg"/providers/Microsoft.HealthcareApis/workspaces/"$fhirServiceWorkspace"/fhirservices/"$msifhirservername
+fi
 echo "Starting Azure Deployments "
 (
     if [[ "$useExistingResourceGroup" == "no" ]]; then
@@ -559,17 +568,18 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Storing Storage Account Connection String in Key Vault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-STORAGEACCT" --value $storageConnectionString)
 		
-	# Create Redis Cache to Support Proxy Modules
-	echo "Creating Redis Cache ["$deployPrefix$redisAccountNameSuffix"]..."
-	stepresult=$(az redis create --subscription $subscriptionId --location $resourceGroupLocation --name $deployPrefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $TAG)
+	# Create Redis Cache to Support Proxy Modules (Default is not deployed)
+	if [[ -n "$deployredis" ]]; then
+		echo "Creating Redis Cache ["$deployPrefix$redisAccountNameSuffix"]..."
+		stepresult=$(az redis create --subscription $subscriptionId --location $resourceGroupLocation --name $deployPrefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $TAG)
 	
-	echo "Creating Redis Connection String..."
-	redisKey=$(az redis list-keys --subscription $subscriptionId --resource-group $resourceGroupName --name $deployPrefix$redisAccountNameSuffix --query "primaryKey" --out tsv)
-	redisConnectionString=$deployPrefix$redisAccountNameSuffix".redis.cache.windows.net:6380,password="$redisKey",ssl=True,abortConnect=False"
+		echo "Creating Redis Connection String..."
+		redisKey=$(az redis list-keys --subscription $subscriptionId --resource-group $resourceGroupName --name $deployPrefix$redisAccountNameSuffix --query "primaryKey" --out tsv)
+		redisConnectionString=$deployPrefix$redisAccountNameSuffix".redis.cache.windows.net:6380,password="$redisKey",ssl=True,abortConnect=False"
 	
-	echo "Storing Redis Connection String in KeyVault..."
-	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-REDISCONNECTION" --value $redisConnectionString)
-		
+		echo "Storing Redis Connection String in KeyVault..."
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-REDISCONNECTION" --value $redisConnectionString)
+	fi	
 	# Create Proxy function app
 	echo "Creating Secure FHIR Proxy Function App ["$proxyAppName"]..."
 	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $TAG --query defaultHostName --output tsv)
@@ -595,7 +605,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 		
 	# Add App Settings
 	echo "Configuring Secure FHIR Proxy App ["$proxyAppName"]..."
-	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess FP-REDISCONNECTION=$(kvuri FP-REDISCONNECTION) FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-ISMSI=$(kvuri FS-ISMSI) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE) FP-OIDC-VALID-AUDIENCES=api://$functionAppHost)
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess  FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-ISMSI=$(kvuri FS-ISMSI) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE) FP-OIDC-VALID-AUDIENCES=api://$functionAppHost)
 	
 	echo "Deploying Secure FHIR Proxy Function App from source repo to ["$functionAppHost"]..."
 	stepresult=$(retry az functionapp deployment source config --branch v2.0 --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --subscription $subscriptionId --resource-group $resourceGroupName)
