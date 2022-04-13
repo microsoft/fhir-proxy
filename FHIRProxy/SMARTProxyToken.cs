@@ -176,6 +176,7 @@ namespace FHIRProxy
             if (isaad)
             {
                 string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
                 tokenscope = tokenscope.Replace(appiduri, "");
             }
             //Generate a Server Access Token for fhir-proxy and replace in token call.
