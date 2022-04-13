@@ -540,6 +540,7 @@ echo "Storing FHIR Service information in KeyVault ["$keyVaultName"]"
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-ID" --value $fhirServiceClientId)
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-SECRET" --value $fhirServiceClientSecret)
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-CLIENT-SECRET" --value $fhirServiceClientSecret)
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-ISMSI" --value "false")
 	else
 		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FS-ISMSI" --value "true")
 	fi
