@@ -30,6 +30,8 @@ namespace FHIRProxy.postprocessors
     class FHIRCDSSyncAgentPostProcess2 : IProxyPostProcess
     {
         private ServiceBusClient _queueClient = null;
+        private ServiceBusSender _sender = null;
+
         private string _qname = null;
         private Object lockobj = new object();
         private string[] _fhirSupportedResources = null;
@@ -71,8 +73,9 @@ namespace FHIRProxy.postprocessors
                             return;
                         }
                         _queueClient = new ServiceBusClient(Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES"));
-                       
-                       
+                        _sender = _queueClient.CreateSender(_qname);
+
+
                     }
                     catch (Exception e)
                     {
@@ -157,8 +160,7 @@ namespace FHIRProxy.postprocessors
          
                 if (!entries.IsNullOrEmpty())
                 {
-                    ServiceBusSender sender = _queueClient.CreateSender(_qname);
-                    using ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync();
+                    using ServiceBusMessageBatch messageBatch = await _sender.CreateMessageBatchAsync();
                     foreach (JToken tok in entries)
                     {
                             //Don't queue if no supported
@@ -174,7 +176,8 @@ namespace FHIRProxy.postprocessors
                            
                     }
                     // Send the message batch to the queue.
-                    await sender.SendMessagesAsync(messageBatch);
+                    await _sender.SendMessagesAsync(messageBatch);
+              
                 }
             
         }
@@ -199,7 +202,7 @@ namespace FHIRProxy.postprocessors
             if (!_bulkLoadMode)
             {
                 //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
-                string partitionkey = resource.FHIRResourceType();
+                string partitionkey = resource.FHIRReferenceId();
                 if (resource.FHIRResourceType().Equals("Patient"))
                 {
                     partitionkey = resource.FHIRReferenceId();
