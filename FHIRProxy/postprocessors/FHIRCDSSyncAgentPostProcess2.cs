@@ -202,7 +202,7 @@ namespace FHIRProxy.postprocessors
             if (!_bulkLoadMode)
             {
                 //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
-                string partitionkey = resource.FHIRReferenceId();
+                string partitionkey = resource.FHIRResourceType();
                 if (resource.FHIRResourceType().Equals("Patient"))
                 {
                     partitionkey = resource.FHIRReferenceId();
