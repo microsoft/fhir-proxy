@@ -266,7 +266,11 @@ namespace FHIRProxy
             List<Claim> fpAccessClaims = new List<Claim>();
             string oidclaimkey = Utils.GetEnvironmentVariable("FP-OIDC-TOKEN-IDENTITY-CLAIM", "oid");
             var oid = id_ci.SingleClaim(oidclaimkey);
-            if (oid == null) throw new Exception($"Cannot find oid claim {oidclaimkey} in original token");
+            if (oid == null)
+            {
+                log.LogError($"GenerateFHIRProxyAccessToken:Cannot find oid claim {oidclaimkey} in original token:\r\n{validatedIdentityToken.ToString()}");
+                throw new Exception($"Cannot find oid claim {oidclaimkey} in original token.");
+            }
             fpAccessClaims.Add(new Claim("oid", oid.Value));
             var tid = id_ci.Tenant();
             if (string.IsNullOrEmpty(tid))
