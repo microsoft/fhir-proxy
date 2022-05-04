@@ -212,6 +212,8 @@ namespace FHIRProxy
                         sc = sc.Replace("launch.", "launch/");
                         if (!sc.Contains("openid")) sc = sc + " openid";
                         if (!sc.Contains("offline_access")) sc = sc + " offline_access";
+                        if (sc.Contains(" profile")) sc.Replace(" profile", "");
+                        if (sc.Contains("profile")) sc.Replace("profile", "");
                         obj["scope"] = sc;
                     }
                 }

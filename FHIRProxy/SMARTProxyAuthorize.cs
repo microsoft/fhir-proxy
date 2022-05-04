@@ -51,6 +51,7 @@ namespace FHIRProxy
             {
                 string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                 scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
+                if (!scopeString.Contains("profile")) scopeString += " profile";
             }
             if (!string.IsNullOrEmpty(scopeString))
             {
