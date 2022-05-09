@@ -92,22 +92,22 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
 14. Congratulations the select users have been assigned the participant role and can now be linked to FHIR Resources
 []()
 ## Linking Users in Participant Roles to FHIR Resources
-1. Make sure you have configured Participant Authorization Roles for users
-2. Obtain the FHIR Resource Id you wish to link to a AAD User principal.  Note you can use any search methods for the resources described in the FHIR specification.  It is strongly recommended to use a known Business Identifier in your query to ensure a specific and correct match.
+1. Make sure you have configured Participant Authorization Roles for users.
+2. Obtain the FHIR Resource Id you wish to link to an AAD User Principal.  Note you can use any search methods for the resources described in the FHIR specification. It is strongly recommended to use a known Business Identifier in your query to ensure a specific and correct match.
    For example:
-   To find a specific Patient in FHIR with a MRN of 1234567 you could issue the following URL in your browser:
+   To find a specific Patient in FHIR with an MRN of 1234567 you could issue the following URL in your browser:
    
    ```https://<your fhir proxy url>/fhir/Patient?identifier=1234567```
    
-   To find a specific Practitioner with last name Smith, in this case you can use other fields to validate like address, identifiers,etc... 
+   To find a specific Practitioner with last name Smith, in this case you can use other fields to validate like address, identifiers, etc... 
    ```https://<your fhir proxy address>/fhir/Practitioner?name=smith```
     
-   The resource id is located in the id field of the returned resource or resource member in a search bundle
+   The resource id is located in the id field of the returned resource or resource member in a search bundle:
    ```"id": "3bdaac8f-5c8e-499d-b906-aab31633337d"``` 
  
    _Note: You will need to login as a user in a FHIR Reader and/or FHIR Administrative role to view._
  
- 3. You will need to obtain the participant user object id for the AAD instance in your tenant that are assigned and in roles for the secure proxy application.  Make sure the Role they are in corresponds to the FHIR Resource you are linking. 
+ 3. You will need to obtain the participant user object id for the AAD instance in your tenant that is assigned and in roles for the secure proxy application.  Make sure the Role they are in corresponds to the FHIR Resource you are linking. 
    
  4. Now you can link the FHIR Resource to the user principal object id by entering the following URL in your browser:</br>
  
