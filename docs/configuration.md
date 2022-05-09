@@ -214,7 +214,7 @@ Notes:
 + Organization is determined by the linked resource association with an organization.
 + If multiple consent records are present the most restrictive policy will be used and actor filters will be aggregated.
 + This filter only covers access. Updates are permitted to protect recorded data.
-+ This filter does not allow exceptions on specific resources all resources related to the patient are filtered
++ This filter does not allow exceptions on specific resources. All resources related to the patient are filtered
  
 This process requires configuration settings on the function app:
 ```
