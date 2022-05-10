@@ -189,7 +189,7 @@ namespace FHIRProxy
         }
         public static UserScopeResult ResultAllowedForUserScope(JToken tok, ClaimsIdentity ci, ILogger log)
         {
-            if (tok == null) return new UserScopeResult(true);
+            if (tok == null || string.IsNullOrEmpty(tok.FHIRResourceType())) return new UserScopeResult(true);
             if (tok.FHIRResourceType().Equals("OperationOutcome")) return new UserScopeResult(true);
             List<string> smartClaims = ExtractSmartScopeClaims(ci);
             //No Claims in token then pass scope context by default

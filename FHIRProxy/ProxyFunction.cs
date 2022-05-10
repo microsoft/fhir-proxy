@@ -130,10 +130,11 @@ namespace FHIRProxy
         }
         public static ContentResult genContentResult(FHIRResponse resp,ILogger log)
         {
-            string r = "{}";
+            string r = "";
             if (resp != null) r = resp.ToString();
             int sc = (int)resp.StatusCode;
-            return new ContentResult() { Content = r, StatusCode = sc, ContentType = "application/json"};
+            string ct = (r.isJSON() ? "application/json" : "text/html");
+            return new ContentResult() { Content = r, StatusCode = sc, ContentType = ct};
            
         }
 
