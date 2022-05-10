@@ -89,7 +89,7 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
 11. Select and/or Search and Select registered users/guests that you want to assign the selected role too.
 12. When all users desired have been selected click the select button at the bottom of the panel.
 13. Click the Assign button.
-14. Congratulations the select users have been assigned the participant role and can now be linked to FHIR Resources
+14. Congratulations! The selected users have been assigned the participant role and can now be linked to FHIR Resources.
 []()
 ## Linking Users in Participant Roles to FHIR Resources
 1. Make sure you have configured Participant Authorization Roles for users.
