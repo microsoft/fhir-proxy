@@ -84,7 +84,7 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
    + Practitioner - This user is a practitioner and is linked to a Practitioner resource in the FHIR Server
    + RelatedPerson - This user is a relative/caregiver to a patient and is linked to a RelatedPerson resource in the FHIR Server
     
-   When the role is selected click the select button at the bottom of the panel
+   When the role is selected click the Select button at the bottom of the panel.
 10. Select the Users assignment box
 11. Select and/or Search and Select registered users/guests that you want to assign the selected role too.
 12. When all users desired have been selected click the select button at the bottom of the panel.
