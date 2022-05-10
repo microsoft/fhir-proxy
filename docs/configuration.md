@@ -78,7 +78,7 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
 6. Click on Users and Groups from the left hand navigation menu
 7. Click on the +Add User button
 8. Click on the Select Role assignment box
-9. Select the access role you want to assign to specific users
+9. Select the access role you want to assign to specific users.
    The following are the predefined FHIR Access roles:
    + Patient - This user is a patient and is linked to a Patient resource in the FHIR Server
    + Practitioner - This user is a practitioner and is linked to a Practitioner resource in the FHIR Server
