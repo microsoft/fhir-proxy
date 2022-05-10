@@ -118,7 +118,7 @@ At a minimum users must be placed in one or more FHIR Participant roles in order
      
     _Note: You will need to login as a user in a FHIR Administrative role to perform the assignment_
 
-5.  Your done the principal user is now connected in role to the FHIR resource.
+5.  You're done. The principal user is now connected in a role to the FHIR resource.
 
 ## Consent Opt-Out Filter
 
