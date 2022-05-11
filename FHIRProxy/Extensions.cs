@@ -34,6 +34,13 @@ namespace FHIRProxy
     }
     public static class Extensions
     {
+        public static bool isJSON(this string source)
+        {
+            if (string.IsNullOrEmpty(source)) return false;
+            source = source.Trim();
+            return source.StartsWith("{") && source.EndsWith("}")
+                   || source.StartsWith("[") && source.EndsWith("]");
+        }
         public static FHIRParsedPath parsePath(this HttpRequest req)
         {
             var retVal = new FHIRParsedPath();
@@ -71,12 +78,12 @@ namespace FHIRProxy
         }
         public static string FHIRResourceId(this JToken token)
         {
-            if (!token.IsNullOrEmpty()) return (string)token["id"];
+            if (!token.IsNullOrEmpty() && !token["id"].IsNullOrEmpty()) return (string)token["id"];
             return "";
         }
         public static string FHIRResourceType(this JToken token)
         {
-            if (!token.IsNullOrEmpty()) return (string)token["resourceType"];
+            if (!token.IsNullOrEmpty() && !token["resourceType"].IsNullOrEmpty()) return (string)token["resourceType"];
             return "";
         }
         public static string FHIRVersionId(this JToken token)
