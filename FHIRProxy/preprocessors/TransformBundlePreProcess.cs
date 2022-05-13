@@ -52,28 +52,51 @@ namespace FHIRProxy.preprocessors
                 log.LogInformation($"TransformBundleProcess: Phase 1 searching for existing entries on FHIR Server...");
                 foreach (JToken tok in entries)
                 {
-                    if (!tok.IsNullOrEmpty() && tok["request"]["ifNoneExist"] != null)
-                    {
-                        string resource = (string)tok["request"]["url"];
-                        string query = (string)tok["request"]["ifNoneExist"];
-                        log.LogInformation($"TransformBundleProcess:Loading Resource {resource} with query {query}");
-                        var r = await FHIRClient.CallFHIRServer($"{resource}?{query}",null,"GET",req.Headers,log);
-                        if (r.StatusCode == System.Net.HttpStatusCode.OK)
+                    if (!tok.IsNullOrEmpty() && !tok["request"].IsNullOrEmpty())
+                    { 
+                        string requrl = (string)tok["request"]["url"];
+                        string method = (string)tok["request"]["method"];
+                        string ifnoneexist = (string)tok["request"]["ifNoneExist"];
+                        string resource = "";
+                        string query = "";
+                        if (method.Equals("post",StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrEmpty(ifnoneexist))
                         {
-                            var rs = (JObject)r.Content;
-                            if (!rs.IsNullOrEmpty() && ((string)rs["resourceType"]).Equals("Bundle") && !rs["entry"].IsNullOrEmpty())
+                            resource = requrl;
+                            query = Uri.UnescapeDataString(ifnoneexist);
+                       
+                        } else if (method.Equals("put",StringComparison.InvariantCultureIgnoreCase) && requrl.Contains("?"))
+                        {
+                            string[] parts = requrl.Split("?");
+                            resource = parts[0];
+                            query = parts[1];
+                            query=Uri.UnescapeDataString(query);
+                        }
+                        if (!string.IsNullOrEmpty(resource) && !string.IsNullOrEmpty(query))
+                        {
+                            log.LogInformation($"TransformBundleProcess: Loading Resource {resource} with query {query}");
+                            var r = await FHIRClient.CallFHIRServer($"{resource}?{query}", null, "GET", req.Headers, log);
+                            if (r.StatusCode == System.Net.HttpStatusCode.OK)
                             {
-                                JArray respentries = (JArray)rs["entry"];
-                                string existingid = "urn:uuid:" + (string)respentries[0]["resource"]["id"];
-                                string furl = (string)tok["fullUrl"];
-                                if (!string.IsNullOrEmpty(furl)) requestBody.Replace(furl, existingid);
+                                var rs = r.toJToken();
+                                if (!rs.IsNullOrEmpty() && ((string)rs["resourceType"]).Equals("Bundle") && !rs["entry"].IsNullOrEmpty())
+                                {
+                                    JArray respentries = (JArray)rs["entry"];
+                                    string furl = (string)tok["fullUrl"];
+                                    if (respentries.Count > 1)
+                                    {
+                                        log.LogWarning($"TransformBundleProcess: Entry fullUrl: {furl} Resource query not selective enough: {resource}?{query}");
+                                    }
+                                    string existingid = "urn:uuid:" + (string)respentries[0]["resource"]["id"];
+                                    if (!string.IsNullOrEmpty(furl)) requestBody = requestBody.Replace(furl, existingid);
+                                    
+                                }
                             }
                         }
                     }
                 }
                 //reparse JSON with replacement of existing ids prepare to convert to Batch bundle with PUT to maintain relationships
-                Dictionary<string, string> convert = new Dictionary<string, string>();
                 result = JObject.Parse(requestBody);
+                Dictionary<string, string> convert = new Dictionary<string, string>();
                 result["type"] = "batch";
                 entries = (JArray)result["entry"];
                 foreach (JToken tok in entries)
@@ -90,7 +113,7 @@ namespace FHIRProxy.preprocessors
                         }
                         if (!convert.TryAdd(rid, rt))
                         {
-                            Console.WriteLine($"**** Duplicate GUID Detected {rid} already assigned to a resource type");
+                            log.LogWarning($"TransformBundleProcess: **** Duplicate GUID Detected {rid} already assigned to a resource type");
                         }
                         tok["request"]["method"] = "PUT";
                         tok["request"]["url"] = $"{rt}?_id={rid}";
@@ -109,6 +132,10 @@ namespace FHIRProxy.preprocessors
                     {
                         item.Replace(t + "/" + s);
                     }
+                }
+                if (Utils.GetBoolEnvironmentVariable("FP-BUNDLES-LOGCONVERTED"))
+                {
+                    log.LogInformation($"TransformBundleProcess: Transformed Bundle:\r\n{result.ToString()}");
                 }
                 return new ProxyProcessResult(true, "", result.ToString(), null);
             }
