@@ -26,35 +26,25 @@ namespace FHIRProxy
             string aauth = req.Scheme + "://" + req.Host.Value + "/oauth2/authorize";
             string atoken = req.Scheme + "://" + req.Host.Value + "/oauth2/token";
             var md = nextresult.toJToken();
-            var rest = md["rest"];
+            var rest = md.SelectToken("$.rest[?(@.mode=='server')]");
             if (!rest.IsNullOrEmpty())
             {
-                JArray r = (JArray)rest;
-                foreach(JToken tok in r)
+                JToken secext = rest.SelectToken("$.security.extension[?(@.url=='http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris')].extension");
+                if (!secext.IsNullOrEmpty()) 
                 {
-                    if (!tok["mode"].IsNullOrEmpty() && ((string)tok["mode"]).Equals("server"))
-                    {
-                        if (!tok["security"].IsNullOrEmpty())
-                        {
-                            JArray urls = (JArray)tok["security"]["extension"][0]["extension"];
-                            foreach(JToken u in urls)
-                            {
-                                if (((string)u["url"]).Equals("token"))
-                                {
-                                    u["valueUri"] = atoken;
-                                }
-                                if (((string)u["url"]).Equals("authorize"))
-                                {
-                                    u["valueUri"] = aauth;
-                                }
-                            }
-                            nextresult.Content = md;
-                            break;
-                        }
-                       
-                    }
+                            JToken tokenep = secext.SelectToken("$.[?(@.url=='token')]");
+                            JToken authep = secext.SelectToken("$.[?(@.url=='authorize')]");
+                            if (!tokenep.IsNullOrEmpty()) tokenep["valueUri"] = atoken;
+                            if (!authep.IsNullOrEmpty()) authep["valueUri"] = aauth;        
                 }
+                JToken sof = rest.SelectToken("$.security.service[0].coding[?(@.system == 'http://terminology.hl7.org/CodeSystem/restful-security-service')]");
+                if (!sof.IsNullOrEmpty())
+                {
+                    sof["code"] = "SMART-on-FHIR";
+                }
+                nextresult.Content = md;
             }
+            
             //TODO: Modify Capability as needed
             return ProxyFunction.genContentResult(nextresult, log);
         }
