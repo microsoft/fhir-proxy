@@ -41,7 +41,7 @@ Launch Azure Cloud Shell (Bash Environment)
 
 Clone the repo to your Bash Shell (CLI) environment 
 ```azurecli-interactive
-git clone https://github.com/microsoft/fhir-proxy 
+git clone --branch v2.0 https://github.com/microsoft/fhir-proxy
 ```
 Change working directory to the repo Scripts directory
 ```azurecli-interactive
