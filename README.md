@@ -57,25 +57,8 @@ Please note you should deploy this proxy into a tenant that you have appropriate
    + The Client Secret for the FHIR Service Client
    + The AAD Tenant ID for the FHIR Server/Service Client
    + The Audience/Resource for the FHIR Server/Service Client typically https://<I>[yourfhirservername]</I>.azurehealthcareapis.com for Azure API for FHIR
-6. [Open Azure Cloud Shell](https://shell.azure.com) you can also access this from [azure portal](https://portal.azure.com)
-7. Select Bash Shell 
-8. Clone this repo 
-```bash
-git clone --branch v2.0 https://github.com/microsoft/fhir-proxy
-```
-
-9. Switch to the scripts subdirectory of this repo 
-```bash 
-cd ./fhir-proxy/scripts/
-```
-10. Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
-```bash
-./deployfhirproxy.bash 
-```
-11. Create application service clients using the <b>```createproxyserviceclient.bash```</b> script for services to access the proxy without a user or for users in proxy roles.
-12. Register SMART Application clients using the <b>```createporxysmartclient.bash```</b> script for users that will be restricted by SMART scoping.
-13. Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
-
+6. Follow the detailed deployment instructions for [deploying fhir-proxy](./scripts/Readme.md)
+ 
 ## Proxy Endpoints
 ### FHIR Server
 The new endpoint for your FHIR Server should now be: <b>```https://<secure proxy url from above>/fhir/```</b>. You can use any supported FHIR HTTP verb and any FHIR compliant request/query
