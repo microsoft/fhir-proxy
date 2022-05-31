@@ -114,6 +114,8 @@ FS-RESOURCE                        | FHIR Resource              | Keyvault refer
 
 
 ## Step 2.  createProxyServiceClient.bash
+This script is used to generate application service clients that can be used to authenticate to the fhir-proxy using the unattended client_credentials OAuth2.0 token aquisition flow. This access token is used in requests to the fhir-proxy for secure access.
+
 Please review the Setup steps above and make sure that you are in the Azure Cloud Shell (Bash Environment) from Step 1. 
 
 Ensure that you are in the proper directory 
@@ -142,10 +144,17 @@ FP-SC-RESOURCE                     | FHIR Resource ID           | Keyvault refer
 FP-SC-URL                          | Proxy URL                  | Keyvault reference 
 
 
-## Step 3.  Grant Admin Access (Portal)
-We purposely do not grant admin access in the createproxyservicevclient.bash script as not everyone has Application Administrator rights. We will supply an "admin script" for this in the next release. In the meantime, here are the Azure Portal steps necessary to grant admin access. 
+## Step 3.  Grant Admin Access (Service Clients Only)
+We purposely do not grant admin access in the createproxyservicevclient.bash script as not everyone has Application Administrator rights.
+### Generated Consent URL
+In the output of your ```.deployfhirproxy.bash``` script a URL is created that when followed by the AAD Tenant Administrator will allow them to Grant Admin Consent for the registered service client application. It will look something like this:
+```
+ https://login.microsoftonline.com/<tenant id>/adminconsent?client_id=<client id>
+```
+If you are an Application Administrator for the AAD tenant you can simply follow the generate URL to grant admin consent.  If you are not, you can forward the URL to your AAD Tenant Administrator and ask that they follow the link to grant admin consent for your service client.
 
-Log into the Azure Portal, and go to Azure Active Directory 
+### Azure Portal
+If your prefer the Application Administrator can use the Azure portal as well to grant consent using the following directions:
 
 ![login](../docs/images/login.png)
 
@@ -166,8 +175,42 @@ Grant Admin Consent
 Complete 
 
 ![apigrant](../docs/images/complete.png)
+## Step 4. Prepare AAD Tenant for SMART Launch (For SMART Application Access Only)
+In order to support the SMART FHIR Launch specification it is required to add a ```fhirUser``` claim to the id_token returned to SMART Applications from authentication flows. This is accomplished in Azure Active Directory by registering a custom claim policy, assigning SMART Applications to that policy and mapping users to associated FHIR Resources.</br> To create a fhirUser custom cliam policy follow the documentation in the [Configure fhirUser Custom Claim Policy](../docs/addingfhiridcustomclaim.md).  You will also need to map AAD Users using the instructions in the [Associate AAD User with FHIR Server Resource Reference](../docs/addingfhiridcustomclaim.md) section. You will need to specify the -a switch on the ```createproxytsmartclient.bash``` script or follow instructions in the [Add the fhirUser custom claim policy to your registered SMART Application Principal](../docs/addingfhiridcustomclaim.md) section for each SMART Application registration. 
+## Step 5. createProxySmartClient.bash (For SMART Application Access Only)
+This script is used to generate SMART Service Clients that can be used to authenticate to the fhir-proxy using the interactive OAuth2.0 authorization code flow. This is used for user authentication and consent to access the fhir-proxy bound by defined SMART scopes.
 
----
+Please review the Setup steps above and make sure that you are in the Azure Cloud Shell (Bash Environment) from Step 1. 
+
+You will need the following information about the SMART Client:
+1. Valid Reply URL(s) for the SMART application
+2. The SMART Scopes needed for the SMART application to function (e.g. fhirUser launch/patient patient/Patient.read patient/Observation.read)
+3. If the SMART Application requires public or private access
+Ensure that you are in the proper directory 
+```azurecli-interactive
+cd $HOME/fhir-proxy/scripts
+``` 
+
+Launch the createproxysmartclient.bash shell script 
+```azurecli-interactive
+./createproxysmartclient.bash 
+``` 
+
+It is recommended to use the createproxysmartclient script with command line options 
+```azurecli
+./createproxysmartclient.bash -k <keyvault> -n <smart client name> -a (If you are a tenant admin, add FHIRUserClaim to smartapp id token to support Launch context, must have FHIRUserClaim custom claim policy defined for the tenant) -p (to generate postman environment) -u (For Public Client Registration)
+```
+For example: Let's say you have a SMART Application to register called patientbrowser that allows a patient to view their medical record, with the following details:</br>
+The application reply URL is: ```https://somepatientbrowser.com/auth/callback```.</br>
+The application requires the following scopes: ``` fhirUser launch/patient patient/Patient.read patient/Condition.read patient/Observation.read```</br>
+The application requires public access.</br>
+The keyvault created from the fhir-proxy deployment is called ```proxykv123```</br>
+You are an application administrator and want to register this application with the fhirUser claim custom policy.</br>
+
+You would launch the createproxysmartclient.bash script from the command shell using the following:</br>
+```./createproxysmartclient.bash -k proxykv123 -n patientbrowser -a -u -p```</br>
+
+
 
 # References 
 FHIR-Proxy serves as a middle tier application / access and authorization endpoint. To better understand the difference in these approaches users should review 
@@ -175,11 +218,6 @@ FHIR-Proxy serves as a middle tier application / access and authorization endpoi
 - Client Credentials, or Implicit Oauth 2.0 flow with access token
 - OAuth 2.0 Authorization code flow with access token
 
-To request an access token, users make an HTTP POST to the tenant-specific Microsoft identity platform token endpoint with the following parameters:
-
-```azurecli
-https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token
-```
 Overview of Proxy Auth 
 ![overview](../docs/images/authflow.png)
 

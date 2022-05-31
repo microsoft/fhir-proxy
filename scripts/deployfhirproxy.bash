@@ -116,7 +116,6 @@ declare msifhirservername=""
 declare msifhirserverrg=""
 declare msifhirserverrid=""
 declare msirolename="FHIR Data Contributor"
-declare workspaces=""
 
 function intro {
 	# Display the intro - give the user a chance to cancel 
@@ -160,7 +159,7 @@ function kvuri {
 	echo "@Microsoft.KeyVault(SecretUri=https://"$keyVaultName".vault.azure.net/secrets/"$@"/)"
 }
 
-usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -k <keyVaultName> -n <deployPrefix> -w using workspaces" 1>&2; exit 1; }
+usage() { echo "Usage: $0 -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -k <keyVaultName> -n <deployPrefix>" 1>&2; exit 1; }
 
 
 #########################################
@@ -187,9 +186,6 @@ while getopts ":i:g:l:k:n:w" arg; do
 			;;
 		l)
 			resourceGroupLocation=${OPTARG}
-			;;
-		w)
-			workspaces="yes"
 			;;
 		*)
 			usage
@@ -467,7 +463,7 @@ else
 		if [ -z "$msifhirserverrg" ] ; then
 			msifhirserverrg=$resourceGroupName
 		fi
-		echo "For MSI Token, enter the workspace name that contains the API for FHIR Server (leave blank for API for FHIR): "
+		echo "For MSI Token, enter the workspace name that contains the AHDS FHIR Service (leave blank for legacy API for FHIR): "
 		read fhirServiceWorkspace
 		fhirServiceAudience=${fhirServiceUrl}
 fi
