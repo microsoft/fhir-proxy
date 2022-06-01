@@ -33,10 +33,13 @@ namespace FHIRProxy
             string launch = req.Query["launch"];
             string scope = req.Query["scope"];
             string state = req.Query["state"];
+            string prompt = req.Query["prompt"];
             //To fully qualify SMART scopes to be compatible with AD Scopes we'll need and audience/application URI for the registered application
             //Check for Application Audience on request
             string aud = req.Query["aud"];
             string newQueryString = $"response_type={response_type}&redirect_uri={redirect_uri}&client_id={client_id}";
+            //Add AAD consent prompt query parm if present
+            if (!string.IsNullOrEmpty(prompt)) newQueryString += $"&prompt={prompt}";
             if (!string.IsNullOrEmpty(launch))
             {
                 //TODO: Not sure if there is a use for us to handle launch parameter, for now only the launch/{patient/user} in scope is supported.
