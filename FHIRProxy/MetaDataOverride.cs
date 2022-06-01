@@ -26,6 +26,8 @@ namespace FHIRProxy
             string aauth = req.Scheme + "://" + req.Host.Value + "/oauth2/authorize";
             string atoken = req.Scheme + "://" + req.Host.Value + "/oauth2/token";
             var md = nextresult.toJToken();
+            //Absoulute Form of URL
+            md["url"] = req.Scheme + "://" + req.Host.Value + "/metadata";
             var rest = md.SelectToken("$.rest[?(@.mode=='server')]");
             if (!rest.IsNullOrEmpty())
             {
