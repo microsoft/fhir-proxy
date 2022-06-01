@@ -175,7 +175,7 @@ namespace FHIRProxy
 
                 }
                 //Undo AAD Scopes
-                if (isaad)
+                if (!obj["scope"].IsNullOrEmpty() && isaad)
                 {
                     string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                     if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
