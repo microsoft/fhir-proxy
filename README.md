@@ -60,9 +60,9 @@ Run the <b>```deployfhirproxy.bash```</b> script and follow the prompts
 ./deployfhirproxy.bash 
 ```
 
-Run the <b>```createProxyServiceClient.bash```</b> script and follow the prompts 
+Run the <b>```createproxyserviceclient.bash```</b> script and follow the prompts 
 ```azurecli
-./createProxyServiceClient.bash
+./createproxyserviceclient.bash
 ```
 
 Congratulations you now have a Secure FHIR Proxy instance with authentication running. You can now add users/groups for authorized access (see below)
