@@ -82,7 +82,7 @@ namespace FHIRProxy
                     JArray entries = (JArray) o["entry"];
                     if (entries != null)
                     {
-                        LinkEntity alreadylink = Utils.getLinkEntity(table, res, tid + "-" + oid);
+                        LinkEntity alreadylink = Utils.getEntity<LinkEntity>(table, res, tid + "-" + oid);
                         sb.Append("<table>");
                         sb.Append("<tr><th>FHIR Id</th><th>Name</th><th>DOB</th><th>Gender</th><th>Link URL</th></tr>");
                         foreach (JToken tok in entries)
@@ -110,15 +110,15 @@ namespace FHIRProxy
                     LinkEntity linkentity = new LinkEntity(res, tid + "-" + oid);
                     linkentity.ValidUntil = DateTime.Now.AddDays(i_link_days);
                     linkentity.LinkedResourceId = id;
-                    Utils.setLinkEntity(table, linkentity);
+                    Utils.setEntity(table, linkentity);
                     return new OkObjectResult($"Identity: {oid} in directory {tid} is now linked to FHIR {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")}");
                 case "unlink":
-                    LinkEntity delentity = Utils.getLinkEntity(table, res, tid + "-" + oid);
+                    LinkEntity delentity = Utils.getEntity<LinkEntity>(table, res, tid + "-" + oid);
                     if (delentity==null) return new OkObjectResult($"Resource {res}/{id} in FHIR has no links to Identity {oid} in directory {tid}");
-                    Utils.deleteLinkEntity(table,delentity);
+                    Utils.deleteEntity(table,delentity);
                     return new OkObjectResult($"Identity: {oid} in directory {tid} has been unlinked from FHIR {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")}");
                 case "list":
-                    LinkEntity entity = Utils.getLinkEntity(table, res, tid + "-" + oid);
+                    LinkEntity entity = Utils.getEntity<LinkEntity>(table, res, tid + "-" + oid);
                     if (entity != null)
                         return new OkObjectResult($"Resource {res}/{id} on FHIR Server: {Utils.GetEnvironmentVariable("FS-URL", "")} is linked to Identity: {oid} in directory {tid}");
                     else

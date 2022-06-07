@@ -29,8 +29,8 @@ namespace FHIRProxy
                 return lazyConnection.Value;
             }
         }
-       
-        public static string genOOErrResponse(string code, string desc,string severity=null)
+
+        public static string genOOErrResponse(string code, string desc, string severity = null)
         {
             var sev = (string.IsNullOrEmpty(severity) ? "error" : severity);
             return $"{{\"resourceType\": \"OperationOutcome\",\"id\": \"{Guid.NewGuid().ToString()}\",\"issue\": [{{\"severity\": \"{sev}\",\"code\": \"{code ?? ""}\",\"diagnostics\": \"{desc ?? ""}\"}}]}}";
@@ -47,7 +47,7 @@ namespace FHIRProxy
         }
         public static bool isServerAccessAuthorized(HttpRequest req)
         {
-            if (Utils.GetBoolEnvironmentVariable("FP-AUTHFREEPASS",false)) return true;
+            if (Utils.GetBoolEnvironmentVariable("FP-AUTHFREEPASS", false)) return true;
             if (req.Headers.ContainsKey(AUTH_STATUS_HEADER))
             {
                 var h = req.Headers[AUTH_STATUS_HEADER];
@@ -69,7 +69,7 @@ namespace FHIRProxy
             {
                 if (fhirresp.Headers.ContainsKey("Location"))
                 {
-                    fhirresp.Headers["Location"].Value = fhirresp.Headers["Location"].Value.Replace(fsurl,pxyurl);
+                    fhirresp.Headers["Location"].Value = fhirresp.Headers["Location"].Value.Replace(fsurl, pxyurl);
                 }
                 if (fhirresp.Headers.ContainsKey("Content-Location"))
                 {
@@ -89,28 +89,35 @@ namespace FHIRProxy
             return null;
         }
 
-        public static void deleteLinkEntity(CloudTable table, LinkEntity entity)
+        public static void deleteEntity(CloudTable table, TableEntity entity)
         {
             TableOperation delete = TableOperation.Delete(entity);
             table.ExecuteAsync(delete).GetAwaiter().GetResult();
             return;
         }
-        public static void setLinkEntity(CloudTable table, LinkEntity entity)
+        public static void setEntity(CloudTable table, TableEntity entity)
         {
-            TableOperation insertorreplace = TableOperation.InsertOrReplace(entity);
-            table.ExecuteAsync(insertorreplace).GetAwaiter().GetResult();
+            try
+            {
+                TableOperation insertorreplace = TableOperation.InsertOrReplace(entity);
+                table.ExecuteAsync(insertorreplace).GetAwaiter().GetResult();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+            }
             return;
         }
-        public static LinkEntity getLinkEntity(CloudTable table, string resourceType, string principalId)
+        public static TEntity getEntity<TEntity>(CloudTable table, string partitionKey, string rowKey) where TEntity : ITableEntity
         {
 
-            TableOperation retrieveOperation = TableOperation.Retrieve<LinkEntity>(resourceType, principalId);
+            TableOperation retrieveOperation = TableOperation.Retrieve<TEntity>(partitionKey, rowKey);
 
             TableResult query = table.ExecuteAsync(retrieveOperation).GetAwaiter().GetResult();
-            return (LinkEntity)query.Result;
+            return (TEntity)query.Result;
 
         }
-        public static CloudTable getTable()
+        public static CloudTable getTable(string tablename = "identitylinks")
         {
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("FP-STORAGEACCT"));
 
@@ -118,7 +125,7 @@ namespace FHIRProxy
             CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
 
             // Retrieve a reference to the table.
-            CloudTable table = tableClient.GetTableReference("identitylinks");
+            CloudTable table = tableClient.GetTableReference(tablename);
 
             // Create the table if it doesn't exist.
             table.CreateIfNotExistsAsync().GetAwaiter().GetResult();
@@ -147,13 +154,17 @@ namespace FHIRProxy
         }
         public static int GetIntEnvironmentVariable(string varname, string defval = null)
         {
-
-
             string retVal = System.Environment.GetEnvironmentVariable(varname);
             if (defval != null && retVal == null) retVal = defval;
             return int.Parse(retVal);
         }
-
+        public static string GetRemoteIpAddress(HttpRequest req)
+        {
+            string remoteIpAddress = req.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+            if (req.Headers.ContainsKey("X-Forwarded-For"))
+                remoteIpAddress = req.Headers["X-Forwarded-For"];
+            return remoteIpAddress;
+        }
     }
     
 }

@@ -64,7 +64,7 @@ namespace FHIRProxy.postprocessors
                 associations = new List<string>();
                 var table = Utils.getTable();
                 //Practioner
-                var practitioner = Utils.getLinkEntity(table, "Practitioner", aadten + "-" + name);
+                var practitioner = Utils.getEntity<LinkEntity>(table, "Practitioner", aadten + "-" + name);
                 if (practitioner != null)
                 {
                     associations.Add(practitioner.PartitionKey + "/" + practitioner.LinkedResourceId);
@@ -88,7 +88,7 @@ namespace FHIRProxy.postprocessors
                     }
                 }
                 //RealtedPerson
-                var related = Utils.getLinkEntity(table, "RelatedPerson", aadten + "-" + name);
+                var related = Utils.getEntity<LinkEntity>(table, "RelatedPerson", aadten + "-" + name);
                 if (related != null)
                 {
                     associations.Add(related.PartitionKey + "/" + related.LinkedResourceId);

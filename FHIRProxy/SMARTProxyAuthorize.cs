@@ -20,6 +20,7 @@ namespace FHIRProxy
         {
             var iss = ADUtils.GetIssuer();
             var isaad = Utils.GetBoolEnvironmentVariable("FP-OIDC-ISAAD", true);
+            var table = Utils.getTable("scopes");
             JObject config = await ADUtils.LoadOIDCConfiguration(iss,log);
             if (config==null)
             {
@@ -34,6 +35,7 @@ namespace FHIRProxy
             string scope = req.Query["scope"];
             string state = req.Query["state"];
             string prompt = req.Query["prompt"];
+            string disablesessionscopes = req.Query["disablesessionscopes"];
             //To fully qualify SMART scopes to be compatible with AD Scopes we'll need and audience/application URI for the registered application
             //Check for Application Audience on request
             string aud = req.Query["aud"];
@@ -62,6 +64,15 @@ namespace FHIRProxy
             }
             string redirect = (string)config["authorization_endpoint"];
             redirect += $"?{newQueryString}";
+            //For SMART Session Scopes store this sessions scopes to return with auth token
+            if (!string.IsNullOrEmpty(client_id) && string.IsNullOrEmpty(disablesessionscopes))
+            {
+                string remoteip = Utils.GetRemoteIpAddress(req);
+                ScopeEntity se = new ScopeEntity(client_id, remoteip);
+                se.RequestedScopes = scopeString;
+                se.ValidUntil = DateTime.Now.AddSeconds(60);
+                Utils.setEntity(table, se);
+            }
             return new RedirectResult(redirect, false);
         }
     }

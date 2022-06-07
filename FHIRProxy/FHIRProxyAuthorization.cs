@@ -168,7 +168,7 @@ namespace FHIRProxy
                 string auditsource = req.Headers["X-MS-AZUREFHIR-AUDIT-SOURCE"];
                 if (string.IsNullOrEmpty(auditsource))
                 {
-                    auditsource = req.HttpContext.Connection.RemoteIpAddress.ToString();
+                    auditsource = Utils.GetRemoteIpAddress(req);
                     req.Headers.Add("X-MS-AZUREFHIR-AUDIT-SOURCE", auditsource);
                 }
                 //Since we are proxying with service client need to ensure authenticated proxy principal is audited
@@ -446,19 +446,19 @@ namespace FHIRProxy
             {
                 var table = Utils.getTable();
                 //Check for Patient Association
-                var entity = Utils.getLinkEntity(table, "Patient", tenant + "-" + oid);
+                var entity = Utils.getEntity<LinkEntity>(table, "Patient", tenant + "-" + oid);
                 if (entity != null)
                 {
                     return $"Patient/{entity.LinkedResourceId}";
                 }
                 //Check for Practitioner Association
-                entity = Utils.getLinkEntity(table, "Practitioner", tenant + "-" + oid);
+                entity = Utils.getEntity<LinkEntity>(table, "Practitioner", tenant + "-" + oid);
                 if (entity != null)
                 {
                     return $"Practitioner/{entity.LinkedResourceId}";
                 }
                 //Check for Practitioner Association
-                entity = Utils.getLinkEntity(table, "RelatedPerson", tenant + "-" + oid);
+                entity = Utils.getEntity<LinkEntity>(table, "RelatedPerson", tenant + "-" + oid);
                 if (entity != null)
                 {
                     return $"RelatedPerson/{entity.LinkedResourceId}";

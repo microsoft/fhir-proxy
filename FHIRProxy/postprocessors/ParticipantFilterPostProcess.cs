@@ -57,7 +57,7 @@ namespace FHIRProxy.postprocessors
             {
                 if (fhirresourceroles.Any(r.Equals))
                 {
-                    var entity = Utils.getLinkEntity(table, r, aadten + "-" + name);
+                    var entity = Utils.getEntity<LinkEntity>(table, r, aadten + "-" + name);
                     if (entity != null)
                     {
                         resourceidentities.Add(r + "/" + entity.LinkedResourceId);

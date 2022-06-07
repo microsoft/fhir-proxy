@@ -42,6 +42,7 @@ namespace FHIRProxy
                 string grant_type = null;
                 string refresh_token = null;
                 string scope = null;
+                string origscope = req.Cookies["fp-orgscope"];
                 //Read in Form Collection
                 IFormCollection col = req.Form;
                 if (col != null)
@@ -139,6 +140,7 @@ namespace FHIRProxy
                     }
 
                 }
+               
                 //Validate Token from Issuer and generate a Proxy Access Token to replace access_token in token call
                 var handler = new JwtSecurityTokenHandler();
                 JwtSecurityToken orig_token = null;
@@ -174,12 +176,19 @@ namespace FHIRProxy
                     }
 
                 }
-                //Undo AAD Scopes
+                //Undo AAD Scopes pair down to original request to support SMART Session scoping
                 if (!obj["scope"].IsNullOrEmpty() && isaad)
                 {
+                    var table = Utils.getTable("scopes");
+                    var se = Utils.getEntity<ScopeEntity>(table, client_id, Utils.GetRemoteIpAddress(req));
+                    if (se != null)
+                    {
+                        tokenscope = se.RequestedScopes;
+                    }
                     string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                     if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
                     tokenscope = tokenscope.Replace(appiduri, "");
+                    
                 }
                 //Generate a Server Access Token for fhir-proxy and replace in token call.
                 proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log);
