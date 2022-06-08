@@ -20,32 +20,26 @@ namespace FHIRProxy
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
             string aauth = req.Scheme + "://" + req.Host.Value + "/oauth2/authorize";
             string atoken = req.Scheme + "://" + req.Host.Value + "/oauth2/token";
-            JObject obj = new JObject();
-            obj["token_endpoint"] = atoken;
-            JArray arr = new JArray();
-            arr.Add("private_key_jwt");
-            obj["token_endpoint_auth_methods_supported"] = arr;
-            JArray arr1 = new JArray();
-            arr1.Add("RS384");
-            arr1.Add("ES384");
-            obj["token_endpoint_auth_signing_alg_values_supported"] = arr1;
-            obj["authorization_endpoint"] = aauth;
-            JArray arr2 = new JArray();
-            arr2.Add("system/*.read");
-            obj["scopes_supported"] = arr2;
+            JObject config = await ADUtils.LoadOIDCConfiguration(ADUtils.GetIssuer(), log);
+            if (config == null)
+            {
+                return new ContentResult() { Content = $"Error retrieving open-id configuration from {ADUtils.GetIssuer()}", StatusCode = 500, ContentType = "text/plain" };
+
+            }
+            //Override for Proxy Intercept of authorization/token issue and add capabilities for SMART
+            config["token_endpoint"] = atoken;
+            config["authorization_endpoint"] = aauth;
             JArray arr3 = new JArray();
-            arr3.Add("launch-ehr");
             arr3.Add("launch-standalone");
             arr3.Add("client-public");
             arr3.Add("Patient Access for Standalone Apps");
-            arr3.Add("Patient Access for EHR Launch");
             arr3.Add("sso-openid-connect");
             arr3.Add("context-standalone-patient");
             arr3.Add("permission-offline");
             arr3.Add("permission-patient");
             arr3.Add("client-confidential-symmetric");
-            obj["capabilities"] = arr3;
-            return new JsonResult(obj);
+            config["capabilities"] = arr3;
+            return new JsonResult(config);
         }
     }
 }

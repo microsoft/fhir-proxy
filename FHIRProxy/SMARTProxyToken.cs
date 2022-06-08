@@ -42,7 +42,7 @@ namespace FHIRProxy
                 string grant_type = null;
                 string refresh_token = null;
                 string scope = null;
-                string origscope = req.Cookies["fp-orgscope"];
+                string codeverifier = null;
                 //Read in Form Collection
                 IFormCollection col = req.Form;
                 if (col != null)
@@ -54,6 +54,7 @@ namespace FHIRProxy
                     grant_type = col["grant_type"];
                     refresh_token = col["refresh_token"];
                     scope = col["scope"];
+                    codeverifier = col["code_verifier"];
                 }
                 //Check for Client Id and Secret in Basic Auth Header and use if not in POST body
                 var authHeader = req.Headers["Authorization"].FirstOrDefault();
@@ -94,6 +95,10 @@ namespace FHIRProxy
                 if (!string.IsNullOrEmpty(refresh_token))
                 {
                     keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
+                }
+                if (!string.IsNullOrEmpty(codeverifier))
+                {
+                    keyValues.Add(new KeyValuePair<string, string>("code_verifier", codeverifier));
                 }
                 if (!string.IsNullOrEmpty(scope))
                 {
@@ -179,12 +184,6 @@ namespace FHIRProxy
                 //Undo AAD Scopes pair down to original request to support SMART Session scoping
                 if (!obj["scope"].IsNullOrEmpty() && isaad)
                 {
-                    var table = Utils.getTable("scopes");
-                    var se = Utils.getEntity<ScopeEntity>(table, client_id, Utils.GetRemoteIpAddress(req));
-                    if (se != null)
-                    {
-                        tokenscope = se.RequestedScopes;
-                    }
                     string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                     if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
                     tokenscope = tokenscope.Replace(appiduri, "");

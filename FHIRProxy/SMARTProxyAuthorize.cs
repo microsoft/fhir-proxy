@@ -35,13 +35,15 @@ namespace FHIRProxy
             string scope = req.Query["scope"];
             string state = req.Query["state"];
             string prompt = req.Query["prompt"];
-            string disablesessionscopes = req.Query["disablesessionscopes"];
+            string codechallenge = req.Query["code_challenge"];
+            string codechallengemethod = req.Query["code_challenge_method"];
             //To fully qualify SMART scopes to be compatible with AD Scopes we'll need and audience/application URI for the registered application
             //Check for Application Audience on request
             string aud = req.Query["aud"];
-            string newQueryString = $"response_type={response_type}&redirect_uri={redirect_uri}&client_id={client_id}";
+            string newQueryString = $"response_type={response_type}&redirect_uri={HttpUtility.UrlEncode(redirect_uri)}&client_id={client_id}";
             //Add AAD consent prompt query parm if present
             if (!string.IsNullOrEmpty(prompt)) newQueryString += $"&prompt={prompt}";
+            if (!string.IsNullOrEmpty(codechallenge)) newQueryString += $"&code_challenge={codechallenge}&code_challenge_method={codechallengemethod}";
             if (!string.IsNullOrEmpty(launch))
             {
                 //TODO: Not sure if there is a use for us to handle launch parameter, for now only the launch/{patient/user} in scope is supported.
@@ -64,15 +66,6 @@ namespace FHIRProxy
             }
             string redirect = (string)config["authorization_endpoint"];
             redirect += $"?{newQueryString}";
-            //For SMART Session Scopes store this sessions scopes to return with auth token
-            if (!string.IsNullOrEmpty(client_id) && string.IsNullOrEmpty(disablesessionscopes))
-            {
-                string remoteip = Utils.GetRemoteIpAddress(req);
-                ScopeEntity se = new ScopeEntity(client_id, remoteip);
-                se.RequestedScopes = scopeString;
-                se.ValidUntil = DateTime.Now.AddSeconds(60);
-                Utils.setEntity(table, se);
-            }
             return new RedirectResult(redirect, false);
         }
     }
