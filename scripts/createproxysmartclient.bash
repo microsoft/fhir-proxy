@@ -58,8 +58,9 @@ declare public=""
 declare scopearr
 declare permissions=""
 declare owner=""
-declare replyurls=""
-declare replyurlsarray
+declare replyurls
+declare replyurlstemp=""
+declare replyarr
 declare adduserclaim=""
 declare fhiruserclaimid=""
 declare spobjectid=""
@@ -70,6 +71,14 @@ declare msgopenid=""
 declare msgprofileid=""
 declare msgofflineaccessid=""
 declare publicclient=""
+declare pgsplit
+declare pglen=0
+declare pgjson=""
+declare pguuid=""
+declare pgcondesc=""
+declare pgextrascopes="launch launch.patient fhirUser"
+declare pgset=""
+declare pgfirst=1
 # Initialize parameters specified from command line
 while getopts ":k:n:spau" arg; do
 	case "${arg}" in
@@ -105,7 +114,7 @@ then
 	az login
 fi
 
-defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
+defsubscriptionId=$(az account show --query "id" --out tsv) 
 
 #Prompt for parameters is some required parameters are missing
 if [[ -z "$kvname" ]]; then
@@ -124,11 +133,11 @@ if [ -z "$spname" ]; then
 	spname="fhirproxy-smart-client"
 fi	
 echo "Enter the application reply-urls (space seperated) ["$postmanreply"]:"
-read replyurls
-if [ -z "$replyurls" ]; then
-	replyurls=$postmanreply
+read replyurlstemp
+if [ -z "$replyurlstemp" ]; then
+	replyurlstemp=$postmanreply
 fi
-IFS=" " read -a replyurlsarray <<< $replyurls
+IFS=" " read -a replyarr <<< $replyurlstemp
 IFS=$'\n\t'
 echo "Enter SMART Scopes required for this application (scopes seperated by spaces) ["$scopesdef"]:"
 read scopes
@@ -153,63 +162,77 @@ echo "Creating SMART Client Application "$spname"..."
 (
 		echo "Loading configuration settings from key vault "$kvname"..."
 		fphost=$(az keyvault secret show --vault-name $kvname --name FP-HOST --query "value" --out tsv)
-		fpclientid=$(az keyvault secret show --vault-name $kvname --name FP-RBAC-CLIENT-ID --query "value" --out tsv)
-		if [ -z "$fpclientid" ] || [ -z "$fphost" ]; then
+		if [ -z "$fphost" ]; then
 			echo $kvname" does not appear to contain fhir proxy settings...Is the Proxy Installed?"
 			exit 1
 		fi
 		echo "Registering FHIR SMART Client for AAD Auth..."
-		stepresult=$(az ad sp create-for-rbac -n $spname --skip-assignment)
+		stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors)
 		spappid=$(echo $stepresult | jq -r '.appId')
 		sptenant=$(echo $stepresult | jq -r '.tenant')
 		spsecret=$(echo $stepresult | jq -r '.password')
-		echo "Setting owner to signed in user..."
-		owner=$(az ad signed-in-user show --query objectId --output tsv)
-		stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner)
+		echo "Setting app owner to signed-in user..."
+		owner=$(az ad signed-in-user show --query id --output tsv --only-show-errors)
+		stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner --only-show-errors)
 		if [ -n "$publicclient" ]; then
 			echo "Enabling public client access..."
-			stepresult=$(az ad app update  --id $spappid  --set publicClient=true)
+			stepresult=$(az ad app update  --id $spappid  --set publicClient=true --only-show-errors)
 		fi
-		
-		#Iterate replyurls and add to app registration
-		echo "Setting reply-urls ["$replyurls"]..."
-		for var in "${replyurlsarray[@]}"
+		echo "Configuring identifier URI for scopes..."
+		stepresult=$(az ad app update --id $spappid --identifier-uris "api://"$spappid --only-show-errors)
+		echo "Configuring reply URLs..."
+		for var in "${replyarr[@]}"
 		do
-			stepresult=$(az ad app update --id $spappid --reply-urls $var)
+			stepresult=$(az ad app update --id $spappid --web-redirect-uris "${var}" --only-show-errors)
 		done
-		stepresult=$(az ad app update --id $spappid --reply-urls $replyurls)
 		#Delegate openid, profile and offline_access permissions from MS Graph
 		echo "Loading MS Graph OAuth2 openid permissions..."
-		#msggraphid=$(az ad sp list --query "[?appDisplayName=='Microsoft Graph'].appId | [0]" --all --out tsv)	
 		msggraphid="00000003-0000-0000-c000-000000000000"
-		msgopenid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='openid'].id | [0]" --out tsv)
-		msgprofileid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='profile'].id | [0]" --out tsv)
-		msgofflineaccessid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='offline_access'].id | [0]" --out tsv)
+		msgopenid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='openid'].id | [0]" --out tsv --only-show-errors)
+		msgprofileid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='profile'].id | [0]" --out tsv --only-show-errors)
+		msgofflineaccessid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='offline_access'].id | [0]" --out tsv --only-show-errors)
 		echo "Delegating required MS Graph OAuth2 openid permissions to SMART app..."
 		stepresult=$(az ad app permission add --id $spappid --api $msggraphid --api-permissions $msgopenid"=Scope" 2> /dev/null)
 		stepresult=$(az ad app permission add --id $spappid --api $msggraphid --api-permissions $msgprofileid"=Scope" 2> /dev/null)
 		stepresult=$(az ad app permission add --id $spappid --api $msggraphid --api-permissions $msgofflineaccessid"=Scope" 2> /dev/null)
-		#Load SMART Scopes
-		smartscopes=$(<smart-oauth2-permissions.json)
+		echo "Loading MS Graph ID for Application Id:"$spappid
+		stepresult=$(az rest --method GET --uri "https://graph.microsoft.com/v1.0/applications?\$filter=appId eq '${spappid}'")
+		spobjectid=$(echo $stepresult | jq -r ".value[] | select(.appId==\"$spappid\") | .id")
+		pgset="{\"api\":{\"oauth2PermissionScopes\": ["
 		#Iterate Scopes and add to permission string
 		echo "Setting the following SMART permissions "$scopes"..."
 		for var in "${scopearr[@]}"
 		do
-			stepresult=$(echo $smartscopes | jq -r ".[] | select(.value==\"$var\") | .id")
-			if [ -n "$stepresult" ]; then
-				stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions $stepresult"=Scope" 2> /dev/null)
-			else 
-				echo "Scope "$var" was not found in SMART scopes for app"
+			pgjson=""
+			IFS="." read -a pgsplit <<< $var
+			IFS=$'\n\t'
+			pglen=${#pgsplit[@]}
+			if [[ $pglen -eq 3 ]]; then
+				pguuid=$(cat /proc/sys/kernel/random/uuid)
+				pgcondesc=${pgsplit[2]}
+				pgcondesc=${pgcondesc//read/Read}
+				pgcondesc=${pgcondesc//write/Write}
+				pgcondesc=${pgcondesc//*/Read\/Write}
+				pgcondesc=$pgcondesc" "${pgsplit[1]}" as a "${pgsplit[0]}
+				pgjson="{\"id\":\""$pguuid"\",\"isEnabled\": true,\"type\":\"User\",\"adminConsentDescription\": \""$pgcondesc"\",\"adminConsentDisplayName\": \""$pgcondesc"\",\"userConsentDescription\": \""$pgcondesc"\",\"userConsentDisplayName\": \""$pgcondesc"\",\"value\":\""$var"\"}"
+			else
+				if [[ "$pgextrascopes" == *"$var"* ]]; then
+					pguuid=$(cat /proc/sys/kernel/random/uuid)
+					pgcondesc="Access or perform "$var
+					pgjson="{\"id\":\""$pguuid"\",\"isEnabled\": true,\"type\":\"User\",\"adminConsentDescription\": \""$pgcondesc"\",\"adminConsentDisplayName\": \""$pgcondesc"\",\"userConsentDescription\": \""$pgcondesc"\",\"userConsentDisplayName\": \""$pgcondesc"\",\"value\":\""$var"\"}"
+				fi
+			fi
+			if [ -n "$pgjson" ]; then
+				if [[ $pgfirst -eq 1 ]]; then
+					pgset=$pgset$pgjson
+					pgfirst=0
+				else
+					pgset=$pgset","$pgjson
+				fi
 			fi
 		done
-		stepresult=$(az ad app permission grant --id $spappid --api $fpclientid)
-		if [ -n "$storekv" ]; then
-			echo "Updating Keyvault with new SMART Client Settings..."
-			stepresult=$(az keyvault secret set --vault-name $kvname --name "SMTC-${spname^^}-TENANT-NAME" --value $sptenant)
-			stepresult=$(az keyvault secret set --vault-name $kvname --name "SMTC-${spname^^}-CLIENT-ID" --value $spappid)
-			stepresult=$(az keyvault secret set --vault-name $kvname --name "SMTC-${spname^^}-SECRET" --value $spsecret)
-			stepresult=$(az keyvault secret set --vault-name $kvname --name "SMTC-${spname^^}-RESOURCE" --value $fpclientid)
-		fi
+		pgset=$pgset"]}}"
+		stepresult=$(az rest --method PATCH --uri https://graph.microsoft.com/v1.0/applications/$spobjectid --body $pgset)
 		if [ -n "$genpostman" ]; then
 			echo "Generating Postman environment for access..."
 			set +e
@@ -237,7 +260,7 @@ echo "Creating SMART Client Application "$spname"..."
 			stepresult=$(az rest --method GET --uri 'https://graph.microsoft.com/beta/policies/claimsMappingPolicies')
 			fhiruserclaimid=$(echo $stepresult | jq -r ".value[] | select(.displayName==\"$fhiruserclaimname\") | .id")
 			if [ -n "$fhiruserclaimid" ]; then
-				echo "Loading MS Graph ID for Application Id:"$spappid
+				echo "Loading MS Graph Principal ID for Application Id:"$spappid
 				stepresult=$(az rest --method GET --uri "https://graph.microsoft.com/beta/servicePrincipals?filter=appId eq '${spappid}'")
 				spobjectid=$(echo $stepresult | jq -r ".value[] | select(.appId==\"$spappid\") | .id")
 				if [ -n "$spobjectid" ]; then
@@ -249,7 +272,7 @@ echo "Creating SMART Client Application "$spname"..."
 						az rest --method POST --uri https://graph.microsoft.com/beta/servicePrincipals/${spobjectid}/claimsMappingPolicies/\$ref --body $pmenv
 					)
 					echo "Updating Manifest to Accept Mapped Claims..."
-					stepresult=$(az ad app update --id $spappid --set acceptMappedClaims=true)
+					stepresult=$(az ad app update --id $spappid --set api='{"acceptMappedClaims":true}')
 				else
 					echo "Cannot locate application id "$spappid" in Microsoft Graph."
 				fi

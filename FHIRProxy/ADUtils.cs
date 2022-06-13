@@ -240,9 +240,9 @@ namespace FHIRProxy
             return retVal;
             
         }
-        public static string GetAppIdURI(string hostname)
+        public static string GetAppIdURI(string client_id)
         {
-            return Utils.GetEnvironmentVariable("FP-OIDC-AAD-APPID-URI", "api://" + hostname);
+            return Utils.GetEnvironmentVariable("FP-OIDC-AAD-APPID-URI", "api://" + client_id);
         }
         public static List<string> GetValidAudiences(string hostname)
         {

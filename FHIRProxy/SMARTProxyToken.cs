@@ -106,7 +106,7 @@ namespace FHIRProxy
                     string scopeString = scope;
                     if (isaad)
                     {
-                        string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                        string appiduri = ADUtils.GetAppIdURI(client_id);
                         scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
                     }
                     keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
@@ -157,7 +157,7 @@ namespace FHIRProxy
                     try
                     {
                         //Client Credentials or Refresh Validate Returned Access Token 
-                        orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value, true, log);
+                        orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], client_id, true, log);
                     }
                     catch (Exception e)
                     {
@@ -172,7 +172,7 @@ namespace FHIRProxy
                     //authorization_code need to validate identity from oidc issuer and produce a SMART Compliant Access token
                     try
                     {
-                        orig_token = await ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value, false, log);
+                        orig_token = await ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], client_id, false, log);
                     }
                     catch (Exception e)
                     {
@@ -184,7 +184,7 @@ namespace FHIRProxy
                 //Undo AAD Scopes pair down to original request to support SMART Session scoping
                 if (!obj["scope"].IsNullOrEmpty() && isaad)
                 {
-                    string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                    string appiduri = ADUtils.GetAppIdURI(client_id);
                     if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
                     tokenscope = tokenscope.Replace(appiduri, "");
                     
@@ -211,7 +211,7 @@ namespace FHIRProxy
                     //Replace Scopes back to SMART from Fully Qualified AD Scopes
                     if (!obj["scope"].IsNullOrEmpty() && isaad)
                     {
-                        string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                        string appiduri = ADUtils.GetAppIdURI(client_id);
                         string sc = obj["scope"].ToString();
                         sc = sc.Replace(appiduri + "/", "");
                         sc = sc.Replace("patient.", "patient/");

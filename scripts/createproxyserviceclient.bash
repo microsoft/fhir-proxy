@@ -179,35 +179,31 @@ echo "Creating Service Client Principal "$spname"..."
 (
 	echo "Loading configuration settings from key vault "$kvname"..."
 	fphost=$(az keyvault secret show --vault-name $kvname --name FP-HOST --query "value" --out tsv)
-	fpclientid=$(az keyvault secret show --vault-name $kvname --name FP-RBAC-CLIENT-ID --query "value" --out tsv)
-	if [ -z "$fpclientid" ] || [ -z "$fphost" ]; then
+	if [ -z "$fphost" ]; then
 		echo $kvname" does not appear to contain fhir proxy settings...Is the Proxy Installed?"
 		exit 1
 	fi
-
 	echo "Creating FHIR Proxy Client Service Principal for AAD Auth"
-	stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors --skip-assignment)
+	stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors)
 	spappid=$(echo $stepresult | jq -r '.appId')
 	sptenant=$(echo $stepresult | jq -r '.tenant')
 	spsecret=$(echo $stepresult | jq -r '.password')
 	echo "Setting Reply URL..."
-	stepresult=$(az ad app update --id $spappid --reply-urls "https://"$fphost"/fhir/metadata")
+	stepresult=$(az ad app update --id $spappid --web-redirect-uris "https://"$fphost"/fhir/metadata" --only-show-errors)
+	echo "Creating Application/User Roles..."
+	stepresult=$(az ad app update --id $spappid --app-roles @./fhirroles.json --only-show-errors)
 	echo "Adding Reader/Writer Roles to Service Client..."
-	stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role)
-	stepresult=$(az ad app permission grant --id $spappid --api $fpclientid)
-	
+	stepresult=$(az ad app permission add --id $spappid --api $spappid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role --only-show-errors)
 	echo "Setting app owner to signed-in user..."
-	owner=$(az ad signed-in-user show --query objectId --output tsv)
-	stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner)
+	owner=$(az ad signed-in-user show --query id --output tsv --only-show-errors)
+	stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner --only-show-errors)
 
 	echo "Updating Keyvault with new Service Client Settings..."
 	stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-TENANT-NAME" --value $sptenant)
 	stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-CLIENT-ID" --value $spappid)
 	stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-SECRET" --value $spsecret)
-	stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-RESOURCE" --value $fpclientid)
 	fpscurl="https://"$fphost
 	stepresult=$(az keyvault secret set --vault-name $kvname --name "FP-SC-URL" --value $fpscurl)
-
 	echo "Generating Postman environment for Proxy Service Client access..."
 	rm $spname".postman_environment.json" 2>/dev/null
 	pmuuid=$(cat /proc/sys/kernel/random/uuid)

@@ -56,7 +56,7 @@ namespace FHIRProxy
             string scopeString = scope;
             if (isaad)
             {
-                string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                string appiduri = ADUtils.GetAppIdURI(client_id);
                 scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
                 if (!scopeString.Contains("profile")) scopeString += " profile";
             }
