@@ -210,7 +210,7 @@ echo "Creating Service Client Principal "$spname"..."
 	pmenv=$(<postmantemplate.json)
 	proxyurl="https://"$fphost
 	pmfhirurl="https://"$fphost"/fhir"
-	apiiduri="api://"$fphost"/.default"
+	apiiduri="api://"$spappid"/.default"
 	pmenv=${pmenv/~guid~/$pmuuid}
 	pmenv=${pmenv/~envname~/$spname}
 	pmenv=${pmenv/~tenentid~/$sptenant}
