@@ -585,7 +585,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	fi	
 	# Create Proxy function app
 	echo "Creating Secure FHIR Proxy Function App ["$proxyAppName"]..."
-	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $TAG --query defaultHostName --output tsv)
+	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $TAG --query defaultHostName --output tsv --only-show-errors)
 
 	echo "FHIR-Proxy Function App Host name = "$functionAppHost
 	
@@ -603,12 +603,12 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	#If using MSI set fhir-proxy function app role assignment on FHIR Server
 	if [[ "$authType" == "MSI" ]] ; then 
 		echo "Setting fhir-proxy function app role assignment on FHIR Server..."
-		stepresult=$(retry az role assignment create --assignee "${msi}" --role "${msirolename}" --scope "${msifhirserverrid}")
+		stepresult=$(retry az role assignment create --assignee "${msi}" --role "${msirolename}" --scope "${msifhirserverrid}" --only-show-errors)
 	fi
 		
 	# Add App Settings
 	echo "Configuring Secure FHIR Proxy App ["$proxyAppName"]..."
-	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess  FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-ISMSI=$(kvuri FS-ISMSI) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE)  FP-ACCESS-TOKEN-SECRET=$(kvuri FP-ACCESS-TOKEN-SECRET FP-LOGIN-TENANT=$sptenant))
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-PRE-PROCESSOR-TYPES=FHIRProxy.preprocessors.TransformBundlePreProcess  FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-ISMSI=$(kvuri FS-ISMSI) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE) FP-ACCESS-TOKEN-SECRET=$(kvuri FP-ACCESS-TOKEN-SECRET) FP-LOGIN-TENANT=$sptenant)
 	
 	echo "Deploying Secure FHIR Proxy Function App from source repo to ["$functionAppHost"]..."
 	stepresult=$(retry az functionapp deployment source config --branch v2.0 --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --subscription $subscriptionId --resource-group $resourceGroupName)
