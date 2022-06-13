@@ -111,6 +111,10 @@ namespace FHIRProxy
                     }
                     keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
                 }
+                if (grant_type.ToLower().Equals("refresh_token") && isaad)
+                {
+                    keyValues.Add(new KeyValuePair<string, string>("resource",client_id));
+                }
                 //Load Configuration
                 JObject config = await ADUtils.LoadOIDCConfiguration(iss, log);
                 if (config == null)
