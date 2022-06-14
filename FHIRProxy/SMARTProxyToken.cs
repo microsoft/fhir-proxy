@@ -111,9 +111,13 @@ namespace FHIRProxy
                     }
                     keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
                 }
-                if (grant_type.ToLower().Equals("refresh_token") && isaad)
+                if (grant_type.ToLower().Equals("refresh_token") && isaad && string.IsNullOrEmpty(scope))
                 {
-                    keyValues.Add(new KeyValuePair<string, string>("resource",client_id));
+                    //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, refresh_token without scope will return access_token with no resource access
+                    scope = "fhirUser";
+                    string appiduri = ADUtils.GetAppIdURI(client_id);
+                    var newscope = scope.ConvertSMARTScopeToAADScope(appiduri);
+                    keyValues.Add(new KeyValuePair<string, string>("scope", newscope));
                 }
                 //Load Configuration
                 JObject config = await ADUtils.LoadOIDCConfiguration(iss, log);
