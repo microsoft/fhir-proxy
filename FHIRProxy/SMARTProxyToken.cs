@@ -111,13 +111,19 @@ namespace FHIRProxy
                     }
                     keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
                 }
-                if (grant_type.ToLower().Equals("refresh_token") && isaad && string.IsNullOrEmpty(scope))
+                if (refresh_token != null && isaad && string.IsNullOrEmpty(scope))
                 {
-                    //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, refresh_token without scope will return access_token with no resource access
-                    scope = "fhirUser";
-                    string appiduri = ADUtils.GetAppIdURI(client_id);
-                    var newscope = scope.ConvertSMARTScopeToAADScope(appiduri);
-                    keyValues.Add(new KeyValuePair<string, string>("scope", newscope));
+                    //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, see if we have stored it from original login
+                    var table = Utils.getTable("scopestore");
+                    ScopeEntity se = Utils.getEntity<ScopeEntity>(table, client_id,Utils.hashstring(refresh_token));
+                    if (se != null)
+                    {
+                        scope = se.RequestedScopes;
+                        string appiduri = ADUtils.GetAppIdURI(client_id);
+                        var newscope = scope.ConvertSMARTScopeToAADScope(appiduri);
+                        keyValues.Add(new KeyValuePair<string, string>("scope", newscope));
+                        Utils.deleteEntity(table, se);
+                    }
                 }
                 //Load Configuration
                 JObject config = await ADUtils.LoadOIDCConfiguration(iss, log);
@@ -158,6 +164,7 @@ namespace FHIRProxy
                 var handler = new JwtSecurityTokenHandler();
                 JwtSecurityToken orig_token = null;
                 JwtSecurityToken proxy_access_token = null;
+                JwtSecurityToken orig_id_token = null;
                 string proxyAccessTokenString = null;
                 string tokenscope = (string)obj["scope"];
                 if (grant_type.ToLower().Equals("client_credentials"))
@@ -181,13 +188,14 @@ namespace FHIRProxy
                     try
                     {
                         orig_token = await ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], client_id, false, log);
+                        orig_id_token = orig_token;
                     }
                     catch (Exception e)
                     {
                         log.LogError($"SMARTProxyToken:Error validating issuer id token: {e.Message}");
                         return new ContentResult() { Content = $"Error validating issuer id token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
                     }
-
+                   
                 }
                 //Undo AAD Scopes pair down to original request to support SMART Session scoping
                 if (!obj["scope"].IsNullOrEmpty() && isaad)
@@ -231,6 +239,17 @@ namespace FHIRProxy
                         if (sc.Contains(" profile")) sc.Replace(" profile", "");
                         if (sc.Contains("profile")) sc.Replace("profile", "");
                         obj["scope"] = sc;
+                    }
+                    //To handle optional scope parameters store scope for offline_access claims for aad
+                    if (!obj["refresh_token"].IsNullOrEmpty() && orig_id_token !=null && isaad)
+                    {
+                        string rt = (string)obj["refresh_token"];
+                        var table = Utils.getTable("scopestore");
+                        ScopeEntity se = new ScopeEntity(client_id,Utils.hashstring(rt));
+                        var s = obj["scope"].ToString();
+                        se.RequestedScopes = s;
+                        se.ValidUntil = DateTime.UtcNow.AddHours(1);
+                        Utils.setEntity(table, se);
                     }
                 }
                 req.HttpContext.Response.Headers.Add("Cache-Control", "no-store");

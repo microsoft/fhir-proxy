@@ -257,6 +257,20 @@ namespace FHIRProxy
             return retVal;
 
         }
+        public static string LoadOIDFromIDToken(JwtSecurityToken validatedIdentityToken,ILogger log)
+        {
+            ClaimsIdentity id_ci = new ClaimsIdentity(validatedIdentityToken.Claims);
+            string oidclaimkey = Utils.GetEnvironmentVariable("FP-OIDC-TOKEN-IDENTITY-CLAIM", "oid");
+            var oid = id_ci.SingleClaim(oidclaimkey);
+            if (oid == null)
+            {
+                log.LogError($"LoadOIDFromIDToken:Cannot find oid claim {oidclaimkey} in original token:\r\n{validatedIdentityToken.ToString()}");
+                throw new Exception($"Cannot find oid claim {oidclaimkey} in original token.");
+            }
+            return oid.Value;
+        }
+
+
         public static string GenerateFHIRProxyAccessToken(JwtSecurityToken validatedIdentityToken,string accessscopes,ILogger log)
         {
             var secret = Utils.GetEnvironmentVariable("FP-ACCESS-TOKEN-SECRET");

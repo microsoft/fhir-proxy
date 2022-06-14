@@ -138,6 +138,17 @@ namespace FHIRProxy
             if (defval != null && retVal == null) return defval;
             return retVal;
         }
+        public static string hashstring(string s)
+        {
+            string hash;
+            using (System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create())
+            {
+                hash = BitConverter.ToString(
+                  md5.ComputeHash(Encoding.UTF8.GetBytes(s))
+                ).Replace("-", String.Empty);
+            }
+            return hash;
+        }
         public static bool GetBoolEnvironmentVariable(string varname, bool defval = false)
         {
             var s = GetEnvironmentVariable(varname);
