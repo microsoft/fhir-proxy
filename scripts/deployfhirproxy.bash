@@ -613,6 +613,19 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Deploying Secure FHIR Proxy Function App from source repo to ["$functionAppHost"]..."
 	stepresult=$(retry az functionapp deployment source config --branch v2.0 --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --subscription $subscriptionId --resource-group $resourceGroupName)
 	
+	echo "Creating service principal for fhir-proxy..."
+	stepresult=$(az ad sp create-for-rbac -n $functionAppHost --only-show-errors)
+	spappid=$(echo $stepresult | jq -r '.appId')
+	stepresult=$(az ad app update --id $spappid --identifier-uris "api://"$functionAppHost --app-roles @${script_dir}/fhirroles.json)
+	echo "Storing fhir-proxy application information in keyvault..."
+	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-SP-NAME" --value $functionAppHost)
+	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-SP-ID" --value $spappid)
+	echo "Updating function configuration with fhir-proxy application..."
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-SP-NAME=$(kvuri FP-SP-NAME) FP-SP-ID=$(kvuri FP-SP-ID))
+	echo "Setting fhir-proxy application owner to signed-in user..."
+	owner=$(az ad signed-in-user show --query id --output tsv --only-show-errors)
+	stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner --only-show-errors)
+	
 	echo "Starting fhir proxy function app..."
 	stepresult=$(az functionapp start --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName)
 	
@@ -628,9 +641,15 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Next Steps:  "
 	echo " 1) You must run the ./createproxyserviceclient.bash script for each service principal you want to allow access"
 	echo "    to FHIR Service via the FHIR Proxy"
-	echo " 2) An Azure AD Application Administrator (RBAC role) must grant consent to each created service principal for the FHIR Proxy"
+	stepresult=${functionAppHost/.azurewebsites.net/}"-sc"
+	echo "    You can use the following command to create a service client called "$stepresult":"
+	echo "    ./createproxyserviceclient.bash -k "$keyVaultName" -n "$stepresult
+	echo " 2) An Azure AD Application Administrator (RBAC role) must grant consent to the added FHIR Proxy Roles for each created service principal"
 	echo " 3) You must run the ./createproxysmartclient.bash for each SMART Application you want to register for access"
 	echo "    to FHIR Service via the FHIR Proxy"
+	stepresult=${functionAppHost/.azurewebsites.net/}"-smart-client"
+	echo "    You can use the following command to create a SMART client called "$stepresult":"
+	echo "    ./createproxysmartclient.bash -k "$keyVaultName" -n "$stepresult "-a -p"
 	echo " "
 	echo "  You can view the ./Readme.md for more detailed information"
 	echo "************************************************************************************************************"

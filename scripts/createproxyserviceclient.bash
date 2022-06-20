@@ -183,6 +183,7 @@ echo "Creating Service Client Principal "$spname"..."
 		echo $kvname" does not appear to contain fhir proxy settings...Is the Proxy Installed?"
 		exit 1
 	fi
+	fpclientid=$(az keyvault secret show --vault-name $kvname --name FP-SP-ID --query "value" --out tsv)
 	echo "Creating FHIR Proxy Client Service Principal for AAD Auth"
 	stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors)
 	spappid=$(echo $stepresult | jq -r '.appId')
@@ -190,10 +191,8 @@ echo "Creating Service Client Principal "$spname"..."
 	spsecret=$(echo $stepresult | jq -r '.password')
 	echo "Setting Reply URL..."
 	stepresult=$(az ad app update --id $spappid --web-redirect-uris "https://"$fphost"/fhir/metadata" --only-show-errors)
-	echo "Creating Application/User Roles..."
-	stepresult=$(az ad app update --id $spappid --app-roles @./fhirroles.json --only-show-errors)
 	echo "Adding Reader/Writer Roles to Service Client..."
-	stepresult=$(az ad app permission add --id $spappid --api $spappid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role --only-show-errors)
+	stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions 24c50db1-1e11-4273-b6a0-b697f734bcb4=Role 2d1c681b-71e0-4f12-9040-d0f42884be86=Role --only-show-errors)
 	echo "Setting app owner to signed-in user..."
 	owner=$(az ad signed-in-user show --query id --output tsv --only-show-errors)
 	stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner --only-show-errors)

@@ -9,8 +9,23 @@ IFS=$'\n\t'
 # Setup SMART Application Client for use with FHIR Proxy --- Author Steve Ordahl Principal Architect Health Data Platform
 #
 
-usage() { echo "Usage: $0 -k <keyvault> -n <smart client name> -a (If you are a tenant admin, add FHIRUserClaim to smartapp id token, must have FHIRUserClaim custom claim policy defined for the tenant) -s (to store credentials in <keyvault>) -p (to generate postman environment) -u (For Public Client Registration)" 1>&2; exit 1; }
-
+usage() { echo "Usage: $0 -k <keyvault> -n <smart client name> -a (If you are a tenant admin, add FHIRUserClaim to smartapp id token, must have FHIRUserClaim custom claim policy defined for the tenant) -p (to generate postman environment) -u (For Public Client Registration)" 1>&2; exit 1; }
+function intro {
+	# Display the intro - give the user a chance to cancel 
+	#
+	echo " "
+	echo "Create fhir-proxy SMART Client script... "
+	echo " - Prerequisite:  Azure API for FHIR or AHDS FHIR Server must be installed"
+	echo " - Prerequisite:  FHIR-Proxy must be installed"
+	echo " - Prerequisite:  KeyVault containing FHIR and FHIR-Proxy settings must be available"
+	echo " - Prerequisite:  Follow the Configure fhirUser Custom Claim Policy"
+    echo "		  section of the Adding fhirUser as Custom Claim to AAD OAuth"
+	echo "		  Tokens document (./docs/addingfhiridcustomclaim.md)" 
+	echo " - Prerequisite:  Azure CLI (bash) access from the Azure Portal"
+	echo " - Prerequisite:  You must have rights to register applications, assign permissions and configure claims policy in your AAD tenant"
+	echo " "
+	read -p 'Press Enter to continue, or Ctrl+C to exit...'
+}
 function fail {
   echo $1 >&2
   exit 1
@@ -45,7 +60,6 @@ declare repurls=""
 declare spappid=""
 declare sptenant=""
 declare spsecret=""
-declare storekv=""
 declare genpostman=""
 declare pmenv=""
 declare pmuuid=""
@@ -53,6 +67,7 @@ declare pmfhirurl=""
 declare pmproxyurl=""
 declare scopesdef="openid fhirUser launch/patient patient/Patient.read"
 declare scopes=""
+declare scopeid=""
 declare smartscopes=""
 declare public=""
 declare scopearr
@@ -78,7 +93,10 @@ declare pguuid=""
 declare pgcondesc=""
 declare pgextrascopes="launch launch.patient fhirUser"
 declare pgset=""
-declare pgfirst=1
+declare pgbody=""
+declare pgassign=""
+declare pgassignarr
+declare pgnewscopes=""
 # Initialize parameters specified from command line
 while getopts ":k:n:spau" arg; do
 	case "${arg}" in
@@ -87,9 +105,6 @@ while getopts ":k:n:spau" arg; do
 			;;
 		n)
 			spname=${OPTARG}
-			;;
-		s)
-			storekv="yes"
 			;;
 		p)
 			genpostman="yes"
@@ -115,7 +130,9 @@ then
 fi
 
 defsubscriptionId=$(az account show --query "id" --out tsv) 
-
+# Call the intro function 
+# 
+intro
 #Prompt for parameters is some required parameters are missing
 if [[ -z "$kvname" ]]; then
 	echo "Enter keyvault name that contains the fhir proxy configuration: "
@@ -166,6 +183,7 @@ echo "Creating SMART Client Application "$spname"..."
 			echo $kvname" does not appear to contain fhir proxy settings...Is the Proxy Installed?"
 			exit 1
 		fi
+		fpclientid=$(az keyvault secret show --vault-name $kvname --name FP-SP-ID --query "value" --out tsv)
 		echo "Registering FHIR SMART Client for AAD Auth..."
 		stepresult=$(az ad sp create-for-rbac -n $spname --only-show-errors)
 		spappid=$(echo $stepresult | jq -r '.appId')
@@ -178,8 +196,6 @@ echo "Creating SMART Client Application "$spname"..."
 			echo "Enabling public client access..."
 			stepresult=$(az ad app update  --id $spappid  --set publicClient=true --only-show-errors)
 		fi
-		echo "Configuring identifier URI for scopes..."
-		stepresult=$(az ad app update --id $spappid --identifier-uris "api://"$spappid --only-show-errors)
 		echo "Configuring reply URLs..."
 		for var in "${replyarr[@]}"
 		do
@@ -188,51 +204,77 @@ echo "Creating SMART Client Application "$spname"..."
 		#Delegate openid, profile and offline_access permissions from MS Graph
 		echo "Loading MS Graph OAuth2 openid permissions..."
 		msggraphid="00000003-0000-0000-c000-000000000000"
-		msgopenid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='openid'].id | [0]" --out tsv --only-show-errors)
-		msgprofileid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='profile'].id | [0]" --out tsv --only-show-errors)
-		msgofflineaccessid=$(az ad sp show --id $msggraphid --query "oauth2Permissions[?value=='offline_access'].id | [0]" --out tsv --only-show-errors)
+		msgopenid=$(az ad sp show --id $msggraphid --query "oauth2PermissionScopes[?value=='openid'].id | [0]" --out tsv --only-show-errors)
+		msgprofileid=$(az ad sp show --id $msggraphid --query "oauth2PermissionScopes[?value=='profile'].id | [0]" --out tsv --only-show-errors)
+		msgofflineaccessid=$(az ad sp show --id $msggraphid --query "oauth2PermissionScopes[?value=='offline_access'].id | [0]" --out tsv --only-show-errors)
 		echo "Delegating required MS Graph OAuth2 openid permissions to SMART app..."
 		stepresult=$(az ad app permission add --id $spappid --api $msggraphid --api-permissions $msgopenid"=Scope" 2> /dev/null)
 		stepresult=$(az ad app permission add --id $spappid --api $msggraphid --api-permissions $msgprofileid"=Scope" 2> /dev/null)
 		stepresult=$(az ad app permission add --id $spappid --api $msggraphid --api-permissions $msgofflineaccessid"=Scope" 2> /dev/null)
-		echo "Loading MS Graph ID for Application Id:"$spappid
-		stepresult=$(az rest --method GET --uri "https://graph.microsoft.com/v1.0/applications?\$filter=appId eq '${spappid}'")
-		spobjectid=$(echo $stepresult | jq -r ".value[] | select(.appId==\"$spappid\") | .id")
-		pgset="{\"api\":{\"oauth2PermissionScopes\": ["
+		echo "Loading MS Graph ID for fhir-proxy Application Id:"$fpclientid
+		stepresult=$(az rest --method GET --uri "https://graph.microsoft.com/v1.0/applications?\$filter=appId eq '${fpclientid}'")
+		spobjectid=$(echo $stepresult | jq -r ".value[] | select(.appId==\"$fpclientid\") | .id")
 		#Iterate Scopes and add to permission string
-		echo "Setting the following SMART permissions "$scopes"..."
+		echo "Processing the following SMART permissions "$scopes"..."
+		#load Existing scopes
+		pgset=$(az ad sp show --id $fpclientid --query oauth2PermissionScopes --only-show-errors)
+		pgassign=""
+		#Add Scopes that do not exist
 		for var in "${scopearr[@]}"
 		do
-			pgjson=""
-			IFS="." read -a pgsplit <<< $var
-			IFS=$'\n\t'
-			pglen=${#pgsplit[@]}
-			if [[ $pglen -eq 3 ]]; then
-				pguuid=$(cat /proc/sys/kernel/random/uuid)
-				pgcondesc=${pgsplit[2]}
-				pgcondesc=${pgcondesc//read/Read}
-				pgcondesc=${pgcondesc//write/Write}
-				pgcondesc=${pgcondesc//*/Read\/Write}
-				pgcondesc=$pgcondesc" "${pgsplit[1]}" as a "${pgsplit[0]}
-				pgjson="{\"id\":\""$pguuid"\",\"isEnabled\": true,\"type\":\"User\",\"adminConsentDescription\": \""$pgcondesc"\",\"adminConsentDisplayName\": \""$pgcondesc"\",\"userConsentDescription\": \""$pgcondesc"\",\"userConsentDisplayName\": \""$pgcondesc"\",\"value\":\""$var"\"}"
-			else
-				if [[ "$pgextrascopes" == *"$var"* ]]; then
+			scopeid=""
+			#See if scope exists
+			scopeid=$(echo $pgset | jq -r ".[] | select(.value==\"$var\") | .id")
+			if [[ -z "$scopeid" ]]; then
+				pgjson=""
+				IFS="." read -a pgsplit <<< $var
+				IFS=$'\n\t'
+				pglen=${#pgsplit[@]}
+				if [[ $pglen -eq 3 ]]; then
 					pguuid=$(cat /proc/sys/kernel/random/uuid)
-					pgcondesc="Access or perform "$var
+					pgcondesc=${pgsplit[2]}
+					pgcondesc=${pgcondesc//read/Read}
+					pgcondesc=${pgcondesc//write/Write}
+					pgcondesc=${pgcondesc//*/Read\/Write}
+					pgcondesc=$pgcondesc" "${pgsplit[1]}" as a "${pgsplit[0]}
 					pgjson="{\"id\":\""$pguuid"\",\"isEnabled\": true,\"type\":\"User\",\"adminConsentDescription\": \""$pgcondesc"\",\"adminConsentDisplayName\": \""$pgcondesc"\",\"userConsentDescription\": \""$pgcondesc"\",\"userConsentDisplayName\": \""$pgcondesc"\",\"value\":\""$var"\"}"
+					scopeid=$pguuid
+					pgnewscopes="yes"
+				else
+					if [[ "$pgextrascopes" == *"$var"* ]]; then
+						pguuid=$(cat /proc/sys/kernel/random/uuid)
+						pgcondesc="Access or perform "$var
+						pgjson="{\"id\":\""$pguuid"\",\"isEnabled\": true,\"type\":\"User\",\"adminConsentDescription\": \""$pgcondesc"\",\"adminConsentDisplayName\": \""$pgcondesc"\",\"userConsentDescription\": \""$pgcondesc"\",\"userConsentDisplayName\": \""$pgcondesc"\",\"value\":\""$var"\"}"
+						scopeid=$pguuid
+						pgnewscopes="yes"
+					fi
+				fi
+				if [ -n "$pgjson" ]; then
+					pgset=$(echo $pgset | jq -c --argjson bashpgjson "$pgjson" '. += [$bashpgjson]')
 				fi
 			fi
-			if [ -n "$pgjson" ]; then
-				if [[ $pgfirst -eq 1 ]]; then
-					pgset=$pgset$pgjson
-					pgfirst=0
+			if [[ -n "$scopeid" ]]; then
+				if [[ -n "$pgassign" ]]; then
+					pgassign=$pgassign" "$scopeid"=Scope"
 				else
-					pgset=$pgset","$pgjson
+					pgassign=$scopeid"=Scope"
 				fi
 			fi
 		done
-		pgset=$pgset"]}}"
-		stepresult=$(az rest --method PATCH --uri https://graph.microsoft.com/v1.0/applications/$spobjectid --body $pgset)
+		if [[ -n "$pgnewscopes" ]]; then
+			echo "Setting new scopes on fhir-proxy service principal..."
+			pgset="{\"api\":{\"oauth2PermissionScopes\":"$pgset
+			pgset=$pgset"}}"
+			stepresult=$(az rest --method PATCH --uri https://graph.microsoft.com/v1.0/applications/$spobjectid --body $pgset)
+		fi
+		echo "Assigning Permissions to new SMART Client..."
+		#Iterate Scope Assignments and add to permission string
+		IFS=" " read -a pgassignarr	<<< $pgassign
+		IFS=$'\n\t'
+		for var in "${pgassignarr[@]}"
+		do
+			stepresult=$(az ad app permission add --id $spappid --api $fpclientid --api-permissions $var 2> /dev/null)
+		done
 		if [ -n "$genpostman" ]; then
 			echo "Generating Postman environment for access..."
 			set +e
@@ -272,7 +314,7 @@ echo "Creating SMART Client Application "$spname"..."
 						az rest --method POST --uri https://graph.microsoft.com/beta/servicePrincipals/${spobjectid}/claimsMappingPolicies/\$ref --body $pmenv
 					)
 					echo "Updating Manifest to Accept Mapped Claims..."
-					stepresult=$(az ad app update --id $spappid --set api='{"acceptMappedClaims":true}')
+					stepresult=$(az ad app update --id $spappid --set api='{"acceptMappedClaims":true}' --only-show-errors)
 				else
 					echo "Cannot locate application id "$spappid" in Microsoft Graph."
 				fi
@@ -284,16 +326,14 @@ echo "Creating SMART Client Application "$spname"..."
 		echo "************************************************************************************************************"
 		echo "Registered SMART Application "$spname" on "$(date)
 		echo "This client can be used for SMART Application Launch and Context Access to FHIR Server via the FHIR Proxy"
-		if [ -n "$storekv" ]; then
-			echo "Your client credentials have been securely stored as secrets in keyvault "$kvname
-			echo "The secret prefix is SMTC-${spname^^}"
-			echo "Your FHIR Server ISS: https://"$fphost"/fhir"
-		else
-			echo "Please note the following reference information for use in authentication calls:"
-			echo "Your Service Prinicipal Client/Application ID is: "$spappid
+		echo "Please note the following reference information for use in authentication calls:"
+		echo "Your Service Prinicipal Client/Application ID is: "$spappid
+		if [ -n "$publicclient" ]; then
+			echo "This is a public client registration"
+		else 
 			echo "Your Service Prinicipal Client Secret is: "$spsecret
-			echo "Your FHIR Server ISS: https://"$fphost"/fhir"
 		fi
+		echo "Your FHIR Server ISS: https://"$fphost"/fhir"
 		echo " "
 		if [ -n "$genpostman" ]; then
 			echo "For your convenience a Postman environment "$spname".postman_environment.json has been generated"
