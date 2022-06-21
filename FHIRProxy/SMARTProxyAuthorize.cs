@@ -59,10 +59,26 @@ namespace FHIRProxy
                 string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                 scopeString = scope.ConvertSMARTScopeToAADScope(appiduri);
                 if (!scopeString.Contains("profile")) scopeString += " profile";
+                //Verify audience is proxy
+                if (!string.IsNullOrEmpty(aud) && !aud.Contains(req.Host.Value,StringComparison.InvariantCultureIgnoreCase))
+                {
+                    string msg = $"Invalid Audience:{aud}";
+                    var cr = new ContentResult()
+                    {
+                        Content = "{\"error\":\"" + msg + "\"}",
+                        StatusCode = 401,
+                        ContentType = "application/json"
+                    };
+                    return cr;
+                }
             }
             if (!string.IsNullOrEmpty(scopeString))
             {
                 newQueryString += $"&scope={HttpUtility.UrlEncode(scopeString)}";
+            }
+            if (!string.IsNullOrEmpty(aud) && !isaad)
+            {
+                newQueryString += $"&aud={HttpUtility.UrlEncode(aud)}";
             }
             string redirect = (string)config["authorization_endpoint"];
             redirect += $"?{newQueryString}";
