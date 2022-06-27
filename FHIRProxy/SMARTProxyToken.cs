@@ -133,6 +133,7 @@ namespace FHIRProxy
                     }
                     int removalStatus = keyValues.RemoveAll(x => x.Key == "refresh_token");
                     refresh_token = se.ISSRefreshToken;
+                    internalrefreshId = se.RowKey;
                     //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, see if we have stored it from original login
                     if (scope == null)
                     {
