@@ -62,21 +62,16 @@ namespace FHIRProxy
                 //Verify audience is proxy
                 if (!string.IsNullOrEmpty(aud) && !aud.Contains(req.Host.Value,StringComparison.InvariantCultureIgnoreCase))
                 {
-                    string msg = $"Invalid Audience:{aud}";
-                    var cr = new ContentResult()
-                    {
-                        Content = "{\"error\":\"" + msg + "\"}",
-                        StatusCode = 401,
-                        ContentType = "application/json"
-                    };
-                    return cr;
+                    string r = redirect_uri + "?" + HttpUtility.UrlEncode($"error=Invalid Audience {aud}");
+                    if (!string.IsNullOrEmpty(state)) r += $"state={HttpUtility.UrlEncode(state)}";
+                    return new RedirectResult(redirect_uri, false);
                 }
             }
             if (!string.IsNullOrEmpty(scopeString))
             {
                 newQueryString += $"&scope={HttpUtility.UrlEncode(scopeString)}";
             }
-            if (!string.IsNullOrEmpty(aud) && !isaad)
+            if (!string.IsNullOrEmpty(aud))
             {
                 newQueryString += $"&aud={HttpUtility.UrlEncode(aud)}";
             }

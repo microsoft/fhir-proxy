@@ -19,6 +19,7 @@ namespace FHIRProxy
             this.RowKey = principalId;
         }
         public string RequestedScopes { get; set; }
+        public string ISSRefreshToken { get; set; }
         public DateTime ValidUntil { get; set; }
     }
 }

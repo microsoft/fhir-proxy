@@ -43,6 +43,7 @@ namespace FHIRProxy
                 string refresh_token = null;
                 string scope = null;
                 string codeverifier = null;
+                string internalrefreshId = null;
                 //Read in Form Collection
                 IFormCollection col = req.Form;
                 if (col != null)
@@ -113,16 +114,34 @@ namespace FHIRProxy
                 }
                 if (refresh_token != null && isaad && string.IsNullOrEmpty(scope))
                 {
+                    
                     //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, see if we have stored it from original login
                     var table = Utils.getTable("scopestore");
-                    ScopeEntity se = Utils.getEntity<ScopeEntity>(table, client_id,Utils.hashstring(refresh_token));
+                    ScopeEntity se = Utils.getEntity<ScopeEntity>(table, client_id, refresh_token);
                     if (se != null)
                     {
+                        internalrefreshId = refresh_token;
+                        if (se.ValidUntil <= DateTime.UtcNow)
+                        {
+                            Utils.deleteEntity(table,se);
+                            string msg = $"Provided Refresh Token has expired and can no longer be used please reauthenticate";
+                            var rv = new ContentResult()
+                            {
+
+                                Content = "{\"error\":\"" + msg + "\"}",
+                                StatusCode = 401,
+                                ContentType = "application/json"
+                            };
+                            return rv;
+                        }
+                        int removalStatus = keyValues.RemoveAll(x => x.Key == "refresh_token");
                         scope = se.RequestedScopes;
+                        refresh_token = se.ISSRefreshToken;
                         string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                         var newscope = scope.ConvertSMARTScopeToAADScope(appiduri);
                         keyValues.Add(new KeyValuePair<string, string>("scope", newscope));
-                        Utils.deleteEntity(table, se);
+                        keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
+                        
                     }
                 }
                 //Load Configuration
@@ -172,7 +191,7 @@ namespace FHIRProxy
                     try
                     {
                         //Client Credentials or Refresh Validate Returned Access Token 
-                        orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value, true, log);
+                        orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value, false, log);
                     }
                     catch (Exception e)
                     {
@@ -243,13 +262,16 @@ namespace FHIRProxy
                     //To handle optional scope parameters store scope for offline_access claims for aad
                     if (!obj["refresh_token"].IsNullOrEmpty() && orig_id_token !=null && isaad)
                     {
+                        if (string.IsNullOrEmpty(internalrefreshId)) internalrefreshId = Guid.NewGuid().ToString();
                         string rt = (string)obj["refresh_token"];
                         var table = Utils.getTable("scopestore");
-                        ScopeEntity se = new ScopeEntity(client_id,Utils.hashstring(rt));
+                        ScopeEntity se = new ScopeEntity(client_id, internalrefreshId);
                         var s = obj["scope"].ToString();
                         se.RequestedScopes = s;
-                        se.ValidUntil = DateTime.UtcNow.AddHours(1);
+                        se.ISSRefreshToken = rt;
+                        se.ValidUntil = DateTime.UtcNow.AddDays(Utils.GetIntEnvironmentVariable("FP-OIDC-REFRESH-TTL-DAYS","14"));
                         Utils.setEntity(table, se);
+                        obj["refresh_token"] = internalrefreshId;
                     }
                 }
                 req.HttpContext.Response.Headers.Add("Cache-Control", "no-store");
