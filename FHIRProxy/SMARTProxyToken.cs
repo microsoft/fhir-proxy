@@ -112,38 +112,37 @@ namespace FHIRProxy
                     }
                     keyValues.Add(new KeyValuePair<string, string>("scope", scopeString));
                 }
-                if (refresh_token != null && isaad && string.IsNullOrEmpty(scope))
+                //Load stored refresh token
+                if (refresh_token != null && isaad)
                 {
-                    
-                    //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, see if we have stored it from original login
+
                     var table = Utils.getTable("scopestore");
                     ScopeEntity se = Utils.getEntity<ScopeEntity>(table, client_id, refresh_token);
-                    if (se != null)
+                    if (se == null || se.ValidUntil <= DateTime.UtcNow)
                     {
-                        internalrefreshId = refresh_token;
-                        if (se.ValidUntil <= DateTime.UtcNow)
+                        if (se != null) Utils.deleteEntity(table, se);
+                        string msg = $"Provided Refresh Token {(se == null ? "is invalid" : "has expired and can no longer be used")} please reauthenticate";
+                        var rv = new ContentResult()
                         {
-                            Utils.deleteEntity(table,se);
-                            string msg = $"Provided Refresh Token has expired and can no longer be used please reauthenticate";
-                            var rv = new ContentResult()
-                            {
 
-                                Content = "{\"error\":\"" + msg + "\"}",
-                                StatusCode = 401,
-                                ContentType = "application/json"
-                            };
-                            return rv;
-                        }
-                        int removalStatus = keyValues.RemoveAll(x => x.Key == "refresh_token");
+                            Content = "{\"error\":\"" + msg + "\"}",
+                            StatusCode = 401,
+                            ContentType = "application/json"
+                        };
+                        return rv;
+                    }
+                    int removalStatus = keyValues.RemoveAll(x => x.Key == "refresh_token");
+                    refresh_token = se.ISSRefreshToken;
+                    //Scope is required for refresh_token request for v2.0 OAuth endpoint calls, see if we have stored it from original login
+                    if (scope == null)
+                    {
                         scope = se.RequestedScopes;
-                        refresh_token = se.ISSRefreshToken;
                         string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                         var newscope = scope.ConvertSMARTScopeToAADScope(appiduri);
                         keyValues.Add(new KeyValuePair<string, string>("scope", newscope));
-                        keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
-                        
                     }
-                }
+                    keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
+                }   
                 //Load Configuration
                 JObject config = await ADUtils.LoadOIDCConfiguration(iss, log);
                 if (config == null)
