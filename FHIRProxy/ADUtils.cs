@@ -59,7 +59,7 @@ namespace FHIRProxy
         
         public static bool isMSI(string resource, string tenant = null, string clientid = null, string secret = null)
         {
-            return (!string.IsNullOrEmpty(resource) && (string.IsNullOrEmpty(tenant) && string.IsNullOrEmpty(clientid) && string.IsNullOrEmpty(secret)));
+            return (!string.IsNullOrEmpty(resource) && (!string.IsNullOrEmpty(tenant) && string.IsNullOrEmpty(clientid) && string.IsNullOrEmpty(secret)));
         }
     }
 }
