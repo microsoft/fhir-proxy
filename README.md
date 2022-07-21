@@ -85,7 +85,7 @@ The original user principal name and tenant are passed in custom headers to the 
 ## Additional Documentation 
 
 ### [Adding Users/Groups to the FHIR Server Proxy](docs/addingusers.md)
-At a minimum, users must be placed in one or more FHIR server roles in order to access the FHIR Server via the Proxy. The Access roles are Administrator, Resource Reader, and Resource Writer. 
+At a minimum, users must be placed in one or more FHIR Server roles in order to access the FHIR Server via the Proxy. The FHIR Server access roles are Administrator, Resource Reader, and Resource Writer. 
 
 ### [Adding Application Service Principals to the FHIR Server Proxy](docs/addingappsvcprincipals.md)
 You can create service client principals and register for Application API Access to the proxy. This is useful for using the proxy in machine-driven service workflows where a human cannot sign-in. </br>
