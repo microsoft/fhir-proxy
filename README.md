@@ -19,7 +19,7 @@ The included pre- and post-processing modules that can be configured are:
 
  + `PublishFHIREventPostProcess` - This processing module will publish FHIR Create-Update-Delete (CUD) events for resources to a configured Event Hub. These events can be subscribed too by any number of consumers in order to trigger orchestrated workflows (e.g. CDS, Audits, Alerts, etc.).</br>
 
- + `TransformBundlePreProcess` - This processing module will transform incoming transaction bundle requests into batch bundle request and maintain UUID associations of contained resources. This is an alternative for updating FHIR Servers unable to handle transaction based requests.</br>
+ + `TransformBundlePreProcess` - This processing module will transform incoming transaction bundle requests into batch bundle request and maintain UUID associations of contained resources. This is an alternative to updating FHIR Servers unable to handle transaction based requests.</br>
 
  + `DateSortPostProcessor` - This processing module allows for a date-based sorting alternative on FHIR Servers that do not natively support `_sort`. The processor implements a top level `_sort=date` or `_sort=-date` parameter for supported resource queries up to a configured maximum number of rows.</br>  
 
@@ -103,7 +103,7 @@ This post process allows for a date-based sorting alternative on FHIR Servers th
 This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured Event Hub. These events can be subscribed to by any number of consumers in order to trigger orchestrated workflows (e.g. Clinical Decision Support, Audits, Alerts, etc.).</br>
 
 ### [Transform Bundle Pre-Processor](docs/configuration.md)
-This processing module will transform incoming transaction bundle requests into batch bundle requests and maintain UUID associations of contained resources. This is an alternative for updating FHIR Servers unable to handle transaction based requests.</br>
+This processing module will transform incoming transaction bundle requests into batch bundle requests and maintain UUID associations of contained resources. This is an alternative to updating FHIR Servers unable to handle transaction based requests.</br>
 
 ### [Participant Filter Post-Processor](docs/configuration.md)
 This processing module will filter resources linked to a user registered in a Patient Participant Role such that only records referencing that user's Patient resource are returned. Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., filtering records for a user in a Practitioner Participant Role linked to a Practitioner resource, etc.).</br>
