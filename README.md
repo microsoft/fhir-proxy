@@ -106,7 +106,7 @@ This processor will publish FHIR Server Create/Update and Delete events for affe
 This processing module will transform incoming transaction bundle requests into batch bundle requests and maintain UUID associations of contained resources. This is an alternative for updating FHIR Servers unable to handle transaction based requests.</br>
 
 ### [Participant Filter Post-Processor](docs/configuration.md)
-This processing module will filter resources linked to a Patient such that only records pertaining to that patient are returned (e.g. in a Participant role). Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., linking a user in a Practitioner role to a Practitioner resource, etc.).</br>
+This processing module will filter resources linked to a user registered in a Patient Participant Role such that only records referencing that user's Patient resource are returned. Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., filtering records for a user in a Practitioner Participant Role linked to a Practitioner resource, etc.).</br>
 
 ### [Consent Opt-Out Filter](docs/configuration.md)
 This module adds the ability to deny access to FHIR Server resources for patients who have elected to OPTOUT everyone or specific individuals and/or organizations from access to their medical data.
