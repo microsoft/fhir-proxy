@@ -94,7 +94,7 @@ You can create service client principals and register for Application API Access
 The FHIR Proxy is configured on installation to be paired to a FHIR Server via a service client. Default roles are added to the application and are configured for specific access in the configuration settings section of the function app.
 
 ### [Enabling Pre/Post Processing Modules](docs/configuration.md)
-By default, no pre/post processors are configured to run. You will need to enable and configure them following the steps outlined in the [congiruation](docs/configuration.md) document. 
+By default, no pre/post processors are configured to run. You will need to enable and configure them following the steps outlined in the [configuration](docs/configuration.md) document. 
 
 ### [Date Sort Post-Processor](docs/configuration.md)
 This post process allows for a date-based sorting alternative on FHIR Servers that do not natively support `_sort`. The processor implements a top level `_sort=date` or `_sort=-date` (reverse chron) query parameter for supported resource queries up to a hard maximum of 5000.</br>
