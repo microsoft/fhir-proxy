@@ -12,10 +12,10 @@ By default the proxy will configure and use Azure Active Directory (Azure AD) as
 
 ## Pre and Post Processing Support
 The proxy can be configured to execute any number of logic processing modules to support a variety of pre/post conditional actions on a per call basis. You can create custom processors by implementing the ```IProxyPreProcess``` or ```IProxyPostProcess``` interfaces in a thread safe class.
-The modules are executed in a chained fashion determined by configured order. Context is continually updated so the last result is passed to the next member of the processor chain - resulting in a fully processed/filtered request or post-processing result. Any configured module can stop the chain progression by issuing a do not continue command.
+The modules are executed in a chained fashion determined by configured order. Context is continually updated so the last result is passed to the next member of the processor chain - resulting in a fully processed/filtered request or post-processing result. Any configured module can stop the chain progression by issuing a do-not-continue command.
 
 The included pre- and post-processing modules that can be configured are:
- + `ParticipantFilterPostProcess` - This processing module will filter resources linked to a Patient such that only records pertaining to that patient are returned (e.g. in a Participant role). Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., linking a user in a Practitioner role to a Practitioner resource, etc.).</br>
+ + `ParticipantFilterPostProcess` - This processing module will filter resources linked to a user registered in a Patient Participant Role such that only records referencing that user's Patient resource are returned. Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., filtering records for a user in a Practitioner Participant Role linked to a Practitioner resource, etc.).</br>
 
  + `PublishFHIREventPostProcess` - This processing module will publish FHIR Create-Update-Delete (CUD) events for resources to a configured Event Hub. These events can be subscribed too by any number of consumers in order to trigger orchestrated workflows (e.g. CDS, Audits, Alerts, etc.).</br>
 
