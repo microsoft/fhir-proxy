@@ -28,7 +28,7 @@ In order to support the SMART on FHIR authorization scheme, the FHIR Proxy relie
 
 ## Configure OAuth 2.0 SMART scopes in FHIR Proxy's application manifest
 
-Information about configuring OAuth 2.0 scopes directly in an application manifest can be found [here](https://docs.microsoft.com/en-us/azure/active-directory/develop/reference-app-manifest). Shown below is a sample oauth2Permissions attribute key/value pair.
+Information about configuring OAuth 2.0 scopes directly in an application manifest can be found [here](https://docs.microsoft.com/en-us/azure/active-directory/develop/reference-app-manifest). Shown below is a sample `oauth2Permissions` attribute key/value pair.
 
 <img src="images/smart/oauth2permissionsattribs_resize.png" width="582" height="430">
 
