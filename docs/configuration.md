@@ -2,7 +2,7 @@
 The FHIR Proxy is configured on installation to be paired to a FHIR Server via a service client. Default roles are added to the application and are configured for specific access in the configuration settings section of the function app.
 Enablement of pre/post processing modules is accomplished via the ```configmodules.bash``` utility.</br>
 
-Important: Most pre/post processing modules will require additional [configuration](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings) after enablement, in order to function. Please check the details of the module for instructions.</br>
+Important: Most pre/post processing modules will require additional [configuration](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings) after enablement in order to function. Please check the details of the module for instructions.</br>
 
 Notice
 
