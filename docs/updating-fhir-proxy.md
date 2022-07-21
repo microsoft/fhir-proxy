@@ -1,6 +1,6 @@
 # Updating FHIR Proxy 
 
-By default the FHIR-Proxy function stays in sync with updates posted in the Github Repo https://github.com/microsoft/fhir-proxy, as new features are added customers will automatically receive them unless they disabled deployment sync or they are operating on a closed network without external access.  
+By default the FHIR-Proxy function stays in sync with updates posted in the Github Repo https://github.com/microsoft/fhir-proxy. As new features are added, customers will automatically receive them unless they disabled deployment sync or they are operating on a closed network without external access.  
 
 ## Default FHIR Proxy Deployment 
 By default FHIR Proxy 
@@ -18,25 +18,25 @@ If the FHIR-Proxy setup does match the default deployment, it can be changed as 
 
 ![change-deployment-cntr2](images/update/change-deployment-cntr2.png)
 
-3.  Complete the form using __https://github.com/microsoft/fhir-proxy__, __main__ and __Public__ repo then select __Save__.  
+3.  Complete the form using __https://github.com/microsoft/fhir-proxy__. Select the __main__ and __Public__ repo and then click __Save__.  
 
 ![change-deployment-cntr3](images/update/change-deployment-cntr3.png)
 
-4.  Validate the deployment success via the Logs 
+4.  Validate the deployment success via the Logs. 
 
 ![deployment-cntr-logs](images/update/deployment-cntr-logs.png)
 
 
 ## Private Link FHIR Proxy Deployment
-There are multiple methods to updating Azure Functions, for security reasons though a deployment process must be used.  
+There are multiple methods of updating Azure Functions. For security reasons, a deployment process must be used.  
 
 [Zip Deply](https://docs.microsoft.com/en-us/azure/azure-functions/functions-deployment-technologies#zip-deploy)
 Zip deploy is the recommended deployment technology for Azure Functions. 
 
-Use zip deploy to push a .zip file that contains your function app to Azure. Optionally, you can set your app to start running from package, or specify that a remote build occurs.
+Use zip deploy to push a .zip file that contains your function app to Azure. Optionally, you can set your app to start running from a package, or specify that a remote build occurs.
 
 [Continuous Deployment](https://docs.microsoft.com/en-us/azure/azure-functions/functions-continuous-deployment)
-With Private Networks, the repo source must be accessible to the private network 
+With Private Networks, the repo source must be accessible to the private network. 
 
 ---
 
