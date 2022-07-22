@@ -62,7 +62,7 @@ This process requires two configuration settings on the function app:
 ```
 
 ## Transform Bundle Pre-Processor
-This processing module will transform incoming transaction bundle requests into batch bundle request and maintain UUID associations of contained resources. This is an alternative to updating FHIR Servers unable to handle transaction based requests.</br>
+This processing module will transform incoming transaction bundle requests into batch bundle requests and maintain UUID associations of contained resources. This is an alternative to updating FHIR Servers unable to handle transaction based requests.</br>
 This processor will maintain internal logical id references when converted to batch mode; however, no transaction support will be included (e.g. Rollback for errors). It will be the client's responsibility to address any referential integrity or data issues that arise from server errors. Success or error status can be obtained using the batch-response bundle response.
 
 This processor requires no additional configuration.
