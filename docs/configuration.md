@@ -98,7 +98,7 @@ At a minimum, users must be placed in one or more FHIR Participant roles in orde
 14. Congratulations! The selected users have been assigned their participant roles and can now be linked to FHIR Resources.
 []()
 ## Linking Users in Participant Roles to FHIR Resources
-1. Make sure you have configured Participant Authorization Roles for users.
+1. Make sure you have configured Participant Authorization Roles for users (see instructions above).
 2. Obtain the FHIR Resource ID you wish to link to an AAD User Principal. Note you can use any search methods for the resources described in the FHIR specification. It is strongly recommended to use a known Business Identifier in your query to ensure a specific and correct match.
    For example:
    To find a specific Patient in FHIR with an MRN of 1234567 you could issue the following URL in your browser:
