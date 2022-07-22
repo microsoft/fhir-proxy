@@ -34,7 +34,7 @@ This post process allows for a date-based sorting alternative on FHIR Servers th
 
 The resources supported for `top level_sort=date` are: Observation, DiagnosticReport, Encounter, CarePlan, CareTeam, EpisodeOfCare, and Claim. Any other resources will be ignored and not sorted.</br> 
 
-This processor is limited to process 5000 resource entries in a search-set bundle. For accurate results, it is imperative that you limit your query so as to not exceed the maximum number of resources. 
+This processor is limited to process 5000 resource entries in a search-set bundle. For accurate results, it is imperative that you limit your query so as not to exceed the maximum number of resources. 
 
 This processor also has the potential to cause server delays in responses. For large result sets, use with caution. 
 
