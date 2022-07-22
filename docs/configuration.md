@@ -40,7 +40,7 @@ This processor also has the potential to cause server delays in responses. For l
 
 <I>Hints: Specify a large `_count` parameter value to reduce calls to the server and select limiting parameters for resource queries.</I> 
 
-A log warning will be issued for requests that exceed the 5000 resource sort limit, but no error response will be returned - just the truncated data set</br> 
+A log warning will be issued for requests that exceed the 5000 resource sort limit, but no error response will be returned - just the truncated data set.</br> 
 
 This process requires no additional configuration.  
 
