@@ -19,7 +19,7 @@ The included pre- and post-processing modules that can be configured are:
 
  + `PublishFHIREventPostProcess` - This processing module will publish FHIR Create-Update-Delete (CUD) events for resources to a configured Event Hub. These events can be subscribed to by any number of consumers in order to trigger orchestrated workflows (e.g. CDS, Audits, Alerts, etc.).</br>
 
- + `TransformBundlePreProcess` - This processing module will transform incoming transaction bundle requests into batch bundle request and maintain UUID associations of contained resources. This is an alternative to updating FHIR Servers unable to handle transaction based requests.</br>
+ + `TransformBundlePreProcess` - This processing module will transform incoming transaction bundle requests into batch bundle requests and maintain UUID associations of contained resources. This is an alternative to updating FHIR Servers unable to handle transaction based requests.</br>
 
  + `DateSortPostProcessor` - This processing module allows for a date-based sorting alternative on FHIR Servers that do not natively support `_sort`. The processor implements a top level `_sort=date` or `_sort=-date` parameter for supported resource queries up to a configured maximum number of rows.</br>  
 
