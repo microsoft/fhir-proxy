@@ -88,7 +88,7 @@ At a minimum, users must be placed in one or more FHIR Participant roles in orde
    The following are the predefined FHIR Access roles:
    + Patient - This user is a patient and is linked to a Patient resource in the FHIR Server.
    + Practitioner - This user is a practitioner and is linked to a Practitioner resource in the FHIR Server.
-   + RelatedPerson - This user is a relative/caregiver to a patient and is linked to a RelatedPerson resource in the FHIR Server.
+   + RelatedPerson - This user is a relative/caregiver accompanying a patient and is linked to a RelatedPerson resource in the FHIR Server.
     
    When the role is selected, click the Select button at the bottom of the panel.
 10. Select the Users assignment box.
