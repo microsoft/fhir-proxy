@@ -45,7 +45,7 @@ A log warning will be issued for requests that exceed the 5000 resource sort lim
 This process requires no additional configuration.  
 
 ## Publish Event Post-Processor
-This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured Event Hub. These events can be subscribed too by any number of consumers in order to trigger orchestrated workflows (e.g. Clinical Decision Support, Audits, Alerts, etc.).</br>
+This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured Event Hub. These events can be subscribed to by any number of consumers in order to trigger orchestrated workflows (e.g. Clinical Decision Support, Audits, Alerts, etc.).</br>
 In addition to the action date, the Event Hub message consists of the following information:
 + Action - HTTP Verb used to modify the FHIR Server
 + Resourcetype - The type of resource affected (e.g. Patient, Observation, etc...)
