@@ -48,7 +48,7 @@ This process requires no additional configuration.
 This processor will publish FHIR Server Create/Update and Delete events for affected resources to a configured Event Hub. These events can be subscribed to by any number of consumers in order to trigger orchestrated workflows (e.g. Clinical Decision Support, Audits, Alerts, etc.).</br>
 In addition to the action date, the Event Hub message consists of the following information:
 + `action` - HTTP Verb used to modify the FHIR Server
-+ `resourcetype` - The type of resource affected (e.g. Patient, Observation, etc...)
++ `resourcetype` - The type of resource affected (e.g. Patient, Observation, etc.)
 + `id` - The resource logical id on the FHIR Server that was affected
 + `version` - The version number of the resource affected
 + `lastupdated` - The date/time the affected resource was updated
