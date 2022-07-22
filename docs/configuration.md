@@ -57,8 +57,8 @@ You can use the data in the Event Hub message to make decisions and get informat
 
 This process requires two configuration settings on the function app:
 ```
-     FP-MOD-EVENTHUB-CONNECTION: <A valid EventHub namespace connection string>
-     FP-MOD-EVENTHUB-NAME: <A valid event hub in the specified event hub namespace connection>
+     FP-MOD-EVENTHUB-CONNECTION: <A valid EventHubs namespace connection string>
+     FP-MOD-EVENTHUB-NAME: <A valid Event Hub in the specified EventHubs namespace connection>
 ```
 
 ## Transform Bundle Pre-Processor
