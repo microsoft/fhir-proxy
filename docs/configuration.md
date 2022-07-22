@@ -75,7 +75,7 @@ This processing module will filter resources linked to a user registered in a Pa
 ![F H I R Proxy Seq](images/architecture/FHIRProxy_Seq.png)
 
 ## Configuring Participant Authorization Roles for Users
-At a minimum, users must be placed in one or more FHIR Participant roles in order to appropriately filter results from the FHIR Server. The Access roles are Patient, Practitioner and RelatedPerson. _Note: The user must also be in an appropriate Access role defined above._
+At a minimum, users must be placed in one or more FHIR Participant roles in order to appropriately filter results from the FHIR Server. The predefined Access roles are Patient, Practitioner, and RelatedPerson. 
 1. [Login to Azure Portal](https://portal.azure.com) - _Note: If you have multiple tenants, make sure you switch to the directory that contains the Secure FHIR Proxy._
 2. [Access the Azure Active Directory Enterprise Application Blade](https://ms.portal.azure.com/#blade/Microsoft_AAD_IAM/StartboardApplicationsMenuBlade/AllApps/menuId/).
 3. Change the Application Type Drop Down to All Applications and click the Apply button.
