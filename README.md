@@ -43,7 +43,7 @@ Please note you should deploy this proxy into a tenant where you have appropriat
 
 _For detailed instructions please read this document_ **[./scripts/Readme.md](./scripts/Readme.md)**
 
-Launch Azure Cloud Shell (Bash Environment)  
+Launch Azure Cloud Shell (Bash Environment).  
   
 [![Launch Azure Shell](/docs/images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
 
