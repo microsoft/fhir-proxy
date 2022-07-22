@@ -56,7 +56,7 @@ Change working directory to the repo Scripts directory.
 cd ./fhir-proxy/scripts
 ```
 
-Make the Bash Scripts used for Deployment and Setup executable. 
+Make the Bash scripts used for Deployment and Setup executable. 
 ```azurecli-interactive
 chmod +x *.bash 
 ```
