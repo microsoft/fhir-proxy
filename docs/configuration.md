@@ -235,7 +235,7 @@ It is also required for users to be linked to FHIR Participant roles/resources. 
 ## Everything Patient Pre Processor
 This pre-processing module implements a limited `$everything` at the patient level. It returns the Patient and up to 5000 related resources for the Patient. Paging or other query parameters are not currently supported.
 
-<I>Notes:</br> This module is provided as a building block example. If used in production, returned resource limitation of 5000 should be noted to end users</br>This module should be executed after all request modifying pre-processors since it will call the FHIR server and stop execution of other pre-processors.</I>
+<I>Notes:</br> This module is provided as a building block example. If used in production, the returned resource limitation of 5000 should be noted to end users.</br> This module should be executed after all requests modifying pre-processors since it will call the FHIR server and stop execution of other pre-processors.</I>
 
 ---
 
