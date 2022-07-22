@@ -32,7 +32,7 @@ By default, no pre/post processors are configured to run. You will need to enabl
 ## Date Sort Post-Processor
 This post process allows for a date-based sorting alternative on FHIR Servers that do not natively support `_sort`. The processor implements a top level `_sort=date` or `_sort=-date` (reverse chron) query parameter for supported resource queries up to a hard maximum of 5000.</br> 
 
-The resources supported for `top level_sort=date` are: Observation, DiagnosticReport, Encounter, CarePlan, CareTeam, EpisodeOfCare, and Claim. Any other resources will be ignored and not sorted.</br> 
+The resources supported for top `level_sort=date` are: Observation, DiagnosticReport, Encounter, CarePlan, CareTeam, EpisodeOfCare, and Claim. Any other resources will be ignored and not sorted.</br> 
 
 This processor is limited to process 5000 resource entries in a search-set bundle. For accurate results, it is imperative that you limit your query so as not to exceed the maximum number of resources. 
 
