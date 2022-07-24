@@ -236,7 +236,7 @@ The recommended value for category in your consent records is LOINC code 59284-0
 It is also required for users to be linked to FHIR Participant roles/resources. Please see the [Linking Users in Participant Roles to FHIR Resources](https://github.com/microsoft/fhir-proxy/blob/main/docs/configuration.md#linking-users-in-participant-roles-to-fhir-resources) section in the Participant Access Filter Module above.
 
 ## Everything Patient Pre Processor
-This pre-processing module implements a limited `$everything` at the patient level. It returns the Patient and up to 5000 related resources for the Patient. Paging or other query parameters are not currently supported.
+This pre-processing module implements a limited `$everything` at the Patient level. It returns the Patient and up to 5000 related resources for the Patient. Paging or other query parameters are not currently supported.
 
 <I>Notes:</br> This module is provided as a building block example. If used in production, the returned resource limitation of 5000 should be noted to end users.</br> This module should be executed after all requests modifying pre-processors since it will call the FHIR server and stop execution of other pre-processors.</I>
 
