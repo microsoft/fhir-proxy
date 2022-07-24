@@ -228,7 +228,7 @@ This process requires configuration settings on the function app:
 ```
 
 The recommended value for category in your consent records is LOINC code 59284-0 Consent Document - the parameter value would be:
-```http://loinc.org|59284-0```
+```http://loinc.org|59284-0```.
 
 It is also required for users to be linked to FHIR Participant roles/resources. Please see the [Linking Users in Participant Roles to FHIR Resources](https://github.com/microsoft/fhir-proxy/blob/main/docs/configuration.md#linking-users-in-participant-roles-to-fhir-resources) section in the Participant Access Filter Module above.
 
