@@ -122,6 +122,7 @@ At a minimum, users must be placed in one or more FHIR Participant roles in orde
     ```https://<your fhir proxy url>/manage/link/<FHIR ResourceName>/<FHIR ResourceID>/<AD Object ID>``` 
 
     For example, to connect Dr. Mickey in your AAD tenant whose Object ID is 9293929-8281-dj89-a999-ppoiiwjwj to the FHIR Practitioner Resource ID 3bdaac8f-5c8e-499d-b906-aab31633337d, you would enter the following URL:
+    
     ```https://<your fhir proxy url>/manage/link/Practitioner/3bdaac8f-5c8e-499d-b906-aab31633337d/9293929-8281-dj89-a999-ppoiiwjwj```.
      
     _Note: You will need to login as a user in a FHIR Administrative role to perform the assignment._
