@@ -215,7 +215,7 @@ The following consent resource will not allow any individuals affiliated with th
 ```
 Notes: 
 + If no Period is specified, the Consent provision will be deemed in force. If no start date is specified, the default will be the earliest supported date/time. If no end date is specified, the default will be the latest supported date/time.
-+ If no Actors are specified in the Consent Provision, all individuals will be prevented from access.
++ If no Actors are specified in the Consent Provision, all individuals will be denied access.
 + If the user is not linked to a FHIR resource and specific actors are specified in the opt-out consent record, the filter will be unable to determine exclusion and the user will be allowed access by default policy.
 + Organization is determined by the linked association with an Organization resource.
 + If multiple consent records are present, the most restrictive policy will be used and actor filters will be aggregated.
