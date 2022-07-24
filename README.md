@@ -111,7 +111,7 @@ This processing module will filter resources linked to a user registered in a Pa
 ### [Consent Opt-Out Filter](docs/configuration.md)
 This module adds the ability to deny access to FHIR Server resources for patients who have elected to OPTOUT everyone or specific individuals and/or organizations from access to their medical data.
 
-### [Everything Patient Pre Processor](docs/configuration.md)
+### [Everything Patient Pre-Processor](docs/configuration.md)
 This pre-preocessing module implements a limited `$everything` at the patient level. It returns the Patient and up to 5000 related resources for the Patient. Paging or other query parameters are not currently supported.
 
 
