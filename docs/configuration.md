@@ -135,7 +135,7 @@ This module adds the ability to deny access to FHIR Server resources for patient
 
 This module operates on the access policy that the health information of patients is accessible automatically to authorized users, but the patient can opt out completely.
 
-It will honor any opt-out consent record(s) effective period, deny access to everyone or specific Organizations, Practitioners, RelatedPersons, and Patients (Actors).
+It will honor any opt-out consent record(s) effective period, denying access to everyone or specific Organizations, Practitioners, RelatedPersons, and Patients (Actors).
 
 This module will only filter if the appropriate OPT-OUT Consent Resource is stored in the FHIR Server and is in force.
 
