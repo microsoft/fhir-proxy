@@ -71,7 +71,7 @@ This processor requires no additional configuration.
 ## Participant Filter Post-Processor
 This processing module will filter resources linked to a user registered in a Patient Participant Role such that only records referencing that user's Patient resource are returned. Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., filtering records for a user in a Practitioner Participant Role linked to a Practitioner resource, etc.).</br>
 
-## How the Participant Post Processor works
+## How the Participant Post-Processor works
 ![F H I R Proxy Seq](images/architecture/FHIRProxy_Seq.png)
 
 ## Configuring Participant Authorization Roles for Users
