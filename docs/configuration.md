@@ -106,9 +106,11 @@ At a minimum, users must be placed in one or more FHIR Participant roles in orde
    ```https://<your fhir proxy url>/fhir/Patient?identifier=1234567```
    
    To find a specific Practitioner with last name Smith, in this case you can use other fields to validate like address, identifiers, etc. 
+   
    ```https://<your fhir proxy address>/fhir/Practitioner?name=smith```
     
    The Resource ID is located in the `id` field of the returned resource or resource member in a search bundle:
+   
    ```"id": "3bdaac8f-5c8e-499d-b906-aab31633337d"``` 
  
    _Note: You will need to login as a user in a FHIR Reader and/or FHIR Administrative role to view._
