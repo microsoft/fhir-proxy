@@ -131,7 +131,7 @@ At a minimum, users must be placed in one or more FHIR Participant roles in orde
 
 ## Consent Opt-Out Filter
 
-This module adds the ability to deny access to FHIR Server resources for patients who have elected to OPTOUT everyone or specific individuals and/or organizations from access to their medical data.
+This processing module adds the ability to deny access to FHIR Server resources for patients who have elected to OPTOUT everyone or specific individuals and/or organizations from access to their medical data.
 
 This module operates on the access policy that the health information of patients is accessible automatically to authorized users, but the patient can opt out completely.
 
