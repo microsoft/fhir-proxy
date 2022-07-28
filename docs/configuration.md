@@ -137,10 +137,10 @@ This module operates on the access policy that the health information of patient
 
 It will honor any opt-out consent record(s) effective period, denying access to everyone or specific Organizations, Practitioners, RelatedPersons, and Patients (Actors).
 
-This module will only filter if the appropriate OPT-OUT Consent Resource is stored in the FHIR Server and is in force.
+This module will only filter if the appropriate OPT-OUT Consent resource is stored in the FHIR Server and is in force.
 
 __For Example:__  
-The following consent resource will not allow any individuals affiliated with the specified organization (`66fa407d-d890-43a5-a6e3-eb82d3bfa393`) access to any resources on the FHIR Server that are related to Patient (`9ec3be2f-342c-4cb6-b2dd-c124747ef1bb`) for the period 4/20/2020-12/31/2020:
+The following Consent resource will not allow any individuals affiliated with the specified organization (`66fa407d-d890-43a5-a6e3-eb82d3bfa393`) access to any resources on the FHIR Server that are related to Patient (`9ec3be2f-342c-4cb6-b2dd-c124747ef1bb`) for the period 4/20/2020-12/31/2020:
 ```
 {
     "resourceType": "Consent",
