@@ -30,7 +30,7 @@ By default, no pre/post processors are configured to run. You will need to enabl
 **Note:** The utility does not read current configuration. It will simply enable the modules you specify and update the function configuration. To disable all modules, press ENTER without selecting options. To escape menu selection and abort updates, press CTRL-C. 
 
 ## Date Sort Post-Processor
-This post process allows for a date-based sorting alternative on FHIR Servers that do not natively support `_sort`. The processor implements a top level `_sort=date` or `_sort=-date` (reverse chron) query parameter for supported resource queries up to a hard maximum of 5000.</br> 
+This post-processing module allows for a date-based sorting alternative on FHIR Servers that do not natively support `_sort`. The processor implements a top level `_sort=date` or `_sort=-date` (reverse chron) query parameter for supported resource queries up to a hard maximum of 5000.</br> 
 
 The resources supported for top `level_sort=date` are: Observation, DiagnosticReport, Encounter, CarePlan, CareTeam, EpisodeOfCare, and Claim. Any other resources will be ignored and not sorted.</br> 
 
