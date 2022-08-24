@@ -138,6 +138,13 @@ namespace FHIRProxy
             if (defval != null && retVal == null) return defval;
             return retVal;
         }
+        public static string[] GetEnvironmentVaiableArray(string varname,char seperator=',',string defval=null)
+        {
+            string retVal = GetEnvironmentVariable(varname, defval);
+            
+            if (string.IsNullOrEmpty(retVal)) return new string[] { };
+            return retVal.Split(seperator);
+        }
         public static string hashstring(string s)
         {
             string hash;

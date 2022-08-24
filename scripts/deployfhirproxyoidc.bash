@@ -123,6 +123,7 @@ declare fpoidctokenidclaim=""
 declare fpoidtokenidclaimdef="email"
 declare fpoidcvalidaudiences=""
 declare fpoidcvalidissuers=""
+decalre fpoidccustomparms=""
 
 function intro {
 	# Display the intro - give the user a chance to cancel 
@@ -492,11 +493,14 @@ echo "Enter valid issuers Open Id Connect configuration (seperated by commas ','
 		fi
 echo "Enter your issuer signature key (leave blank to use JWKS from issuer .wellknown endpoint or NP_NOVALIDATION for no signature validation):"
 	 read fpoidcsecretkey
-echo "Enter the issuers id_token identity claim [email]:"
+echo "Enter the issuers id_token identity claim [name]:"
 	  read fpoidctokenidclaim
 		if [ -z "$fpoidctokenidclaim" ] ; then
-			fpoidctokenidclaim="email"
+			fpoidctokenidclaim="name"
 		fi
+echo "Enter any custom authorization request parameters for your Open Id Connect provider (seperated by commas ','):"
+	  read fpoidccustomparms
+
 sptenant=$(az account show --name $subscriptionId --query "tenantId" --out tsv)
 
 # Prompt for final confirmation
@@ -524,6 +528,7 @@ echo "Open Id Connect:"
 echo "	Issuer URL:.................... "$fpoidciss
 echo "	Valid Audiences:............... "$fpoidcvalidaudiences
 echo " 	Valid Token Issuers:........... "$fpoidcvalidissuers
+echo "  Custom Parameters:............. "$fpoidccustomparms
 if [ -z "$fpoidcsecretkey" ] ; then
 	echo "	Token Signature Key:........... Use JWKS from Issuer"
 else 
@@ -652,7 +657,7 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 		
 	# Add App Settings
 	echo "Configuring Secure FHIR Proxy App ["$proxyAppName"]..."
-	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-ISMSI=$(kvuri FS-ISMSI) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE) FP-ACCESS-TOKEN-SECRET=$(kvuri FP-ACCESS-TOKEN-SECRET) FP-LOGIN-TENANT=$sptenant FP-OIDC-ISAAD="false" FP-OIDC-ISSUER=$fpoidciss FP-OIDC-SECRETKEY=$(kvuri FP-OIDC-SECRETKEY) FP-OIDC-TOKEN-IDENTITY-CLAIM=$fpoidctokenidclaim FP-OIDC-VALID-AUDIENCES=$fpoidcvalidaudiences FP-OIDC-VALID-ISSUERS=$fpoidcvalidissuers)
+	stepresult=$(az functionapp config appsettings set --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName --settings FP-ADMIN-ROLE=$roleadmin FP-READER-ROLE=$rolereader FP-WRITER-ROLE=$rolewriter FP-GLOBAL-ACCESS-ROLES=$roleglobal FP-PATIENT-ACCESS-ROLES=$rolepatient FP-PARTICIPANT-ACCESS-ROLES=$roleparticipant FP-STORAGEACCT=$(kvuri FP-STORAGEACCT) FS-ISMSI=$(kvuri FS-ISMSI) FS-URL=$(kvuri FS-URL) FS-TENANT-NAME=$(kvuri FS-TENANT-NAME) FS-CLIENT-ID=$(kvuri FS-CLIENT-ID) FS-SECRET=$(kvuri FS-SECRET) FS-RESOURCE=$(kvuri FS-RESOURCE) FP-ACCESS-TOKEN-SECRET=$(kvuri FP-ACCESS-TOKEN-SECRET) FP-LOGIN-TENANT=$sptenant FP-OIDC-ISAAD="false" FP-OIDC-ISSUER=$fpoidciss FP-OIDC-SECRETKEY=$(kvuri FP-OIDC-SECRETKEY) FP-OIDC-TOKEN-IDENTITY-CLAIM=$fpoidctokenidclaim FP-OIDC-VALID-AUDIENCES=$fpoidcvalidaudiences FP-OIDC-VALID-ISSUERS=$fpoidcvalidissuers FP-OIDC-CUSTOM-PARMS=$fpoidccustomparms)
 	echo "Deploying Secure FHIR Proxy Function App from source repo to ["$functionAppHost"]..."
 	stepresult=$(retry az functionapp deployment source config --branch v2.0 --manual-integration --name $proxyAppName --repo-url https://github.com/microsoft/fhir-proxy --subscription $subscriptionId --resource-group $resourceGroupName)
 	
