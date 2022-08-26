@@ -30,28 +30,30 @@ namespace FHIRProxy.postprocessors
     class FHIRCDSSyncAgentPostProcess2 : IProxyPostProcess
     {
         private ServiceBusClient _queueClient = null;
+        private ServiceBusSender _sender = null;
+
         private string _qname = null;
         private Object lockobj = new object();
         private string[] _fhirSupportedResources = null;
         private bool initializationfailed = false;
         private string _updateAction = null;
-        private bool _bulkLoadMode = false; 
+        private bool _bulkLoadMode = false;
 
         public FHIRCDSSyncAgentPostProcess2()
         {
-           
+
         }
         public void InitQueueClient(ILogger log)
         {
 
             if (initializationfailed || _queueClient != null) return;
-            lock(lockobj)
+            lock (lockobj)
             {
-                if (_queueClient==null)
+                if (_queueClient == null)
                 {
                     try
                     {
-                        _updateAction=Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION", "Update");
+                        _updateAction = Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION", "Update");
                         _bulkLoadMode = Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD");
                         string _sbcfhirupdates = Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES");
                         if (_bulkLoadMode)
@@ -63,7 +65,7 @@ namespace FHIRProxy.postprocessors
                             _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRUPDATES");
                         }
                         string fsr = Utils.GetEnvironmentVariable("SA-FHIRMAPPEDRESOURCES");
-                        if (!string.IsNullOrEmpty(fsr)) _fhirSupportedResources=fsr.Split(",");
+                        if (!string.IsNullOrEmpty(fsr)) _fhirSupportedResources = fsr.Split(",");
                         if (string.IsNullOrEmpty(_sbcfhirupdates) || string.IsNullOrEmpty(_qname))
                         {
                             log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize SA-SERVICEBUSNAMESPACEFHIRUPDATES and/or Queue name is/are not defined...Check Configuration");
@@ -71,22 +73,23 @@ namespace FHIRProxy.postprocessors
                             return;
                         }
                         _queueClient = new ServiceBusClient(Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES"));
-                       
-                       
+                        _sender = _queueClient.CreateSender(_qname);
+
+
                     }
                     catch (Exception e)
                     {
                         log.LogError($"FHIRCDSSyncAgentPostProcess2: Failed to initialize ServiceBusClient:{e.Message}->{e.StackTrace}");
                         initializationfailed = true;
                     }
-                } 
+                }
             }
-            
-            
+
+
         }
         public async Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
-            
+
             try
             {
                 FHIRParsedPath pp = req.parsePath();
@@ -95,12 +98,12 @@ namespace FHIRProxy.postprocessors
                     req.Method.Equals("PATCH") || req.Headers["X-MS-FHIRCDSSynAgent"] == "true")
                     return new ProxyProcessResult(true, "", "", response);
                 InitQueueClient(log);
-                if (_queueClient==null)
+                if (_queueClient == null)
                 {
                     log.LogWarning($"FHIRCDSSyncAgentPostProcess2: Service Bus Queue Client not initialized will not publish....Check Environment Configuration");
                     return new ProxyProcessResult(true, "", "", response);
                 }
-                if (_fhirSupportedResources==null)
+                if (_fhirSupportedResources == null)
                 {
                     log.LogWarning($"FHIRCDSSyncAgentPostProcess2: No mapped resources configured (SA-FHIRMAPPEDRESOURCES) will not publish....Check Environment Configuration");
                     return new ProxyProcessResult(true, "", "", response);
@@ -114,12 +117,13 @@ namespace FHIRProxy.postprocessors
 
                         entries = (JArray)fhirresp["entry"];
 
-                    } else
+                    }
+                    else
                     {
                         entries = new JArray();
                         JObject stub = new JObject();
                         stub["response"] = new JObject();
-                        stub["response"]["status"] = (int) response.StatusCode + " " + response.StatusCode.ToString();
+                        stub["response"]["status"] = (int)response.StatusCode + " " + response.StatusCode.ToString();
                         stub["resource"] = fhirresp;
                         entries.Add(stub);
                     }
@@ -137,7 +141,7 @@ namespace FHIRProxy.postprocessors
                     stub["resource"]["meta"]["versionId"] = "1";
                     entries.Add(stub);
                 }
-                await publishFHIREvents(entries,log);
+                await publishFHIREvents(entries, log);
 
 
 
@@ -145,40 +149,40 @@ namespace FHIRProxy.postprocessors
 
             catch (Exception exception)
             {
-              log.LogError(exception,$"FHIRCDSSyncAgentPostProcess2 Exception: {exception.Message}");
-               
+                log.LogError(exception, $"FHIRCDSSyncAgentPostProcess2 Exception: {exception.Message}");
+
             }
-           
+
             return new ProxyProcessResult(true, "", "", response);
 
         }
-        private async Task publishFHIREvents(JArray entries,ILogger log)
+        private async Task publishFHIREvents(JArray entries, ILogger log)
         {
-         
-                if (!entries.IsNullOrEmpty())
-                {
-                    ServiceBusSender sender = _queueClient.CreateSender(_qname);
-                    using ServiceBusMessageBatch messageBatch = await sender.CreateMessageBatchAsync();
-                    foreach (JToken tok in entries)
-                    {
-                            //Don't queue if no supported
-                            if (!Array.Exists(_fhirSupportedResources, element => element == tok["resource"].FHIRResourceType()))
-                                continue;
 
-                            string entrystatus = (string)tok["response"]["status"];
-                            ServiceBusMessage dta = createMsg(entrystatus, tok["resource"]);
-                            if (!messageBatch.TryAddMessage(dta))
-                            {
-                                throw new Exception("FHIRCDSSyncAgentPostProcess2:Message Batch is too large");
-                            }
-                           
+            if (!entries.IsNullOrEmpty())
+            {
+                using ServiceBusMessageBatch messageBatch = await _sender.CreateMessageBatchAsync();
+                foreach (JToken tok in entries)
+                {
+                    //Don't queue if no supported
+                    if (!Array.Exists(_fhirSupportedResources, element => element == tok["resource"].FHIRResourceType()))
+                        continue;
+
+                    string entrystatus = (string)tok["response"]["status"];
+                    ServiceBusMessage dta = createMsg(entrystatus, tok["resource"]);
+                    if (!messageBatch.TryAddMessage(dta))
+                    {
+                        throw new Exception("FHIRCDSSyncAgentPostProcess2:Message Batch is too large");
                     }
-                    // Send the message batch to the queue.
-                    await sender.SendMessagesAsync(messageBatch);
+
                 }
-            
+                // Send the message batch to the queue.
+                await _sender.SendMessagesAsync(messageBatch);
+
+            }
+
         }
-        private ServiceBusMessage createMsg(string status,JToken resource)
+        private ServiceBusMessage createMsg(string status, JToken resource)
         {
             if (resource.IsNullOrEmpty()) return null;
             string action = "Unknown";
