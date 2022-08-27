@@ -37,7 +37,8 @@ namespace FHIRProxy.postprocessors
         private string[] _fhirSupportedResources = null;
         private bool initializationfailed = false;
         private string _updateAction = null;
-        private bool _bulkLoadMode = false; 
+        private bool _bulkLoadMode = false;
+        private bool _isUniquePartitionKeyForNonPatientResources = false;
 
         public FHIRCDSSyncAgentPostProcess2()
         {
@@ -56,6 +57,7 @@ namespace FHIRProxy.postprocessors
                         _updateAction=Utils.GetEnvironmentVariable("FP-BULK-OVERRIDE-ACTION", "Update");
                         _bulkLoadMode = Utils.GetBoolEnvironmentVariable("FP-SA-BULKLOAD");
                         string _sbcfhirupdates = Utils.GetEnvironmentVariable("SA-SERVICEBUSNAMESPACEFHIRUPDATES");
+                        _isUniquePartitionKeyForNonPatientResources = Utils.GetEnvironmentVariable("SA-UNIQUEPARTITIONKEYFORNONPATIENTRESOURCE") == null || Utils.GetEnvironmentVariable("SA-UNIQUEPARTITIONKEYFORNONPATIENTRESOURCE").ToLower() == "false" ? false : true;
                         if (_bulkLoadMode)
                         {
                             _qname = Utils.GetEnvironmentVariable("SA-SERVICEBUSQUEUENAMEFHIRBULK");
@@ -202,7 +204,7 @@ namespace FHIRProxy.postprocessors
             if (!_bulkLoadMode)
             {
                 //Partioning and Session locks are defaulted to resource type, if the resource is patient/subject based the key will be the reference
-                string partitionkey = resource.FHIRResourceType();
+                string partitionkey = _isUniquePartitionKeyForNonPatientResources ? resource.FHIRReferenceId() : resource.FHIRResourceType();
                 if (resource.FHIRResourceType().Equals("Patient"))
                 {
                     partitionkey = resource.FHIRReferenceId();
