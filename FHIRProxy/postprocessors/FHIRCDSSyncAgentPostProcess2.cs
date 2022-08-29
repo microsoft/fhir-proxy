@@ -176,6 +176,7 @@ namespace FHIRProxy.postprocessors
                     {
                         throw new Exception("FHIRCDSSyncAgentPostProcess2:Message Batch is too large");
                     }
+                    log.LogInformation($"FHIRCDSSyncAgentPostProcess2 Message: {dta}");
 
                 }
                 // Send the message batch to the queue.
