@@ -67,6 +67,17 @@ This processor will maintain internal logical id references when converted to ba
 
 This processor requires no additional configuration.
 
+## FHIRCDSSyncAgent Post-Processor
+This processing modules will filter resources based on the environment variable "SA-FHIRMAPPEDRESOURCES" and post the resource to the Sync Agent queue. Since the queue is partition based, this module will use the patient ID as the partition key for patient related resources which enables Sync Agent to process resources in a FIrst In, FIRST Out (FIFO) order. For all non-patient related resources, the module will default to using the resource type as the partition key. Users can use the SA-UNIQUEPARTITIONKEYFORNONPATIENTRESOURCE to generate a unique parititon key for all non patient related resources. The processing module also has a bulk mode which if enabled will send all the messages to an unordered queue. 
+
+| Environment Variable | Notes |
+| -- | -- |
+| FP-SA-BULKLOAD | Boolean (True/False). Indicating whether to send all resources to unordered queue for faster processing. Resources will lose FIFO order. |
+| SERVICEBUSNAMESPACEFHIRUPDATES | The name space of the Service Bus Queue. |
+| SA-SERVICEBUSQUEUENAMEFHIRBULK | If bulk mode is enabled, the messages will be posted to this unordered queue. |
+| SA-SERVICEBUSQUEUENAMEFHIRUPDATES | If bulk mode is not enabled, the messaged will be posted to this ordered queue. |
+| SA-UNIQUEPARTITIONKEYFORNONPATIENTRESOURCE | Boolean (True/False). When using ordered queue, set this to true to generate unique partition keys for each of the non-patient resources like Practitioner. This will allow sync agent to process more resources parallely |
+| SA-FHIRMAPPEDRESOURCES | A list of comma-separated FHIR resources to send to the Sync Agent Queue. Any resource not in the list will be filtered out |
 
 ## Participant Filter Post-Processor
 This processing module will filter resources linked to a user registered in a Patient Participant Role such that only records referencing that user's Patient resource are returned. Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., filtering records for a user in a Practitioner Participant Role linked to a Practitioner resource, etc.).</br>
