@@ -131,7 +131,11 @@ namespace FHIRProxy
         public static Claim fhirUserClaim(this ClaimsIdentity ci)
         {
             IEnumerable<Claim> claims = ci.Claims;
-            var fhiruser = claims.Where(c => c.Type == Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser")).Select(c => c).SingleOrDefault();
+            var fhiruser = claims.Where(c => c.Type == "fhirUser").Select(c => c).SingleOrDefault();
+            if (fhiruser==null)
+            {
+                fhiruser = claims.Where(c => c.Type == "extension_fhirUser").Select(c => c).SingleOrDefault();
+            }
             return fhiruser;
         }
         public static string fhirUser(this ClaimsIdentity ci)

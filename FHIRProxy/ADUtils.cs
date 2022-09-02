@@ -297,7 +297,7 @@ namespace FHIRProxy
             var fhiruserclaim = id_ci.fhirUserClaim();
             if (fhiruserclaim != null)
             {
-                fpAccessClaims.Add(fhiruserclaim);
+                fpAccessClaims.Add(new Claim("fhirUser",fhiruserclaim.Value));
             } else
             {
                 //Look for a external mapping 

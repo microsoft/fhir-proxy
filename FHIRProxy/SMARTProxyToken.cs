@@ -178,7 +178,6 @@ namespace FHIRProxy
                     }
 
                 }
-               
                 //Validate Token from Issuer and generate a Proxy Access Token to replace access_token in token call
                 var handler = new JwtSecurityTokenHandler();
                 JwtSecurityToken orig_token = null;
@@ -217,12 +216,29 @@ namespace FHIRProxy
                    
                 }
                 //Undo AAD Scopes pair down to original request to support SMART Session scoping
-                if (!obj["scope"].IsNullOrEmpty() && isaad)
+                if (!obj["scope"].IsNullOrEmpty())
                 {
-                    string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
-                    if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
-                    tokenscope = tokenscope.Replace(appiduri, "");
+                    if (isaad)
+                    {
+                        string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                        if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
+                        tokenscope = tokenscope.Replace(appiduri, "");
+                    }
                     
+                } else
+                {
+                    //Pull scopes from idp access token b2c
+                    ClaimsIdentity id_ci = new ClaimsIdentity(orig_id_token.Claims);
+                    var idpaccess = id_ci.SingleClaim("idp_access_token");
+                    if (idpaccess != null && !string.IsNullOrEmpty(idpaccess.Value))
+                    {
+                        var tokenHandler = new JwtSecurityTokenHandler();
+                        var idpToken = (JwtSecurityToken)tokenHandler.ReadToken(idpaccess.Value);
+                        ClaimsIdentity idpci = new ClaimsIdentity(idpToken.Claims);
+                        tokenscope = idpci.ScopeString();
+                    }
+                    
+
                 }
                 //Generate a Server Access Token for fhir-proxy and replace in token call.
                 proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log);
@@ -233,7 +249,6 @@ namespace FHIRProxy
                     proxy_access_token = handler.ReadJwtToken(proxyAccessTokenString);
                     ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
                     string fhiruser = access_ci.fhirUser();
-
                     if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
                     {
 
@@ -244,20 +259,26 @@ namespace FHIRProxy
                         }
                     }
                     //Replace Scopes back to SMART from Fully Qualified AD Scopes
-                    if (!obj["scope"].IsNullOrEmpty() && isaad)
+                    if (!obj["scope"].IsNullOrEmpty())
                     {
-                        string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
-                        string sc = obj["scope"].ToString();
-                        sc = sc.Replace(appiduri + "/", "");
-                        sc = sc.Replace("patient.", "patient/");
-                        sc = sc.Replace("user.", "user/");
-                        sc = sc.Replace("system.", "system/");
-                        sc = sc.Replace("launch.", "launch/");
-                        if (!sc.Contains("openid")) sc = sc + " openid";
-                        if (!sc.Contains("offline_access")) sc = sc + " offline_access";
-                        if (sc.Contains(" profile")) sc.Replace(" profile", "");
-                        if (sc.Contains("profile")) sc.Replace("profile", "");
-                        obj["scope"] = sc;
+                        if (isaad)
+                        {
+                            string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
+                            string sc = obj["scope"].ToString();
+                            sc = sc.Replace(appiduri + "/", "");
+                            sc = sc.Replace("patient.", "patient/");
+                            sc = sc.Replace("user.", "user/");
+                            sc = sc.Replace("system.", "system/");
+                            sc = sc.Replace("launch.", "launch/");
+                            if (!sc.Contains("openid")) sc = sc + " openid";
+                            if (!sc.Contains("offline_access")) sc = sc + " offline_access";
+                            if (sc.Contains(" profile")) sc.Replace(" profile", "");
+                            if (sc.Contains("profile")) sc.Replace("profile", "");
+                            obj["scope"] = sc;
+                        }
+                    } else
+                    {
+                        if (tokenscope != null) obj["scope"] = tokenscope;
                     }
                     //To handle optional scope parameters store scope for offline_access claims for aad
                     if (!obj["refresh_token"].IsNullOrEmpty() && orig_id_token !=null && isaad)
