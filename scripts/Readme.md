@@ -5,10 +5,15 @@ In this document we go over the deploy scripts necessary for installing FHIR-Pro
 There are no open issues at this time. 
 
 ## Prerequisites 
+You must have installed either Azure API for FHIR or Azure Health Data Services - FHIR Service
 
-These scripts will gather (and export) information necessary for the proper deployment and configuration of FHIR Proxy. In the deploy process, an Application Service Principal for RBAC will be configured. If needed, a Key Vault and Resource Group will also be deployed. All credential secrets will be stored in the Key Vault.  
+You must choose an Identity Provider to authenticate and authorize user access. You may use Azure Active Directory or any other OpenId Connect compliant provider (including Azure B2C) provided the identity provider supports the ability to define and consent to necessary scopes, roles and generate required claims in OAuth JWT id and access tokens. See [OpenId Connect Providers](/docs/oidcconfig.md) configuration document for details.
+
+
+
+The deployment scripts will gather (and export) information necessary for the proper deployment and configuration of FHIR Proxy. In the deploy process, an Application Service Principal for RBAC will be configured. If needed, a Key Vault and Resource Group will also be deployed. All credential secrets will be stored in the Key Vault.  
  - User must have rights to deploy resources at the Subscription scope (i.e., Contributor role).
- - User must have Application Administrator rights in AAD to assign Consent at the Service Principal scope in Step 2.
+ - If using AAD as the IDP, the User must have Application Administrator rights in AAD to assign Consent at the Service Principal scope in Step 2.
 
 __Note__
 A Key Vault is necessary for securing Service Client Credentials used with the FHIR Service and FHIR-Proxy.  Only one Key Vault should be used as this script scans the Key Vault for FHIR Service and FHIR-Proxy values. If multiple Key Vaults have been deployed, please use the [backup and restore](https://docs.microsoft.com/en-us/azure/key-vault/general/backup?tabs=azure-cli) option to copy values to one Key Vault.
@@ -53,22 +58,33 @@ Make the Bash Shell Scripts used for Deployment and Setup executable
 chmod +x *.bash 
 ```
 
-## Step 1.  deployFhirproxy.bash
-This is the main component deployment script for the FHIR-Proxy Azure components.    
+## Step 1.  Deploy the FHIR Proxy Components
+There are two main component deployment scripts for the FHIR-Proxy.  These scripts will deploy necessary Azure components and configure them for use. 
+
+If you will be using Azure Active Directory as your identity provider you should use the ```deployfhirproxy.bash``` script.
+
+If you will be using another Open Id Connect compliant identity provider or Azure B2C use the ```deployfhirproxyoidc.bash``` sciript.    
 
 Ensure you are in the proper directory 
 ```azurecli-interactive
 cd $HOME/fhir-proxy/scripts
 ``` 
 
-Launch the deployfhirproxy.bash shell script 
+Launch the correct script for your IDP
 ```azurecli-interactive
+# Using AAD
 ./deployfhirproxy.bash 
+```
+or
+
+```azurecli-interactive
+# Using another Open Id Compliant Provider or Azure B2C
+./deployfhirproxyoidc.bash 
 ``` 
 
 Optionally the deployment script can be used with command line options 
 ```azurecli
-./deployfhirproxy.bash -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -k <keyVaultName> -n <deployPrefix>
+./deployfhirproxy[oidc].bash -i <subscriptionId> -g <resourceGroupName> -l <resourceGroupLocation> -k <keyVaultName> -n <deployPrefix>
 ```
 
 Azure Components installed 
@@ -109,9 +125,17 @@ FP-STORAGEACCT                     | Storage account connection | App Service Co
 FS-TENANT-NAME                     | FHIR Tenant ID / Name      | App Service Config
 FS-CLIENT-ID                       | FHIR Client ID             | Keyvault reference  
 FS-CLIENT-SECRET                   | FHIR Client Secret         | Keyvault reference  
-FS-RESOURCE                        | FHIR Resource              | Keyvault reference   
+FS-RESOURCE                        | FHIR Resource              | Keyvault reference
+FP-OIDC-ISAAD                      | OIDC IDP is Azure AD       | App Service Config  
+FP-OIDC-ISSUER                     | OIDC Issuer URL            | App Service Config
+FP-OIDC-TOKEN-IDENTITY-CLAIM       | OIDC Claim Name for UserID | App Service Config
+FP-OIDC-VALID-AUDIENCES            | OIDC Token Valid Audiences | App Service Config
+FP-OIDC-VALID-ISSUERS              | OIDC Token Valid Issuers   | App Service Config
+FP-OIDC-CUSTOM-PARMS               | OIDC Custom Parms for Auth | App Service Config
 
+If you are using a non Azure AD identity provider or Azure B2C, STOP and please see additional configuration instructions for [OpenId Connect Providers](/docs/oidcconfig.md). 
 
+If you are using Azure AD as the identity provider follow steps 2-5
 
 ## Step 2.  createProxyServiceClient.bash
 This script is used to generate application service clients that can be used to authenticate to the fhir-proxy using the unattended client_credentials OAuth2.0 token aquisition flow. This access token is used in requests to the fhir-proxy for secure access.
@@ -210,7 +234,7 @@ You are an application administrator and want to register this application with 
 You would launch the createproxysmartclient.bash script from the command shell using the following:</br>
 ```./createproxysmartclient.bash -k proxykv123 -n patientbrowser -a -u -p```</br>
 
-
+# 
 
 # References 
 FHIR-Proxy serves as a middle tier application / access and authorization endpoint. To better understand the difference in these approaches users should review 
