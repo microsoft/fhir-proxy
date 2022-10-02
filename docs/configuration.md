@@ -79,6 +79,15 @@ This processing modules will filter resources based on the environment variable 
 | SA-UNIQUEPARTITIONKEYFORNONPATIENTRESOURCE | Boolean (True/False). When using ordered queue, set this to true to generate unique partition keys for each of the non-patient resources like Practitioner. This will allow sync agent to process more resources parallely |
 | SA-FHIRMAPPEDRESOURCES | A list of comma-separated FHIR resources to send to the Sync Agent Queue. Any resource not in the list will be filtered out |
 
+## Publish Event To Blob Storage Post-Processor
+This post-processing modules will write the FHIR response to a POST/PUT request to blob storage. If FHIR response status code is not success, the module will not write the response to storage.
+
+| Environment Variable | Notes |
+| -- | -- |
+| FP-STORAGEACCOUNT-CONNSTRING | Azure Blob Storage Connection String. |
+| FP-STORAGEACCOUNT-CONTAINER | The name of the container in blob storage where the FHIR response will be published. |
+| FP-BLOBALREADYEXISTS-RETRYCOUNT | The module generates a unique file name for each of the blobs. In case there are any conflicts with the file name, the module will retry with a different name each time. Default is 3.|
+
 ## Participant Filter Post-Processor
 This processing module will filter resources linked to a user registered in a Patient Participant Role such that only records referencing that user's Patient resource are returned. Note: this only filters patient-based linked resources. You can use this module as a basis for building your own security filtering (e.g., filtering records for a user in a Practitioner Participant Role linked to a Practitioner resource, etc.).</br>
 

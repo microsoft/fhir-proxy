@@ -22,6 +22,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Messaging.EventHubs" Version="5.2.0" />
     <PackageReference Include="Azure.Messaging.ServiceBus" Version="7.1.2" />
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.13.1" />
     <PackageReference Include="Hl7.Fhir.Specification.R4" Version="2.0.3" />
     <PackageReference Include="LazyCache" Version="2.1.2" />
     <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.8" />

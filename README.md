@@ -27,6 +27,8 @@ The included pre- and post-processing modules that can be configured are:
 
  + `EverythingPatientPreProcess` - This pre-processing module implements a limited `$everything` at the Patient level. It returns up to 5000 related resources for the Patient.
 
++ `PublishFHIRResponseToBlobPostProcessor` - This post-processing module writes the FHIR response to a POST/PUT request to a blob storage.
+
 A __SamplePreProcess__ and __SamplePostProcess__ are available in the project folders <b>```FHIRProxy/preprocessors```</b> and <b>```FHIRProxy/postprocessors```</b>. </br>
  
 See the [Configuration](docs/configuration.md) document for full descriptions and configuration instructions.
