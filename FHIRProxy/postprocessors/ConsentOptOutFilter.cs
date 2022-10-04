@@ -227,10 +227,10 @@ namespace FHIRProxy.postprocessors
             if (period.IsNullOrEmpty()) return true;
             //See if we are within the enforcement period
             //If start or end is not specified the lowest/greatest dates are assumed.
-            DateTime start = (DateTime)period["start"];
-            if (start == null) start = DateTime.MinValue;
-            DateTime end = (DateTime)period["end"];
-            if (end == null) end = DateTime.MaxValue;
+            DateTime? start = (DateTime)period["start"];
+            if (!start.HasValue) start = DateTime.MinValue;
+            DateTime? end = (DateTime)period["end"];
+            if (!end.HasValue) end = DateTime.MaxValue;
             DateTime now = DateTime.Now;
             if (now >= start && now <= end) return true;
             return false;

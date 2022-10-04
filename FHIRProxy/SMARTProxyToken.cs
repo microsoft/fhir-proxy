@@ -69,7 +69,7 @@ namespace FHIRProxy
                     headclientid = decodedString.Substring(0, decodedString.IndexOf(":"));
                     headsecret = decodedString.Substring(decodedString.IndexOf(":") + 1);
                     if (string.IsNullOrEmpty(client_id)) client_id = headclientid;
-                    if (string.IsNullOrEmpty(client_secret)) client_secret = headsecret;
+                    if (string.IsNullOrEmpty(client_secret) && string.IsNullOrEmpty(codeverifier)) client_secret = headsecret;
                 }
                 //Create Key Value Pairs List
                 var keyValues = new List<KeyValuePair<string, string>>();

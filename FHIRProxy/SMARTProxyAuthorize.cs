@@ -78,10 +78,18 @@ namespace FHIRProxy
             //Add Custom Request Parmeters
             foreach(string s in Utils.GetEnvironmentVaiableArray("FP-OIDC-CUSTOM-PARMS"))
             {
-                string qp = req.Query[s];
+                string[] parm = s.Split("=");
+                string qp = req.Query[parm[0]];
+                if (string.IsNullOrEmpty(qp))
+                {
+                    if (parm.Length > 1)
+                    {
+                        qp = parm[1];
+                    }
+                }
                 if (!string.IsNullOrEmpty(qp))
                 {
-                    newQueryString += $"&{s}={HttpUtility.UrlEncode(qp)}";
+                    newQueryString += $"&{parm[0]}={HttpUtility.UrlEncode(qp)}";
                 }
             }
             string redirect = (string)config["authorization_endpoint"];
