@@ -320,6 +320,10 @@ namespace FHIRProxy
             List<string> smartClaims = ExtractSmartScopeClaims(ci);
             //No Claims in token then pass scope context by default
             if (smartClaims == null || smartClaims.Count == 0) return new UserScopeResult(true,tok);
+            //Is this a service client
+            var sc = ci.SingleClaim("serviceClient");
+            if (sc != null && sc.Value.Equals("system")) return new UserScopeResult(true, tok);
+            //Check User Scope Claims
             string claimstring = String.Join(" ", smartClaims);
             //Load fhirUser placed in cache by SMARTProxyToken issuer.
             string fhiruser = ci.fhirUser();

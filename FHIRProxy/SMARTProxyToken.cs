@@ -14,6 +14,8 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using System.Net;
 
 namespace FHIRProxy
 {
@@ -44,6 +46,8 @@ namespace FHIRProxy
                 string scope = null;
                 string codeverifier = null;
                 string internalrefreshId = null;
+                string client_assertion = null;
+                string client_assertion_type = null;
                 //Read in Form Collection
                 IFormCollection col = req.Form;
                 if (col != null)
@@ -56,6 +60,8 @@ namespace FHIRProxy
                     refresh_token = col["refresh_token"];
                     scope = col["scope"];
                     codeverifier = col["code_verifier"];
+                    client_assertion = col["client_assertion"];
+                    client_assertion_type = col["client_assertion_type"];
                 }
                 //Check for Client Id and Secret in Basic Auth Header and use if not in POST body
                 var authHeader = req.Headers["Authorization"].FirstOrDefault();
@@ -101,6 +107,14 @@ namespace FHIRProxy
                 {
                     keyValues.Add(new KeyValuePair<string, string>("code_verifier", codeverifier));
                 }
+                if (!string.IsNullOrEmpty(client_assertion))
+                {
+                    keyValues.Add(new KeyValuePair<string, string>("client_assertion", client_assertion));
+                }
+                if (!string.IsNullOrEmpty(client_assertion_type))
+                {
+                    keyValues.Add(new KeyValuePair<string, string>("client_assertion_type", client_assertion_type));
+                }
                 if (!string.IsNullOrEmpty(scope))
                 {
                     //Convert SMART on FHIR Scopes to Fully Qualified AAD Scopes
@@ -143,38 +157,62 @@ namespace FHIRProxy
                         keyValues.Add(new KeyValuePair<string, string>("scope", newscope));
                     }
                     keyValues.Add(new KeyValuePair<string, string>("refresh_token", refresh_token));
-                }   
-                //Load Configuration
-                JObject config = await ADUtils.LoadOIDCConfiguration(iss, log);
-                if (config == null)
-                {
-                    return new ContentResult() { Content = $"Error retrieving open-id configuration from {iss}", StatusCode = 500, ContentType = "text/plain" };
-
                 }
-                string tendpoint = (string)config["token_endpoint"];
+                JObject config = null;
                 JObject obj = null;
                 HttpResponseMessage response = null;
-                //POST to the issuer token endpoint
-                using (HttpClient client = new HttpClient())
+                //Client Assertion Federated Access Token
+                if (client_assertion != null)
                 {
-                    // Call asynchronous network methods in a try/catch block to handle exceptions
-                    try
+                    if (!client_assertion_type.Equals(Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-TYPE", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")))
                     {
-                        var request = new HttpRequestMessage(HttpMethod.Post, tendpoint);
-                        request.Content = new FormUrlEncodedContent(keyValues);
-                        response = await client.SendAsync(request);
-                        string contresp = await response.Content.ReadAsStringAsync();
-                        obj = JObject.Parse(contresp);
+                        string msg = $"SMARTProxyToken:Not a supported assertion type {client_assertion_type}";
+                        log.LogWarning(msg);
+                        return new ContentResult()
+                        {
+                            Content = "{\"error\":\"" + msg + "\"}",
+                            StatusCode = 400,
+                            ContentType = "application/json"
+                        };
                     }
-                    catch (Exception re)
+                    var jwksuri = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-JWTKEYSETURL");
+                    obj = new JObject();
+                    config = new JObject();
+                    obj["access_token"] = client_assertion;
+                    config["jwks_uri"] = jwksuri;
+                    obj["scope"] = scope;
+                } else { 
+                    //Call Configured Token Provider
+                    //Load Configuration
+                    config = await ADUtils.LoadOIDCConfiguration(iss, log);
+                    if (config == null)
                     {
-                        log.LogError($"SMARTProxyToken:Error loading from {tendpoint} Message: {re.Message}");
-                        return new ContentResult() { Content = $"Error loading from {tendpoint} Message: {re.Message}", StatusCode = 500, ContentType = "text/plain" };
+                        return new ContentResult() { Content = $"Error retrieving open-id configuration from {iss}", StatusCode = 500, ContentType = "text/plain" };
+
                     }
-                    if (!response.IsSuccessStatusCode)
+                    string tendpoint = (string)config["token_endpoint"];
+                    //POST to the issuer token endpoint
+                    using (HttpClient client = new HttpClient())
                     {
-                        log.LogError($"SMARTProxyToken:Error loading token {obj.ToString()}");
-                        return new ContentResult() { Content = $"{obj.ToString()}", StatusCode = (int)response.StatusCode, ContentType = "application/json" };
+                        // Call asynchronous network methods in a try/catch block to handle exceptions
+                        try
+                        {
+                            var request = new HttpRequestMessage(HttpMethod.Post, tendpoint);
+                            request.Content = new FormUrlEncodedContent(keyValues);
+                            response = await client.SendAsync(request);
+                            string contresp = await response.Content.ReadAsStringAsync();
+                            obj = JObject.Parse(contresp);
+                        }
+                        catch (Exception re)
+                        {
+                            log.LogError($"SMARTProxyToken:Error loading from {tendpoint} Message: {re.Message}");
+                            return new ContentResult() { Content = $"Error loading from {tendpoint} Message: {re.Message}", StatusCode = 500, ContentType = "text/plain" };
+                        }
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            log.LogError($"SMARTProxyToken:Error loading token {obj.ToString()}");
+                            return new ContentResult() { Content = $"{obj.ToString()}", StatusCode = (int)response.StatusCode, ContentType = "application/json" };
+                        }
                     }
 
                 }
@@ -187,6 +225,7 @@ namespace FHIRProxy
                 string tokenscope = (string)obj["scope"];
                 if (grant_type.ToLower().Equals("client_credentials"))
                 {
+                   
                     try
                     {
                         //Client Credentials or Refresh Validate Returned Access Token 
@@ -195,7 +234,7 @@ namespace FHIRProxy
                     catch (Exception e)
                     {
                         log.LogError($"SMARTProxyToken:Error validating issuer access token: {e.Message}");
-                        return new ContentResult() { Content = $"Error validating issuer access token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
+                        return new ContentResult() { Content = $"Error validating issuer access token: {e.Message}", StatusCode = 401, ContentType = "text/plain" };
                     }
 
 
@@ -211,9 +250,19 @@ namespace FHIRProxy
                     catch (Exception e)
                     {
                         log.LogError($"SMARTProxyToken:Error validating issuer id token: {e.Message}");
-                        return new ContentResult() { Content = $"Error validating issuer id token: {e.Message}", StatusCode = 403, ContentType = "text/plain" };
+                        return new ContentResult() { Content = $"Error validating issuer id token: {e.Message}", StatusCode = 401, ContentType = "text/plain" };
                     }
                    
+                } else
+                {
+                    string msg = $"SMARTProxyToken:Not a supported grant type {grant_type}";
+                    log.LogWarning(msg);
+                    return new ContentResult()
+                    {
+                        Content = "{\"error\":\"" + msg + "\"}",
+                        StatusCode = 400,
+                        ContentType = "application/json"
+                    };
                 }
                 //Undo AAD Scopes pair down to original request to support SMART Session scoping
                 if (!obj["scope"].IsNullOrEmpty())
@@ -227,25 +276,30 @@ namespace FHIRProxy
                     
                 } else
                 {
-                    //Pull scopes from idp access token b2c
-                    ClaimsIdentity id_ci = new ClaimsIdentity(orig_id_token.Claims);
-                    var idpaccess = id_ci.SingleClaim("idp_access_token");
-                    if (idpaccess != null && !string.IsNullOrEmpty(idpaccess.Value))
+                    if (orig_id_token != null)
                     {
-                        var tokenHandler = new JwtSecurityTokenHandler();
-                        var idpToken = (JwtSecurityToken)tokenHandler.ReadToken(idpaccess.Value);
-                        ClaimsIdentity idpci = new ClaimsIdentity(idpToken.Claims);
-                        tokenscope = idpci.ScopeString();
+                        //Pull scopes from idp access token b2c
+                        ClaimsIdentity id_ci = new ClaimsIdentity(orig_id_token.Claims);
+                        var idpaccess = id_ci.SingleClaim("idp_access_token");
+                        if (idpaccess != null && !string.IsNullOrEmpty(idpaccess.Value))
+                        {
+                            var tokenHandler = new JwtSecurityTokenHandler();
+                            var idpToken = (JwtSecurityToken)tokenHandler.ReadToken(idpaccess.Value);
+                            ClaimsIdentity idpci = new ClaimsIdentity(idpToken.Claims);
+                            tokenscope = idpci.ScopeString();
+                        }
                     }
                     
 
                 }
                 //Generate a Server Access Token for fhir-proxy and replace in token call.
-                proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log);
+                proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log, grant_type.ToLower().Equals("client_credentials"));
                 //substitute our access token if created
                 if (!string.IsNullOrEmpty(proxyAccessTokenString))
                 {
                     obj["access_token"] = proxyAccessTokenString;
+                    obj["token_type"] = "bearer";
+                    obj["expires_in"] = Utils.GetIntEnvironmentVariable("FP-ACCESS-TOKEN-LIFESPAN-SECONDS", "3599");
                     proxy_access_token = handler.ReadJwtToken(proxyAccessTokenString);
                     ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
                     string fhiruser = access_ci.fhirUser();
@@ -301,7 +355,7 @@ namespace FHIRProxy
                 var cr = new ContentResult()
                 {
                     Content = obj.ToString(),
-                    StatusCode = (int)response.StatusCode,
+                    StatusCode = (response != null ? (int)response.StatusCode : (int)HttpStatusCode.OK),
                     ContentType = "application/json"
                 };
                 return cr;

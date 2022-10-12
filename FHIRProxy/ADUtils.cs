@@ -134,9 +134,9 @@ namespace FHIRProxy
         }
         public static async Task<JwtSecurityToken> ValidateToken(string authToken, string jwksurl, string hostname, bool validateAudience, ILogger log)
         {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var validationParameters = await GetValidationParameters(jwksurl,hostname,validateAudience,log);
-                SecurityToken validatedToken;
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var validationParameters = await GetValidationParameters(jwksurl,hostname,validateAudience,log);
+            SecurityToken validatedToken;
             if (!validationParameters.RequireSignedTokens)
             {
                 validatedToken = tokenHandler.ReadToken(authToken);
@@ -237,6 +237,16 @@ namespace FHIRProxy
                         retVal.Add(i);
                 }
             }
+            //Add Federated Issuers
+            validissuers = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-VALID-ISSUERS");
+            if (validissuers != null)
+            {
+                var s = validissuers.Split(",");
+                foreach (string i in s)
+                {
+                    retVal.Add(i);
+                }
+            }
             return retVal;
             
         }
@@ -254,24 +264,20 @@ namespace FHIRProxy
             {
                 retVal.Add(a);
             }
-            return retVal;
-
-        }
-        public static string LoadOIDFromIDToken(JwtSecurityToken validatedIdentityToken,ILogger log)
-        {
-            ClaimsIdentity id_ci = new ClaimsIdentity(validatedIdentityToken.Claims);
-            string oidclaimkey = Utils.GetEnvironmentVariable("FP-OIDC-TOKEN-IDENTITY-CLAIM", "oid");
-            var oid = id_ci.SingleClaim(oidclaimkey);
-            if (oid == null)
+            //Add Federated Valid Audiences
+            validaud = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-VALID-AUDIENCES");
+            if (validaud != null)
             {
-                log.LogError($"LoadOIDFromIDToken:Cannot find oid claim {oidclaimkey} in original token:\r\n{validatedIdentityToken.ToString()}");
-                throw new Exception($"Cannot find oid claim {oidclaimkey} in original token.");
+                s = validaud.Split(",");
+                foreach (string a in s)
+                {
+                    retVal.Add(a);
+                }
             }
-            return oid.Value;
+            return retVal;
         }
 
-
-        public static string GenerateFHIRProxyAccessToken(JwtSecurityToken validatedIdentityToken,string accessscopes,ILogger log)
+        public static string GenerateFHIRProxyAccessToken(JwtSecurityToken validatedIdentityToken, string accessscopes, ILogger log, bool iscc = false)
         {
             var secret = Utils.GetEnvironmentVariable("FP-ACCESS-TOKEN-SECRET");
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -282,8 +288,7 @@ namespace FHIRProxy
             var oid = id_ci.SingleClaim(oidclaimkey);
             if (oid == null)
             {
-                log.LogError($"GenerateFHIRProxyAccessToken:Cannot find oid claim {oidclaimkey} in original token:\r\n{validatedIdentityToken.ToString()}");
-                throw new Exception($"Cannot find oid claim {oidclaimkey} in original token.");
+                oid = id_ci.SingleClaim("iss");
             }
             fpAccessClaims.Add(new Claim("oid", oid.Value));
             var tid = id_ci.Tenant();
@@ -294,19 +299,27 @@ namespace FHIRProxy
                 tid = tid.Trim('/');
             }
             fpAccessClaims.Add(new Claim("tid", tid));
-            var fhiruserclaim = id_ci.fhirUserClaim();
-            if (fhiruserclaim != null)
+            if (iscc)
             {
-                fpAccessClaims.Add(new Claim("fhirUser",fhiruserclaim.Value));
-            } else
+                fpAccessClaims.Add(new Claim("serviceClient", "system"));
+            }
+            else
             {
-                //Look for a external mapping 
-                if (fhiruserclaim == null)
+                var fhiruserclaim = id_ci.fhirUserClaim();
+                if (fhiruserclaim != null)
                 {
-                    var fhiruser = FHIRProxyAuthorization.GetMappedFHIRUser(tid, oid.Value, log);
-                    if (!string.IsNullOrEmpty(fhiruser))
+                    fpAccessClaims.Add(new Claim("fhirUser", fhiruserclaim.Value));
+                }
+                else
+                {
+                    //Look for a external mapping 
+                    if (fhiruserclaim == null)
                     {
-                        fpAccessClaims.Add(new Claim(Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser"), fhiruser));
+                        var fhiruser = FHIRProxyAuthorization.GetMappedFHIRUser(tid, oid.Value, log);
+                        if (!string.IsNullOrEmpty(fhiruser))
+                        {
+                            fpAccessClaims.Add(new Claim(Utils.GetEnvironmentVariable("FP-FHIR-USER-CLAIM", "fhirUser"), fhiruser));
+                        }
                     }
                 }
             }
