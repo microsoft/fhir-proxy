@@ -31,7 +31,11 @@ using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.ComponentModel.Design;
-
+using System.Diagnostics;
+using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.DataContracts;
 
 namespace FHIRProxy
 {
@@ -49,15 +53,17 @@ namespace FHIRProxy
         [FunctionName("ProxyFunction")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{*restOfPath}")] HttpRequest req, string restOfPath,
-                         ILogger log, ClaimsPrincipal principal)
+                         ILogger log, ClaimsPrincipal principal, TelemetryConfiguration telemetryConfiguration)
         {
             //Parse Path
             FHIRParsedPath parsedPath = req.parsePath();
+
             string coid = null;
             if (req.Headers.ContainsKey("x-ms-service-request-id"))
             {
                 coid = req.Headers["x-ms-service-request-id"].First();
             }
+
             using (log.BeginScope(
                     new Dictionary<string, object> { { "CorrelationId", coid } }))
             {
@@ -66,13 +72,23 @@ namespace FHIRProxy
                     return new ContentResult() { Content = Utils.genOOErrResponse("auth-access", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
                 }
 
+                var _telemetryClient = new TelemetryClient(telemetryConfiguration);
+
                 //Load Request Body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
               
                 //Initialize Response 
                 FHIRResponse serverresponse = null;
+
+                // Setup for metrics
+                var timer = Stopwatch.StartNew();
+                var metrics = new Dictionary<string, double>();
+
                 //Call Configured Pre-Processor Modules
                 ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody, req, log, principal);
+
+                timer.Stop();
+                metrics.Add("PreProcessorExecutionTime", timer.Elapsed.TotalMilliseconds);
 
                 if (!prerslt.Continue)
                 {
@@ -94,12 +110,34 @@ namespace FHIRProxy
                 log.LogInformation($"Calling FHIR Server...Path {restOfPath}");
 
                 //Proxy the call to the FHIR Server
-                serverresponse = await FHIRClient.CallFHIRServer(req, restOfPath, prerslt.Request, log);
+                var startTime = DateTime.UtcNow;
+                timer = Stopwatch.StartNew();
+                try
+                {
+                    serverresponse = await FHIRClient.CallFHIRServer(req, restOfPath, prerslt.Request, log);
+                }
+                finally
+                {
+                    timer.Stop();
+                    _telemetryClient.TrackDependency(new DependencyTelemetry()
+                    {
+                        Name = "FHIR Server",
+                        Data = "Main",
+                        Timestamp = startTime,
+                        Duration = timer.Elapsed,
+                        Success = serverresponse.IsSuccess()
+                    });
+                    metrics.Add("FHIRCallExecutionTime", timer.Elapsed.TotalMilliseconds);
+                }
 
             PostProcessing:
+
+                timer = Stopwatch.StartNew();
+
                 //Call Configured Post-Processor Modules
                 ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal);
 
+                metrics.Add("PostProcessorExecutionTime", timer.Elapsed.TotalMilliseconds);
 
                 if (postrslt.Response == null)
                 {
@@ -125,6 +163,9 @@ namespace FHIRProxy
                 {
                     return null;
                 }
+
+                _telemetryClient.TrackEvent("FHIRProxy Function Executed", metrics: metrics);
+
                 return genContentResult(postrslt.Response, log);
             }
         }
