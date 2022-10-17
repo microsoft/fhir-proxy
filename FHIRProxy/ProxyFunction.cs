@@ -46,14 +46,20 @@ namespace FHIRProxy
           * IMPORTANT:  Do not publish this function without Authentication (Easy Auth or APIM) you will compromise your FHIR server!
           * 
     */
-    public static class ProxyFunction
+
+    public class ProxyFunction
     {
+        private readonly TelemetryClient _telemetryClient;
+        public ProxyFunction(TelemetryConfiguration telemetryConfiguration)
+        {
+            _telemetryClient = new TelemetryClient(telemetryConfiguration);
+        }
      
         [FHIRProxyAuthorization]
         [FunctionName("ProxyFunction")]
-        public static async Task<IActionResult> Run(
+        public async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", "put", "patch", "delete", Route = "fhir/{*restOfPath}")] HttpRequest req, string restOfPath,
-                         ILogger log, ClaimsPrincipal principal, TelemetryConfiguration telemetryConfiguration)
+                         ILogger log, ClaimsPrincipal principal)
         {
             //Parse Path
             FHIRParsedPath parsedPath = req.parsePath();
@@ -72,7 +78,6 @@ namespace FHIRProxy
                     return new ContentResult() { Content = Utils.genOOErrResponse("auth-access", req.Headers[Utils.AUTH_STATUS_MSG_HEADER].First()), StatusCode = (int)System.Net.HttpStatusCode.Unauthorized, ContentType = "application/json" };
                 }
 
-                var _telemetryClient = new TelemetryClient(telemetryConfiguration);
 
                 //Load Request Body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -122,10 +127,11 @@ namespace FHIRProxy
                     _telemetryClient.TrackDependency(new DependencyTelemetry()
                     {
                         Name = "FHIR Server",
-                        Data = "Main",
+                        Data = $"{req.Method} {req.Host} {(Utils.GetBoolEnvironmentVariable("FP-HIDETELEMETRYPATH",false) ? "" : restOfPath)}",
                         Timestamp = startTime,
                         Duration = timer.Elapsed,
-                        Success = serverresponse.IsSuccess()
+                        Success = serverresponse.IsSuccess(),
+                        Type = "HTTP"
                     });
                     metrics.Add("FHIRCallExecutionTime", timer.Elapsed.TotalMilliseconds);
                 }
