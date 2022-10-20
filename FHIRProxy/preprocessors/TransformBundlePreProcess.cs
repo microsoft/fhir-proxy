@@ -12,11 +12,14 @@
 * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -25,8 +28,10 @@ namespace FHIRProxy.preprocessors
 {
     /* Converts Transaction Bundles to Batch bundles subtable for API for FHIR ingestion preserving relationships. 
      * Caution: assumes UUID are assigned per spec.*/
-    class TransformBundlePreProcess : IProxyPreProcess
+    class TransformBundlePreProcess : IProxyPreProcess, IProxyPreProcessMetrics
     {
+        private TelemetryClient _telemetryClient;
+
         public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
             FHIRParsedPath pp = req.parsePath();
@@ -74,7 +79,29 @@ namespace FHIRProxy.preprocessors
                         if (!string.IsNullOrEmpty(resource) && !string.IsNullOrEmpty(query))
                         {
                             log.LogInformation($"TransformBundleProcess: Loading Resource {resource} with query {query}");
-                            var r = await FHIRClient.CallFHIRServer($"{resource}?{query}", null, "GET", req.Headers, log);
+
+                            var startTime = DateTime.UtcNow;
+                            var timer = Stopwatch.StartNew();
+                            FHIRResponse r = null;
+                            try
+                            {
+                                r = await FHIRClient.CallFHIRServer($"{resource}?{query}", null, "GET", req.Headers, log);
+                            }
+                            finally
+                            {
+                                timer.Stop();
+                                _telemetryClient.TrackDependency(new DependencyTelemetry()
+                                {
+                                    Name = "FHIR Server",
+                                    Data = $"{req.Method} {req.Host} {(Utils.GetBoolEnvironmentVariable("FP-HIDETELEMETRYPATH", false) ? "" : query)}",
+                                    Timestamp = startTime,
+                                    Duration = timer.Elapsed,
+                                    Success = r != null && r.IsSuccess(),
+                                    Type = "Transform Bundle Query Resolver"
+                                });
+                            }
+
+                            
                             if (r.StatusCode == System.Net.HttpStatusCode.OK)
                             {
                                 var rs = r.toJToken();
@@ -140,6 +167,11 @@ namespace FHIRProxy.preprocessors
                 return new ProxyProcessResult(true, "", result.ToString(), null);
             }
             return new ProxyProcessResult(true, "", requestBody, null);
+        }
+
+        public void SetTelemetryClient(TelemetryClient telemetryClient)
+        {
+            _telemetryClient = telemetryClient;
         }
     }
     

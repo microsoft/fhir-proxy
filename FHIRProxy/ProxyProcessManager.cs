@@ -14,9 +14,11 @@
 */
 
 using LazyCache;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Data;
 using System.Security.Claims;
 using System.Threading.Tasks;
 namespace FHIRProxy
@@ -36,7 +38,7 @@ namespace FHIRProxy
         private static IAppCache cache = new CachingService();
 
         private static readonly int DEF_EXP_MINS = 1440;
-        public static async Task<ProxyProcessResult> RunPostProcessors(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal)
+        public static async Task<ProxyProcessResult> RunPostProcessors(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal, TelemetryClient telemetryClient = null)
         {
             ProxyProcessResult rslt = new ProxyProcessResult();
             //Default to server response 
@@ -65,6 +67,13 @@ namespace FHIRProxy
 
                     }
                     IProxyPostProcess ip = (IProxyPostProcess)cache.GetOrAdd(cls, () => GetInstance(ic),os);
+
+                    // If the processor implements the metrics, set the telemetry client
+                    if (ip.GetType().IsAssignableFrom(typeof(IProxyPostProcessMetrics)))
+                    {
+                        ((IProxyPostProcessMetrics)ip).SetTelemetryClient(telemetryClient);
+                    }
+
                     log.LogInformation($"ProxyProcessManager is running {cls} post-process...");
                     rslt = await ip.Process(rslt.Response,req, log, principal);
                     if (!rslt.Continue) return rslt;
@@ -84,7 +93,7 @@ namespace FHIRProxy
             }
             return rslt;
         }
-        public static async Task<ProxyProcessResult> RunPreProcessors(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
+        public static async Task<ProxyProcessResult> RunPreProcessors(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal, TelemetryClient telemetryClient = null)
         {
             ProxyProcessResult rslt = new ProxyProcessResult();
             rslt.Request = requestBody;
@@ -111,6 +120,13 @@ namespace FHIRProxy
 
                     }
                     IProxyPreProcess ip =  (IProxyPreProcess) cache.GetOrAdd(cls, () => GetInstance(ic),os);
+
+                    // If the processor implements the metrics, set the telemetry client
+                    if (ip.GetType().IsAssignableFrom(typeof(IProxyPreProcessMetrics)))
+                    {
+                        ((IProxyPreProcessMetrics)ip).SetTelemetryClient(telemetryClient);
+                    }
+
                     log.LogInformation($"ProxyProcessManager is running {cls} pre-process...");
                     rslt = await ip.Process(rslt.Request, req, log, principal);
                     if (!rslt.Continue) return rslt;

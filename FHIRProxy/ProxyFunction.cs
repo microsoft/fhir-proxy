@@ -1,7 +1,7 @@
 /* 
 * 2020 Microsoft Corp
 * 
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ï¿½AS ISï¿½
 * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
 * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
@@ -90,7 +90,7 @@ namespace FHIRProxy
                 var metrics = new Dictionary<string, double>();
 
                 //Call Configured Pre-Processor Modules
-                ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody, req, log, principal);
+                ProxyProcessResult prerslt = await ProxyProcessManager.RunPreProcessors(requestBody, req, log, principal, _telemetryClient);
 
                 timer.Stop();
                 metrics.Add("PreProcessorExecutionTime", timer.Elapsed.TotalMilliseconds);
@@ -131,7 +131,7 @@ namespace FHIRProxy
                         Timestamp = startTime,
                         Duration = timer.Elapsed,
                         Success = serverresponse.IsSuccess(),
-                        Type = "HTTP"
+                        Type = "Proxied FHIR Call"
                     });
                     metrics.Add("FHIRCallExecutionTime", timer.Elapsed.TotalMilliseconds);
                 }
@@ -141,7 +141,7 @@ namespace FHIRProxy
                 timer = Stopwatch.StartNew();
 
                 //Call Configured Post-Processor Modules
-                ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal);
+                ProxyProcessResult postrslt = await ProxyProcessManager.RunPostProcessors(serverresponse, req, log, principal, _telemetryClient);
 
                 metrics.Add("PostProcessorExecutionTime", timer.Elapsed.TotalMilliseconds);
 

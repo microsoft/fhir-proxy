@@ -12,13 +12,13 @@
 * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Text;
 using System.Threading.Tasks;
+
+
 namespace FHIRProxy
 {
     interface IProxyPostProcess
@@ -33,5 +33,10 @@ namespace FHIRProxy
         /// <param name="principal">The current ClaimsPrinicipal from the function invocation</param>
         /// <returns>ProxyProcessResult - The result of this Post Process Function</returns>
         public Task<ProxyProcessResult> Process(FHIRResponse response, HttpRequest req, ILogger log, ClaimsPrincipal principal);
+    }
+
+    interface IProxyPostProcessMetrics
+    {
+        public void SetTelemetryClient(TelemetryClient telemetryClient);
     }
 }

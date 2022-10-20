@@ -23,11 +23,14 @@ using System.Text;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 using System.Linq;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.DataContracts;
+using System.Diagnostics;
 
 namespace FHIRProxy.postprocessors
 {
     /* Proxy Post Process to publish events for CUD events to FHIR Server */
-    class FHIRCDSSyncAgentPostProcess2 : IProxyPostProcess
+    class FHIRCDSSyncAgentPostProcess2 : IProxyPostProcess, IProxyPostProcessMetrics
     {
         private ServiceBusClient _queueClient = null;
         private ServiceBusSender _sender = null;
@@ -39,11 +42,12 @@ namespace FHIRProxy.postprocessors
         private string _updateAction = null;
         private bool _bulkLoadMode = false;
         private bool _isUniquePartitionKeyForNonPatientResources = false;
+        private TelemetryClient _telemetryClient;
 
         public FHIRCDSSyncAgentPostProcess2()
         {
-
         }
+
         public void InitQueueClient(ILogger log)
         {
 
@@ -179,9 +183,44 @@ namespace FHIRProxy.postprocessors
                     log.LogInformation($"FHIRCDSSyncAgentPostProcess2 Message: {dta}");
 
                 }
-                // Send the message batch to the queue.
-                await _sender.SendMessagesAsync(messageBatch);
 
+                //Proxy the call to the FHIR Server
+                var startTime = DateTime.UtcNow;
+                var timer = Stopwatch.StartNew();
+                bool success = true;
+
+                try
+                {
+                    // Send the message batch to the queue.
+                    await _sender.SendMessagesAsync(messageBatch);
+                }
+                catch (Exception ex)
+                {
+                    success = false;
+                    throw ex;
+                }
+                finally
+                {
+                    timer.Stop();
+
+                    if (_telemetryClient != null)
+                    {
+                        var data = new JObject();
+                        data["entries"] = entries.Count;
+                        data["messageBatch"] = messageBatch.Count;
+                        data["messageSize"] = messageBatch.SizeInBytes;
+
+                        _telemetryClient.TrackDependency(new DependencyTelemetry()
+                        {
+                            Name = "Service Bus",
+                            Data = data.ToString(Newtonsoft.Json.Formatting.None),
+                            Timestamp = startTime,
+                            Duration = timer.Elapsed,
+                            Success = success,
+                            Type = "Send Proxy"
+                        });
+                    }
+                }
             }
 
         }
@@ -236,6 +275,11 @@ namespace FHIRProxy.postprocessors
                 ).Replace("-", String.Empty);
             }
             return hash;
+        }
+
+        public void SetTelemetryClient(TelemetryClient telemetryClient)
+        {
+            _telemetryClient = telemetryClient;
         }
     }
 }
