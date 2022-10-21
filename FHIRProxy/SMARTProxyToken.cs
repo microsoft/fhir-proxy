@@ -175,6 +175,7 @@ namespace FHIRProxy
                             ContentType = "application/json"
                         };
                     }
+
                     var jwksuri = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-JWTKEYSETURL");
                     obj = new JObject();
                     config = new JObject();

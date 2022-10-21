@@ -624,8 +624,9 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	fi	
 	# Create Proxy function app
 	echo "Creating Secure FHIR Proxy Function App ["$proxyAppName"]..."
-	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $TAG --query defaultHostName --output tsv --only-show-errors)
-
+	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 4 --tags $TAG --query defaultHostName --output tsv --only-show-errors)
+	stepresult=$(az functionapp config set --net-framework-version v6.0 --name $proxyAppName --resource-group $resourceGroupName)
+	stepresult=$(az functionapp update --name $proxyAppName --resource-group $resourceGroupName --set httpsOnly=true)
 	echo "FHIR-Proxy Function App Host name = "$functionAppHost
 	
 	stepresult=$(az functionapp stop --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName)

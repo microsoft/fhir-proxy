@@ -44,6 +44,8 @@ namespace FHIRProxy
                 {
                     sof["code"] = "SMART-on-FHIR";
                 }
+                var group = rest.SelectToken("$.resource[?(@.type=='Group')]");
+                group["operation"] = JToken.Parse("[{'name':'export','definition':'http://hl7.org/fhir/uv/bulkdata/OperationDefinition/group-export'}]");
                 nextresult.Content = md;
             }
             

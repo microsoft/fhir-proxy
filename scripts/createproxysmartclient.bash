@@ -194,13 +194,17 @@ echo "Creating SMART Client Application "$spname"..."
 		stepresult=$(az ad app owner add --id $spappid --owner-object-id $owner --only-show-errors)
 		if [ -n "$publicclient" ]; then
 			echo "Enabling public client access..."
-			stepresult=$(az ad app update  --id $spappid  --set publicClient=true --only-show-errors)
+			for var in "${replyarr[@]}"
+			do
+				stepresult=$(az ad app update  --id $spappid --public-client-redirect-uris "${var}" --only-show-errors)
+			done
+		else
+			echo "Configuring reply URLs..."
+			for var in "${replyarr[@]}"
+			do
+				stepresult=$(az ad app update --id $spappid --web-redirect-uris "${var}" --only-show-errors)
+			done
 		fi
-		echo "Configuring reply URLs..."
-		for var in "${replyarr[@]}"
-		do
-			stepresult=$(az ad app update --id $spappid --web-redirect-uris "${var}" --only-show-errors)
-		done
 		#Delegate openid, profile and offline_access permissions from MS Graph
 		echo "Loading MS Graph OAuth2 openid permissions..."
 		msggraphid="00000003-0000-0000-c000-000000000000"
