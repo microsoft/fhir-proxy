@@ -16,6 +16,7 @@ using System.Linq;
 using System.Text;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Net;
+using System.Xml;
 
 namespace FHIRProxy
 {
@@ -130,7 +131,7 @@ namespace FHIRProxy
                 if (refresh_token != null && isaad)
                 {
 
-                    var table = Utils.getTable("scopestore");
+                    var table = Utils.getTable(ProxyConstants.SCOPE_STORE_TABLE);
                     ScopeEntity se = Utils.getEntity<ScopeEntity>(table, client_id, refresh_token);
                     if (se == null || se.ValidUntil <= DateTime.UtcNow)
                     {
@@ -160,8 +161,9 @@ namespace FHIRProxy
                 }
                 JObject config = null;
                 JObject obj = null;
+                FederatedEntity appreg = null;
                 HttpResponseMessage response = null;
-                //Client Assertion Federated Access Token
+                //Client Assertion Federated Access Token Check
                 if (client_assertion != null)
                 {
                     if (!client_assertion_type.Equals(Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-TYPE", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")))
@@ -175,12 +177,67 @@ namespace FHIRProxy
                             ContentType = "application/json"
                         };
                     }
-
-                    var jwksuri = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-JWTKEYSETURL");
+                    //Load Client ID (Issuer) from Asserted Token
+                    ClaimsIdentity ci = ADUtils.ClaimsIdentityFromToken(client_assertion,log);
+                    if (ci == null)
+                    {
+                        string msg = $"SMARTProxyToken:Not a valid Token {client_assertion}";
+                        log.LogWarning(msg);
+                        return new ContentResult()
+                        {
+                            Content = "{\"error\":\"" + msg + "\"}",
+                            StatusCode = 400,
+                            ContentType = "application/json"
+                        };
+                    }
+                    var fediss = ci.Issuer();
+                    //Lookup Client Id in Federated Registrations
+                    var table = Utils.getTable(ProxyConstants.FEDERATED_APP_TABLE);
+                    appreg = Utils.getEntity<FederatedEntity>(table, "federatedentities", fediss);
+                    if (appreg == null)
+                    {
+                        string msg = $"{fediss} is not registered as a federated application";
+                        return new ContentResult()
+                        {
+                            Content = "{\"error\":\"" + msg + "\"}",
+                            StatusCode = 400,
+                            ContentType = "application/json"
+                        };
+                    }
+                    //set are OAuth token/config objects for federated assertion
                     obj = new JObject();
                     config = new JObject();
                     obj["access_token"] = client_assertion;
-                    config["jwks_uri"] = jwksuri;
+                    config["jwks_uri"] = appreg.JWKSetUrl;
+                    //Check Scopes
+                    if (!string.IsNullOrEmpty(appreg.Scope))
+                    {
+                        if (string.IsNullOrEmpty(scope))
+                        {
+                            string msg = "Scope must be specified in request";
+                            return new ContentResult()
+                            {
+                                Content = "{\"error\":\"" + msg + "\"}",
+                                StatusCode = 400,
+                                ContentType = "application/json"
+                            };
+                        }
+                        string[] registeredScopes = appreg.Scope.Split(" ");
+                        string[] requestedScopes = scope.Split(" ");
+                        foreach (string s in requestedScopes)
+                        {
+                            if (!registeredScopes.Contains(s))
+                            {
+                                string msg = $"Scope {s} is not allowed for application {appreg.Name} ({client_id})";
+                                return new ContentResult()
+                                {
+                                    Content = "{\"error\":\"" + msg + "\"}",
+                                    StatusCode = 400,
+                                    ContentType = "application/json"
+                                };
+                            }
+                        }
+                    }
                     obj["scope"] = scope;
                 } else { 
                     //Call Configured Token Provider
@@ -229,8 +286,16 @@ namespace FHIRProxy
                    
                     try
                     {
-                        //Client Credentials or Refresh Validate Returned Access Token 
-                        orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"], req.Host.Value, false, log);
+                        //Client Assertion
+                        if (appreg != null)
+                        {
+                            orig_token = await ADUtils.ValidateToken((string)obj["access_token"], appreg, log);
+                        }
+                        else
+                        {
+                            //Client Credentials or Refresh Validate Returned Access Token 
+                            orig_token = await ADUtils.ValidateToken((string)obj["access_token"], (string)config["jwks_uri"],Utils.GetEnvironmentVariable("FP-OIDC-VALID-ISSUERS"),Utils.GetEnvironmentVariable("FP-OIDC-VALID-AUDIENCES"), log);
+                        }
                     }
                     catch (Exception e)
                     {
@@ -245,7 +310,7 @@ namespace FHIRProxy
                     //authorization_code need to validate identity from oidc issuer and produce a SMART Compliant Access token
                     try
                     {
-                        orig_token = await ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], req.Host.Value, false, log);
+                        orig_token = await ADUtils.ValidateToken((string)obj["id_token"], (string)config["jwks_uri"], Utils.GetEnvironmentVariable("FP-OIDC-VALID-ISSUERS"), Utils.GetEnvironmentVariable("FP-OIDC-VALID-AUDIENCES"),log);
                         orig_id_token = orig_token;
                     }
                     catch (Exception e)
@@ -340,7 +405,7 @@ namespace FHIRProxy
                     {
                         if (string.IsNullOrEmpty(internalrefreshId)) internalrefreshId = Guid.NewGuid().ToString();
                         string rt = (string)obj["refresh_token"];
-                        var table = Utils.getTable("scopestore");
+                        var table = Utils.getTable(ProxyConstants.SCOPE_STORE_TABLE);
                         ScopeEntity se = new ScopeEntity(client_id, internalrefreshId);
                         var s = obj["scope"].ToString();
                         se.RequestedScopes = s;

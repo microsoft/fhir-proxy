@@ -71,7 +71,11 @@ namespace FHIRProxy
                 ClaimsPrincipal principal = ADUtils.BearerToClaimsPrincipal(req);
                 //Load Request Body
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-              
+                //
+                if (restOfPath.StartsWith("_export") && req.Method.Equals("GET"))
+                {
+                    return await StreamExportFile.ExportFile(principal, restOfPath,log);
+                }
                 //Initialize Response 
                 FHIRResponse serverresponse = null;
                 //Call Configured Pre-Processor Modules

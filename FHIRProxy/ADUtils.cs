@@ -32,6 +32,21 @@ namespace FHIRProxy
             ClaimsPrincipal user = new ClaimsPrincipal(ci);
             return user;
         }
+        public static ClaimsIdentity ClaimsIdentityFromToken(string tokenstring,ILogger log)
+        {
+            try
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwttoken = handler.ReadToken(tokenstring) as JwtSecurityToken;
+                ClaimsIdentity ci = new ClaimsIdentity(jwttoken.Claims);
+                return ci;
+            }
+            catch (Exception e)
+            {
+                log.LogError($"Exception parsing token:{e.Message}");
+                return null;
+            }
+        }
         public static bool isTokenExpired(string bearerToken)
         {
             
@@ -130,12 +145,16 @@ namespace FHIRProxy
                 }
             }
 
-
         }
-        public static async Task<JwtSecurityToken> ValidateToken(string authToken, string jwksurl, string hostname, bool validateAudience, ILogger log)
+        public static async Task<JwtSecurityToken> ValidateToken(string authToken,FederatedEntity fe, ILogger log)
+        {
+            return await ValidateToken(authToken, fe.JWKSetUrl, fe.ValidIssuers, fe.ValidAudiences,log);
+        }
+
+        public static async Task<JwtSecurityToken> ValidateToken(string authToken, string jwksurl, string validissuers, string validaudiences, ILogger log)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var validationParameters = await GetValidationParameters(jwksurl,hostname,validateAudience,log);
+            var validationParameters = await GetValidationParameters(jwksurl, validissuers, validaudiences, log);
             SecurityToken validatedToken;
             if (!validationParameters.RequireSignedTokens)
             {
@@ -148,61 +167,24 @@ namespace FHIRProxy
             }
             return (JwtSecurityToken)validatedToken;      
         }
-        private static async Task<TokenValidationParameters> GetValidationParameters(string jwksurl, string hostname,bool validateAudience, ILogger log)
+        private static async Task<TokenValidationParameters> GetValidationParameters(string jwksurl, string validissuers,string validaudiences, ILogger log)
         {
             TokenValidationParameters retVal = null;
-            var sk = Utils.GetEnvironmentVariable("FP-OIDC-SECRETKEY");
-          
-            if (!string.IsNullOrEmpty(sk))
+            var jwks = await LoadJWKS(jwksurl, log);
+            var signingKeys = new JsonWebKeySet(jwks).GetSigningKeys();
+            retVal = new TokenValidationParameters()
             {
-                if (sk.Equals("FP-NOVALIDATION"))
-                {
-                    retVal = new TokenValidationParameters()
-                    {
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                        ValidateLifetime = true,
-                        RequireSignedTokens = false
-                    };
-                }
-                else
-                {
-                    //var t = new HMACSHA256(Encoding.UTF8.GetBytes(sk));
-                    var t = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(sk));
-
-                    retVal = new TokenValidationParameters()
-                    {
-                        ValidateIssuerSigningKey = true,
-                        ValidateAudience = false,
-                        ValidateLifetime = true,
-                        ValidIssuer = GetValidIssuers()[0],
-                        IssuerSigningKey = t,
-                        RequireSignedTokens = true
-                    };
-                }
-
-            }
-            else
-            {
-                var jwks = Utils.GetEnvironmentVariable("FP-OIDC-JWKS");
-                if (string.IsNullOrEmpty(jwks))
-                {
-                    jwks = await LoadJWKS(jwksurl, log);
-                }
-                var signingKeys = new JsonWebKeySet(jwks).GetSigningKeys();
-                retVal = new TokenValidationParameters()
-                {
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    ValidIssuers = GetValidIssuers(),
-                    IssuerSigningKeys = signingKeys,
-                    RequireSignedTokens = true
-                };
-            }
-            if (validateAudience)
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidIssuers = GetValidIssuers(validissuers),
+                IssuerSigningKeys = signingKeys,
+                RequireSignedTokens = true
+            };
+            
+            if (!string.IsNullOrEmpty(validaudiences))
             {
                 retVal.ValidateAudience = true;
-                retVal.ValidAudiences = GetValidAudiences(hostname);
+                retVal.ValidAudiences = GetValidAudiences(validaudiences);
             }
             return retVal;
         }
@@ -216,10 +198,9 @@ namespace FHIRProxy
             return iss;
         }
         
-        public static List<string> GetValidIssuers()
+        public static List<string> GetValidIssuers(string validissuers)
         {
             List<string> retVal = new List<string>();
-            var validissuers = Utils.GetEnvironmentVariable("FP-OIDC-VALID-ISSUERS");
             if (string.IsNullOrEmpty(validissuers))
             {
                 string iss = GetIssuer();
@@ -237,16 +218,6 @@ namespace FHIRProxy
                         retVal.Add(i);
                 }
             }
-            //Add Federated Issuers
-            validissuers = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-VALID-ISSUERS");
-            if (validissuers != null)
-            {
-                var s = validissuers.Split(",");
-                foreach (string i in s)
-                {
-                    retVal.Add(i);
-                }
-            }
             return retVal;
             
         }
@@ -254,25 +225,14 @@ namespace FHIRProxy
         {
             return Utils.GetEnvironmentVariable("FP-OIDC-AAD-APPID-URI", "api://" + app);
         }
-        public static List<string> GetValidAudiences(string hostname)
+        public static List<string> GetValidAudiences(string validaudiences)
         {
             List<string> retVal = new List<string>();
-            var validaud = Utils.GetEnvironmentVariable("FP-OIDC-VALID-AUDIENCES",hostname);
-            if (string.IsNullOrEmpty(validaud)) return null;
-            var s = validaud.Split(",");
+            if (string.IsNullOrEmpty(validaudiences)) return null;
+            var s = validaudiences.Split(",");
             foreach (string a in s)
             {
                 retVal.Add(a);
-            }
-            //Add Federated Valid Audiences
-            validaud = Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-VALID-AUDIENCES");
-            if (validaud != null)
-            {
-                s = validaud.Split(",");
-                foreach (string a in s)
-                {
-                    retVal.Add(a);
-                }
             }
             return retVal;
         }

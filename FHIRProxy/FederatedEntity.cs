@@ -13,18 +13,22 @@ namespace FHIRProxy
         {
 
         }
-        public FederatedEntity(string clientId)
+        public FederatedEntity(string clientId, string name)
         {
             this.PartitionKey = "federatedentities";
             this.RowKey = clientId;
-            this.ValidUntil = DateTime.MaxValue;
+            this.Status = "active";
+            this.Name = name;
         }
         public string ClientId {
             get { return this.RowKey; }
         }
         //Comma Delimeted string of valid issuers
+        public string Name { get; set; }
         public string ValidIssuers { get; set; }
         public string ValidAudiences { get; set; }
-        public DateTime ValidUntil { get; set; }
+        public string Scope { get; set; }
+        public string JWKSetUrl { get; set; }
+        public string Status { get; set; }
     }
 }

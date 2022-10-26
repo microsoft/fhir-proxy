@@ -26,6 +26,9 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.WindowsAzure.Storage.Table;
 using System.Text;
+using System.IO;
+using Newtonsoft.Json;
+using System.Reflection.Metadata.Ecma335;
 
 namespace FHIRProxy
 {
@@ -34,13 +37,13 @@ namespace FHIRProxy
         public static string _bearerToken;
         private static object _lock = new object();
         private static string[] allowedresources = { "Patient", "Practitioner", "RelatedPerson" };
-        private static string[] validcmds = { "find","link", "unlink", "list","usage" };
+        private static string[] validcmds = { "find","link", "unlink", "list","usage","appregistration"};
         private static string htmltemplatehead = "<html><head><style>body {font-family: arial, sans-serif;} table {font-family: arial, sans-serif;border-collapse: collapse;width: 100%;}td, th {border: 1px solid #dddddd;text-align: left;padding: 8px;}tr:nth-child(even){background-color: #dddddd;}</style></head><body>";
         private static string htmltemplatefoot = "</body></html>";
         [FHIRProxyAuthorization]
         [FunctionName("SecureLink")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", Route = "manage/{cmd}/{res?}/{id?}/{tid?}/{oid?}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get","post", "delete", Route = "manage/{cmd}/{res?}/{id?}/{tid?}/{oid?}")] HttpRequest req,
             ILogger log, string cmd, string res, string id, string tid, string oid)
         {
 
@@ -48,6 +51,93 @@ namespace FHIRProxy
             if (string.IsNullOrEmpty(cmd) || !validcmds.Any(cmd.Contains))
             {
                 return new BadRequestObjectResult($"Invalid Command....Valid commands are: {String.Join(",",validcmds)}");
+            }
+            //Federated Client Registration REST CAlls
+            if (cmd.Equals("appregistration"))
+            {
+                CloudTable regtable = Utils.getTable(ProxyConstants.FEDERATED_APP_TABLE);
+                if (req.Method.Equals("POST"))
+                {
+                    //Load Request Body
+                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                    if (string.IsNullOrEmpty(requestBody)) requestBody = "{}";
+                    JObject o = null;
+                    try
+                    {
+                        o = JObject.Parse(requestBody);
+                    }
+                    catch (JsonReaderException jre)
+                    {
+                        return new BadRequestObjectResult($"Error parsing JSON in Request Body:{jre.Message}");
+                    }
+                    string audiences = (string)o["audiences"];
+                    string appname = (string)o["name"];
+                    string issuers = (string)o["issuers"];
+                    string jwkskeys = (string)o["jwskeyset"];
+                    string scope = (string)o["scope"];
+                    string clientid = Guid.NewGuid().ToString();
+                    if (string.IsNullOrEmpty(appname))
+                    {
+                        return new BadRequestObjectResult("You musy provide a name of the federated application to register");
+                    }
+                    if (string.IsNullOrEmpty(issuers))
+                    {
+                        issuers = clientid;
+                    }
+                    if (string.IsNullOrEmpty(jwkskeys))
+                    {
+                        return new BadRequestObjectResult("You musy provide a valid JWKS url");
+                    }
+                    if (string.IsNullOrEmpty(scope))
+                    {
+                        scope = "system/*.read";
+                    }
+                    if (string.IsNullOrEmpty(audiences))
+                    {
+                        audiences = "https://" + req.Host.Value + "/oauth2/token";
+                    }
+                    FederatedEntity fe = new FederatedEntity(clientid, appname);
+                    fe.ValidIssuers = issuers;
+                    fe.ValidAudiences = audiences;
+                    fe.Scope = scope;
+                    fe.JWKSetUrl = jwkskeys;
+                    Utils.setEntity(regtable, fe);
+                    return new ContentResult() { Content = JsonConvert.SerializeObject(fe), StatusCode = 201, ContentType = "application/json" };
+                }
+                else if (req.Method.Equals("DELETE"))
+                {
+                    if (string.IsNullOrEmpty(res))
+                    {
+                        return new BadRequestObjectResult("You musy provide a valid client_id");
+                    }
+                    FederatedEntity fex = Utils.getEntity<FederatedEntity>(regtable, "federatedentities", res);
+                    if (fex == null)
+                    {
+                        return new ContentResult() { Content = $"Client Id {res} not found in table", StatusCode = 404, ContentType = "text/plain" };
+                    }
+                    Utils.deleteEntity(regtable, fex);
+                    return new ContentResult() { Content = "", StatusCode = 204, ContentType = "application/json" };
+                }
+                else if (req.Method.Equals("GET"))
+                {
+                    if (string.IsNullOrEmpty(res))
+                    {
+                        return new BadRequestObjectResult("You musy provide a valid client_id");
+                    }
+                    FederatedEntity fex = Utils.getEntity<FederatedEntity>(regtable, "federatedentities", res);
+                    if (fex == null)
+                    {
+                        return new ContentResult() { Content = $"Client Id {res} not found in table", StatusCode = 404, ContentType = "text/plain" };
+                    }
+                    return new ContentResult() { Content = JsonConvert.SerializeObject(fex), StatusCode = 200, ContentType = "application/json" };
+                }
+                else
+                {
+                    return new BadRequestObjectResult($"{req.Method} is not a supported HTTP Verb for command appregistration");
+                }
+            }
+            if (!req.Method.Equals("GET")) {
+                return new BadRequestObjectResult("You must use the GET HTTP Verb for linking");
             }
             //Are we linking the correct resource type
             if (!cmd.ToLower().Equals("usage") && (string.IsNullOrEmpty(res) || !allowedresources.Any(res.Contains)))

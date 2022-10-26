@@ -117,7 +117,7 @@ namespace FHIRProxy
             return (TEntity)query.Result;
 
         }
-        public static CloudTable getTable(string tablename = "identitylinks")
+        public static CloudTable getTable(string tablename = ProxyConstants.IDENTITY_LINKS_TABLE)
         {
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(Environment.GetEnvironmentVariable("FP-STORAGEACCT"));
 

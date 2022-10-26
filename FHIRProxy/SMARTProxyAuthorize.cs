@@ -20,7 +20,6 @@ namespace FHIRProxy
         {
             var iss = ADUtils.GetIssuer();
             var isaad = Utils.GetBoolEnvironmentVariable("FP-OIDC-ISAAD", true);
-            var table = Utils.getTable("scopes");
             JObject config = await ADUtils.LoadOIDCConfiguration(iss,log);
             if (config==null)
             {
