@@ -234,7 +234,22 @@ You are an application administrator and want to register this application with 
 You would launch the createproxysmartclient.bash script from the command shell using the following:</br>
 ```./createproxysmartclient.bash -k proxykv123 -n patientbrowser -a -u -p```</br>
 
-# 
+## Step 6. New Authorization and FHIR Endpoints
+When you deploy the FHIR Proxy you will need to use alternate endpoints for authorization and FHIR Server access.</br>
+
+OAuth 2.0 Endpoints are: </br>
+
+```Authorize: https://<your proxy host>/oauth2/authorize```
+</br>```Token: https://<your proxy host>/oauth2/token```
+
+FHIR Endpoints are: </br>
+```FHIR Server: https://<your proxy host>/fhir```
+
+SMART-on-FHIR Endpoints are: </br>
+```Advertisement: https://<your proxy host>/fhir/.well-known/smart-configuration```
+</br>
+
+When you create the service clients and smart clients detailed above Postman enviornments are created that can be used with [client sample call collections](../samples) to demonstrate authorization and accessing fhir services.
 
 # References 
 FHIR-Proxy serves as a middle tier application / access and authorization endpoint. To better understand the difference in these approaches users should review 
