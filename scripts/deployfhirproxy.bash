@@ -457,7 +457,12 @@ else
 		if [[ "$fhirServiceUrl" == *".fhir.azurehealthcareapis.com"* ]]; then
 			IFS='-' read -ra Arr <<< "$msifhirserverdefault"
 			fhirServiceWorkspace=${Arr[0]}
-			msifhirservername=${Arr[1]}
+			msifhirservername=""
+			for (( i=1; i<${#Arr[@]}; i++ ));
+			do
+				msifhirservername=$msifhirservername${Arr[$i]}"-"
+			done
+			msifhirservername=${msifhirservername::-1}
 			IFS=$'\n\t'
 			msifhirserverrg=$(az resource list --name $fhirServiceWorkspace/$msifhirservername --resource-type 'Microsoft.HealthcareApis/workspaces/fhirservices' --query "[0].resourceGroup" --output tsv)
 		else 
