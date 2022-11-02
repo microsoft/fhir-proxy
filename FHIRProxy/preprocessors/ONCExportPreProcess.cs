@@ -15,6 +15,7 @@
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -23,6 +24,8 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.WindowsAzure.Storage.Table;
+using System.Web.Http;
+using Newtonsoft.Json.Linq;
 
 namespace FHIRProxy.preprocessors
 {
@@ -46,11 +49,10 @@ namespace FHIRProxy.preprocessors
                     req.QueryString = newquery;
 
                     FHIRParsedPath pp = req.parsePath();
+                    List<string> overrideExportUrls = new();
 
                     if (pp.ResourceType == "Group")
                     {
-                        List<string> overrideExportUrls = new();
-
                         // Handle device export
                         var patientsInGroup = await GetPatientIdsForGroupId(req.Path, log);
                         var deviceRequestStrings = BuildDeviceExportRequests(patientsInGroup, ci.ObjectId());
@@ -63,33 +65,11 @@ namespace FHIRProxy.preprocessors
 
                         // Add current group export
                         overrideExportUrls.Add($"Group/$export?_container={ci.ObjectId()}");
+                    }
 
-                        List<string> exportContentLocations = new();
-                        foreach (var path in overrideExportUrls)
-                        {
-                            FHIRResponse groupResult = await FHIRClient.CallFHIRServer(path, body: "", "GET", log);
-
-                            if (!groupResult.IsSuccess())
-                            {
-                                return new ProxyProcessResult(false, $"Bad return code {groupResult.StatusCode} for export.", string.Empty, groupResult);
-                            }
-
-                            if (!groupResult.Headers.ContainsKey("Content-Location"))
-                            {
-                                return new ProxyProcessResult(false, $"Content-Location header not found for export.", string.Empty, groupResult);
-                            }
-
-                            exportContentLocations.Add(groupResult.Headers["Content-Location"].Value);
-                        }
-
-                        ExportAggregate ea = new(exportContentLocations);
-
-                        CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
-                        Utils.setEntity(eaTable, ea);
-
-                        FHIRResponse resp = new();
-                        resp.StatusCode = System.Net.HttpStatusCode.Accepted;
-                        resp.Headers.Add("Content-Location", new HeaderParm("Content-Location", $"https://{req.Host}/fhir/_operations/aggexport/{ea.ExportId}"));
+                    if (overrideExportUrls.Count > 0)
+                    {
+                        FHIRResponse resp = await ProcessExportAggregate(overrideExportUrls, req.Host, log);
                         return new ProxyProcessResult(false, string.Empty, string.Empty, resp);
                     }
                 }
@@ -152,6 +132,41 @@ namespace FHIRProxy.preprocessors
             {
                 yield return currentRequestString;
             }
+        }
+
+        public async Task<FHIRResponse> ProcessExportAggregate(List<string> overrideExportUrls, HostString host, ILogger log)
+        {
+            List<string> exportContentLocations = new();
+            foreach (var path in overrideExportUrls)
+            {
+                FHIRResponse groupResult = await FHIRClient.CallFHIRServer(path, body: "", "GET", log);
+
+                if (!groupResult.IsSuccess())
+                {
+                    return groupResult;
+                }
+
+                if (!groupResult.Headers.ContainsKey("Content-Location"))
+                {
+                    groupResult.StatusCode = HttpStatusCode.InternalServerError;
+                    JObject content = new();
+                    content["error"] = "Content-Location header not found for export";
+                    groupResult.Content = content;
+                    return groupResult;
+                }
+
+                exportContentLocations.Add(groupResult.Headers["Content-Location"].Value);
+            }
+
+            ExportAggregate ea = new(exportContentLocations);
+
+            CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
+            Utils.setEntity(eaTable, ea);
+
+            FHIRResponse resp = new();
+            resp.StatusCode = HttpStatusCode.Accepted;
+            resp.Headers.Add("Content-Location", new HeaderParm("Content-Location", $"https://{host}/fhir/_operations/aggexport/{ea.ExportId}"));
+            return resp;
         }
     }
 }
