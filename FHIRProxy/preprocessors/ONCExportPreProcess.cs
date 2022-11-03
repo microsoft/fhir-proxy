@@ -100,7 +100,7 @@ namespace FHIRProxy.preprocessors
                     CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
                     ExportAggregate ea = Utils.getEntity<ExportAggregate>(eaTable, ProxyConstants.EXPORT_AGGREGATE_TABLE, exportId);
 
-                    FHIRResponse resp = await FetchExportAggregateResult(ea, log);
+                    FHIRResponse resp = await FetchExportAggregateResult(ea, req.Host, log);
                     return new ProxyProcessResult(false, "", requestBody, resp);
                 }
             }
@@ -207,7 +207,7 @@ namespace FHIRProxy.preprocessors
             return resp;
         }
 
-        public async Task<FHIRResponse> FetchExportAggregateResult(ExportAggregate ea, ILogger log)
+        public async Task<FHIRResponse> FetchExportAggregateResult(ExportAggregate ea, HostString proxyHost, ILogger log)
         {
             JObject exportResult = new();
             exportResult["transactionTime"] = ea.Timestamp;
@@ -237,6 +237,8 @@ namespace FHIRProxy.preprocessors
 
                 foreach (JToken singleOutput in current.SelectTokens("output[*]"))
                 {
+                    Uri outputUrl = new(singleOutput["url"].ToString());
+                    singleOutput["url"] = $"https://{proxyHost.Value}/fhir/_exportFile{outputUrl.PathAndQuery}";
                     output.Add(singleOutput);
                 }
                 

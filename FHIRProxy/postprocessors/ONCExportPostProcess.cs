@@ -38,7 +38,7 @@ namespace FHIRProxy.postprocessors
             await Task.Delay(0);
             if (req.Method.Equals("GET") && req.Path.HasValue)
             {
-                if (req.Path.Value.StartsWith("/fhir/_operations/export") || req.Path.Value.StartsWith("/fhir/_operations/aggexport"))
+                if (req.Path.Value.StartsWith("/fhir/_operations/export"))
                 {
                     ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
                     if (response.StatusCode==System.Net.HttpStatusCode.OK && response.Content != null)
