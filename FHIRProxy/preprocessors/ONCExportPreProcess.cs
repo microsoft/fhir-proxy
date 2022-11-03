@@ -92,12 +92,12 @@ namespace FHIRProxy.preprocessors
             return new ProxyProcessResult(true, "", requestBody, null);
         }
       
-        public async Task<IEnumerable<string>> GetPatientIdsForGroupId(string groupId, ILogger log)
+        public async Task<List<string>> GetPatientIdsForGroupId(string groupId, ILogger log)
         {
             FHIRResponse groupResult = await FHIRClient.CallFHIRServer($"Group/{groupId}", body: "", "GET", log);
             if (groupResult.StatusCode != HttpStatusCode.OK)
             {
-                return Enumerable.Empty<string>();
+                return new List<string>();
             }
 
             var result = groupResult
@@ -105,7 +105,10 @@ namespace FHIRProxy.preprocessors
                 .SelectTokens("member[*].entity")
                 .Where(x => x.Value<string?>("reference") is not null)
                 .Where(x => x.Value<string?>("reference").Contains("Patient/"))
-                .Select(x => x.ToString().Split("/").Last());
+                .Select(x => x.ToString().Split("/").Last())
+                .ToList();
+
+            log.LogInformation("Found patients {PatientIds} in group {GroupId}.", string.Join(",", result), groupId);
 
             return result;
         }
