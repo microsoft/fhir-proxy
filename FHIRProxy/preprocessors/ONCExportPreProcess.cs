@@ -102,11 +102,13 @@ namespace FHIRProxy.preprocessors
                 return Enumerable.Empty<string>();
             }
 
-            return groupResult
+            var result = groupResult
                 .toJToken()
                 .SelectToken("member.entity")
                 .Where(x => x.Value<string?>("reference").Contains("Patient/"))
                 .Select(x => x.ToString().Split("/").Last());
+
+            return result;
         }
 
         public IEnumerable<string> BuildDeviceExportRequests(IEnumerable<string> patientIds, string oid)
@@ -155,6 +157,7 @@ namespace FHIRProxy.preprocessors
 
                 if (!groupResult.IsSuccess())
                 {
+                    log.LogWarning("Child export returned without success. {Path} {StatusCode} {Body}", path, groupResult.StatusCode, new JObject(groupResult.Content).ToString());
                     return groupResult;
                 }
 
@@ -164,6 +167,9 @@ namespace FHIRProxy.preprocessors
                     JObject content = new();
                     content["error"] = "Content-Location header not found for export";
                     groupResult.Content = content;
+
+                    log.LogError("Child export returned without ContentLocationHeader. {Path} {StatusCode} {Body}", path, groupResult.StatusCode, new JObject(groupResult.Content).ToString());
+
                     return groupResult;
                 }
 
@@ -199,6 +205,11 @@ namespace FHIRProxy.preprocessors
                 // If any exports are still running wait
                 if (currentResponse.StatusCode != HttpStatusCode.OK)
                 {
+                    if (!currentResponse.IsSuccess())
+                    {
+                        log.LogWarning("Child export operation returned unsucessful. {Path} {StatusCode} {Body}", uri.LocalPath, currentResponse.StatusCode, new JObject(currentResponse.Content).ToString());
+                    }
+
                     return currentResponse;
                 }
 
