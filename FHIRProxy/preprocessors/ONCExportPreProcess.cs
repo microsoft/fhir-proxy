@@ -118,7 +118,7 @@ namespace FHIRProxy.preprocessors
 
             int baseUrlLength = Utils.GetEnvironmentVariable("FS-URL", "").Length;
 
-            string baseDeviceRequest = $"$export?_container={oid}&_type=Device&_typefilter=";
+            string baseDeviceRequest = $"$export?_container={oid}&_type=Device&_typeFilter=";
             string currentRequestString = baseDeviceRequest;
 
             foreach (var typeFilter in patientIdsTypeFilters)
