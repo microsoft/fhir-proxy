@@ -217,17 +217,17 @@ namespace FHIRProxy.preprocessors
 
                 JToken current = currentResponse.toJToken();
 
-                foreach (JToken singleOutput in current.SelectTokens("output.*"))
+                foreach (JToken singleOutput in current.SelectTokens("output[*]"))
                 {
                     output.Add(singleOutput);
                 }
                 
-                foreach (JToken singleError in current.SelectTokens("error.*"))
+                foreach (JToken singleError in current.SelectTokens("error[*]"))
                 {
                     error.Add(singleError);
                 }
                 
-                foreach (JToken singleIssue in current.SelectTokens("issues.*"))
+                foreach (JToken singleIssue in current.SelectTokens("issues[*]"))
                 {
                     issues.Add(singleIssue);
                 }
