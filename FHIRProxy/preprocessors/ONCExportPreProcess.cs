@@ -61,20 +61,6 @@ namespace FHIRProxy.preprocessors
                         // Add current group export
                         overrideExportUrls.Add($"Group/{pp.ResourceId}/$export?_container={ci.ObjectId()}");
                     }
-                    else if (pp.ResourceType == "Patient")
-                    {
-                        log.LogInformation("Starting aggregate group export for patient {PatientId}", pp.ResourceId);
-                        var deviceRequestStrings = BuildDeviceExportRequests(new List<string> { pp.ResourceId }, ci.ObjectId());
-
-                        // Add system level export for all devices for patient
-                        overrideExportUrls.AddRange(deviceRequestStrings);
-
-                        // Add system level export for all reference data
-                        overrideExportUrls.Add($"$export?_container={ci.ObjectId()}&_type=Medication,Practitioner,Location,Organization");
-
-                        // Add current patient export
-                        overrideExportUrls.Add($"Patient/{pp.ResourceId}/$export?_container={ci.ObjectId()}");
-                    }
                     else
                     {
                         QueryString newquery = new QueryString();
