@@ -54,12 +54,8 @@ namespace FHIRProxy.preprocessors
 
                     if (pp.ResourceType == "Group")
                     {
-                        // Group id is right before $exportj
-                        var pathSplit = req.Path.Value.Split("/");
-                        string groupId = pathSplit[pathSplit.Length - 1];
-
                         // Handle device export
-                        var patientsInGroup = await GetPatientIdsForGroupId(groupId, log);
+                        var patientsInGroup = await GetPatientIdsForGroupId(pp.ResourceId, log);
                         var deviceRequestStrings = BuildDeviceExportRequests(patientsInGroup, ci.ObjectId());
 
                         // Add system level export for all devices for patients in group
@@ -69,7 +65,7 @@ namespace FHIRProxy.preprocessors
                         overrideExportUrls.Add($"$export?_container={ci.ObjectId()}&_type=Medication,Practitioner,Location,Organization");
 
                         // Add current group export
-                        overrideExportUrls.Add($"Group/{groupId}/$export?_container={ci.ObjectId()}");
+                        overrideExportUrls.Add($"Group/{pp.ResourceId}/$export?_container={ci.ObjectId()}");
                     }
 
                     if (overrideExportUrls.Count > 0)
