@@ -262,7 +262,15 @@ namespace FHIRProxy.preprocessors
             // Kick off deletes to child requests and move on
             foreach (var uri in ea.ExportUrlList.Select(x => new Uri(x)))
             {
-                FHIRResponse currentResponse = await FHIRClient.CallFHIRServer(uri.LocalPath, body: "", "DELETE", log);
+                try
+                {
+                    FHIRResponse currentResponse = await FHIRClient.CallFHIRServer(uri.LocalPath, body: "", "DELETE", log);
+                }
+                catch (Exception)
+                {
+                    // swallow - FHIR Service may return an error here for smaller exports due to timing
+                }
+                
             }
 
             return new FHIRResponse()
