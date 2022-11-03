@@ -26,6 +26,7 @@ using System.Web;
 using Microsoft.WindowsAzure.Storage.Table;
 using System.Web.Http;
 using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Http.Extensions;
 
 namespace FHIRProxy.preprocessors
 {
@@ -69,9 +70,20 @@ namespace FHIRProxy.preprocessors
 
                     if (overrideExportUrls.Count > 0)
                     {
-                        FHIRResponse resp = await ProcessExportAggregate(overrideExportUrls, req.Host, log);
+                        FHIRResponse resp = await ProcessExportAggregate(req.GetEncodedUrl(), overrideExportUrls, req.Host, log);
                         return new ProxyProcessResult(false, string.Empty, string.Empty, resp);
                     }
+                }
+
+                // Process Export Check requests
+                if (req.Path.Value.StartsWith("/fhir/_operations/aggexport"))
+                {
+                    string exportId = req.Path.Value.Split("/").Last();
+                    CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
+                    ExportAggregate ea = Utils.getEntity<ExportAggregate>(eaTable, ProxyConstants.EXPORT_AGGREGATE_TABLE, exportId);
+
+                    FHIRResponse resp = await FetchExportAggregateResult(ea, log);
+                    return new ProxyProcessResult(false, "", requestBody, resp);
                 }
             }
 
@@ -134,7 +146,7 @@ namespace FHIRProxy.preprocessors
             }
         }
 
-        public async Task<FHIRResponse> ProcessExportAggregate(List<string> overrideExportUrls, HostString host, ILogger log)
+        public async Task<FHIRResponse> ProcessExportAggregate(string requestUrl, List<string> overrideExportUrls, HostString host, ILogger log)
         {
             List<string> exportContentLocations = new();
             foreach (var path in overrideExportUrls)
@@ -158,7 +170,7 @@ namespace FHIRProxy.preprocessors
                 exportContentLocations.Add(groupResult.Headers["Content-Location"].Value);
             }
 
-            ExportAggregate ea = new(exportContentLocations);
+            ExportAggregate ea = new(requestUrl, exportContentLocations);
 
             CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
             Utils.setEntity(eaTable, ea);
@@ -167,6 +179,56 @@ namespace FHIRProxy.preprocessors
             resp.StatusCode = HttpStatusCode.Accepted;
             resp.Headers.Add("Content-Location", new HeaderParm("Content-Location", $"https://{host}/fhir/_operations/aggexport/{ea.ExportId}"));
             return resp;
+        }
+
+        public async Task<FHIRResponse> FetchExportAggregateResult(ExportAggregate ea, ILogger log)
+        {
+            JObject exportResult = new();
+            exportResult["transactionTime"] = ea.Timestamp;
+            exportResult["request"] = ea.ExportRequestUrl;
+            exportResult["requiresAccessToken"] = true;
+
+            JArray output = new();
+            JArray error = new();
+            JArray issues = new();
+
+            foreach (var uri in ea.ExportUrlList.Select(x => new Uri(x)))
+            {
+                FHIRResponse currentResponse = await FHIRClient.CallFHIRServer(uri.LocalPath, body: "", "GET", log);
+
+                // If any exports are still running wait
+                if (currentResponse.StatusCode != HttpStatusCode.OK)
+                {
+                    return currentResponse;
+                }
+
+                JToken current = currentResponse.toJToken();
+
+                foreach (JToken singleOutput in current.SelectTokens("output.*"))
+                {
+                    output.Add(singleOutput);
+                }
+                
+                foreach (JToken singleError in current.SelectTokens("error.*"))
+                {
+                    error.Add(singleError);
+                }
+                
+                foreach (JToken singleIssue in current.SelectTokens("issues.*"))
+                {
+                    issues.Add(singleIssue);
+                }
+            }
+
+            exportResult["output"] = output;
+            exportResult["error"] = error;
+            exportResult["issues"] = issues;
+
+            return new FHIRResponse()
+            {
+                Content = exportResult,
+                StatusCode = HttpStatusCode.OK,
+            };
         }
     }
 }

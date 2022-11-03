@@ -15,14 +15,16 @@ namespace FHIRProxy
         {
 
         }
-        public ExportAggregate(List<string> childContentLocationUrls)
+        public ExportAggregate(string exportRequestUrl, List<string> childContentLocationUrls)
         {
-            this.PartitionKey = "exportaggregate";
-            this.RowKey = Guid.NewGuid().ToString();
+            PartitionKey = "exportaggregate";
+            RowKey = Guid.NewGuid().ToString();
+            ExportRequestUrl = exportRequestUrl;
+            ExportUrls = string.Join(",", childContentLocationUrls);
         }
-        public string ExportId {
-            get { return this.RowKey; }
-        }
+        public string ExportId => RowKey;
+
+        public string ExportRequestUrl { get; set; }
 
         public List<string> ExportUrlList => ExportUrls.Split(",").ToList();
 
