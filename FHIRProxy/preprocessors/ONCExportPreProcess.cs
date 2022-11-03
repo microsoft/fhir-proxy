@@ -102,10 +102,12 @@ namespace FHIRProxy.preprocessors
 
             var result = groupResult
                 .toJToken()
-                .SelectTokens("member[*].entity")
-                .Where(x => x.Value<string?>("reference") is not null)
-                .Where(x => x.Value<string?>("reference").Contains("Patient/"))
-                .Select(x => x.ToString().Split("/").Last())
+                .SelectTokens("member[*].entity.reference")
+                .Where(x => x is not null)
+                .Where(x => x is JValue)
+                .Select(x => x.ToString())
+                .Where(x => x.Contains("Patient/"))
+                .Select(x => x.Split("/").Last())
                 .ToList();
 
             log.LogInformation("Found patients {PatientIds} in group {GroupId}.", string.Join(",", result), groupId);
