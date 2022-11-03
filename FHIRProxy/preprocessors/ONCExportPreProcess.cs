@@ -102,7 +102,7 @@ namespace FHIRProxy.preprocessors
 
             var result = groupResult
                 .toJToken()
-                .SelectTokens("member.entity")
+                .SelectTokens("member[*].entity")
                 .Where(x => x.Value<string?>("reference") is not null)
                 .Where(x => x.Value<string?>("reference").Contains("Patient/"))
                 .Select(x => x.ToString().Split("/").Last());
