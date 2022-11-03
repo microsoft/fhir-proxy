@@ -84,6 +84,13 @@ namespace FHIRProxy.preprocessors
                 CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
                 ExportAggregate ea = Utils.getEntity<ExportAggregate>(eaTable, ProxyConstants.EXPORT_AGGREGATE_TABLE, exportId);
 
+                if (ea is null)
+                {
+                    FHIRResponse resp = new();
+                    resp.StatusCode = HttpStatusCode.NotFound;
+                    return new ProxyProcessResult(false, "", requestBody, resp);
+                }
+
                 if (req.Method.Equals("GET"))
                 {
                     FHIRResponse resp = await FetchExportAggregateResult(ea, req.Host, log);
@@ -93,6 +100,7 @@ namespace FHIRProxy.preprocessors
                 if (req.Method.Equals("DELETE"))
                 {
                     FHIRResponse resp = await DeleteExportAggregateResult(ea, log);
+                    Utils.deleteEntity(eaTable, ea);
                     return new ProxyProcessResult(false, "", requestBody, resp);
                 }
             }
@@ -270,7 +278,6 @@ namespace FHIRProxy.preprocessors
                 {
                     // swallow - FHIR Service may return an error here for smaller exports due to timing
                 }
-                
             }
 
             return new FHIRResponse()
