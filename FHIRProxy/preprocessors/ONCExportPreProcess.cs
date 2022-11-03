@@ -259,20 +259,10 @@ namespace FHIRProxy.preprocessors
         public async Task<FHIRResponse> DeleteExportAggregateResult(ExportAggregate ea, ILogger log)
         {
 
+            // Kick off deletes to child requests and move on
             foreach (var uri in ea.ExportUrlList.Select(x => new Uri(x)))
             {
                 FHIRResponse currentResponse = await FHIRClient.CallFHIRServer(uri.LocalPath, body: "", "DELETE", log);
-
-                // If any exports are still running wait
-                if (currentResponse.StatusCode != HttpStatusCode.Accepted)
-                {
-                    if (!currentResponse.IsSuccess())
-                    {
-                        log.LogWarning("Child export delete operation returned unsucessful. {Path} {StatusCode} {Body}", uri.LocalPath, currentResponse.StatusCode, currentResponse.Content.ToString());
-                    }
-
-                    return currentResponse;
-                }
             }
 
             return new FHIRResponse()
