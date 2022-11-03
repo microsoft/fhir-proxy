@@ -92,7 +92,7 @@ namespace FHIRProxy.preprocessors
       
         public async Task<IEnumerable<string>> GetPatientIdsForGroupId(PathString requestPath, ILogger log)
         {
-            // Group id is right before $export
+            // Group id is right before $exportj
             var pathSplit = requestPath.Value.Split("/");
             string groupId = pathSplit[pathSplit.Length - 1];
 
@@ -157,7 +157,7 @@ namespace FHIRProxy.preprocessors
 
                 if (!groupResult.IsSuccess())
                 {
-                    log.LogWarning("Child export returned without success. {Path} {StatusCode} {Body}", path, groupResult.StatusCode, new JObject(groupResult.Content).ToString());
+                    log.LogWarning("Child export returned without success. {Path} {StatusCode} {Body}", path, groupResult.StatusCode, groupResult.Content);
                     return groupResult;
                 }
 
@@ -168,7 +168,7 @@ namespace FHIRProxy.preprocessors
                     content["error"] = "Content-Location header not found for export";
                     groupResult.Content = content;
 
-                    log.LogError("Child export returned without ContentLocationHeader. {Path} {StatusCode} {Body}", path, groupResult.StatusCode, new JObject(groupResult.Content).ToString());
+                    log.LogError("Child export returned without ContentLocationHeader. {Path} {StatusCode} {Body}", path, groupResult.StatusCode, groupResult.Content.ToString());
 
                     return groupResult;
                 }
@@ -207,7 +207,7 @@ namespace FHIRProxy.preprocessors
                 {
                     if (!currentResponse.IsSuccess())
                     {
-                        log.LogWarning("Child export operation returned unsucessful. {Path} {StatusCode} {Body}", uri.LocalPath, currentResponse.StatusCode, new JObject(currentResponse.Content).ToString());
+                        log.LogWarning("Child export operation returned unsucessful. {Path} {StatusCode} {Body}", uri.LocalPath, currentResponse.StatusCode, currentResponse.Content.ToString());
                     }
 
                     return currentResponse;
