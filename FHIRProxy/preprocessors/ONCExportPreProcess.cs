@@ -36,57 +36,63 @@ namespace FHIRProxy.preprocessors
 
         public async Task<ProxyProcessResult> Process(string requestBody, HttpRequest req, ILogger log, ClaimsPrincipal principal)
         {
-            if (req.Method.Equals("GET") && req.Path.HasValue)
+            if (req.Method.Equals("GET") && req.Path.HasValue && req.Path.Value.EndsWith("$export"))
             {
-                if (req.Path.Value.EndsWith("$export"))
+                ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
+                FHIRParsedPath pp = req.parsePath();
+                List<string> overrideExportUrls = new();
+
+                if (pp.ResourceType == "Group")
                 {
-                    ClaimsIdentity ci = (ClaimsIdentity)principal.Identity;
-                    FHIRParsedPath pp = req.parsePath();
-                    List<string> overrideExportUrls = new();
+                    log.LogInformation("Starting aggregate group export for group {GroupId}", pp.ResourceId);
 
-                    if (pp.ResourceType == "Group")
+                    // Handle device export
+                    var patientsInGroup = await GetPatientIdsForGroupId(pp.ResourceId, log);
+                    var deviceRequestStrings = BuildDeviceExportRequests(patientsInGroup, ci.ObjectId());
+
+                    // Add system level export for all devices for patients in group
+                    overrideExportUrls.AddRange(deviceRequestStrings);
+
+                    // Add system level export for all reference data
+                    overrideExportUrls.Add($"$export?_container={ci.ObjectId()}&_type=Medication,Practitioner,Location,Organization");
+
+                    // Add current group export
+                    overrideExportUrls.Add($"Group/{pp.ResourceId}/$export?_container={ci.ObjectId()}");
+                }
+                else
+                {
+                    QueryString newquery = new QueryString();
+                    foreach (var s in req.Query)
                     {
-                        log.LogInformation("Starting aggregate group export for group {GroupId}", pp.ResourceId);
-
-                        // Handle device export
-                        var patientsInGroup = await GetPatientIdsForGroupId(pp.ResourceId, log);
-                        var deviceRequestStrings = BuildDeviceExportRequests(patientsInGroup, ci.ObjectId());
-
-                        // Add system level export for all devices for patients in group
-                        overrideExportUrls.AddRange(deviceRequestStrings);
-
-                        // Add system level export for all reference data
-                        overrideExportUrls.Add($"$export?_container={ci.ObjectId()}&_type=Medication,Practitioner,Location,Organization");
-
-                        // Add current group export
-                        overrideExportUrls.Add($"Group/{pp.ResourceId}/$export?_container={ci.ObjectId()}");
+                        if (!s.Key.Equals("_container")) newquery = newquery.Add(s.Key, s.Value);
                     }
-                    else
-                    {
-                        QueryString newquery = new QueryString();
-                        foreach (var s in req.Query)
-                        {
-                            if (!s.Key.Equals("_container")) newquery = newquery.Add(s.Key, s.Value);
-                        }
-                        newquery = newquery.Add("_container", ci.ObjectId());
-                        req.QueryString = newquery;
-                    }
-
-                    if (overrideExportUrls.Count > 0)
-                    {
-                        FHIRResponse resp = await ProcessExportAggregate(req.GetEncodedUrl(), overrideExportUrls, req.Host, req.Headers, log);
-                        return new ProxyProcessResult(false, string.Empty, string.Empty, resp);
-                    }
+                    newquery = newquery.Add("_container", ci.ObjectId());
+                    req.QueryString = newquery;
                 }
 
-                // Process Export Check requests
-                if (req.Path.Value.StartsWith("/fhir/_operations/aggexport"))
+                if (overrideExportUrls.Count > 0)
                 {
-                    string exportId = req.Path.Value.Split("/").Last();
-                    CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
-                    ExportAggregate ea = Utils.getEntity<ExportAggregate>(eaTable, ProxyConstants.EXPORT_AGGREGATE_TABLE, exportId);
+                    FHIRResponse resp = await ProcessExportAggregate(req.GetEncodedUrl(), overrideExportUrls, req.Host, req.Headers, log);
+                    return new ProxyProcessResult(false, string.Empty, string.Empty, resp);
+                }
+            }
 
+                // Process Export Check requests
+            if (req.Path.HasValue && req.Path.Value.StartsWith("/fhir/_operations/aggexport"))
+            {
+                string exportId = req.Path.Value.Split("/").Last();
+                CloudTable eaTable = Utils.getTable(ProxyConstants.EXPORT_AGGREGATE_TABLE);
+                ExportAggregate ea = Utils.getEntity<ExportAggregate>(eaTable, ProxyConstants.EXPORT_AGGREGATE_TABLE, exportId);
+
+                if (req.Method.Equals("GET"))
+                {
                     FHIRResponse resp = await FetchExportAggregateResult(ea, req.Host, log);
+                    return new ProxyProcessResult(false, "", requestBody, resp);
+                }
+
+                if (req.Method.Equals("DELETE"))
+                {
+                    FHIRResponse resp = await DeleteExportAggregateResult(ea, log);
                     return new ProxyProcessResult(false, "", requestBody, resp);
                 }
             }
@@ -247,6 +253,31 @@ namespace FHIRProxy.preprocessors
             {
                 Content = exportResult,
                 StatusCode = HttpStatusCode.OK,
+            };
+        }
+
+        public async Task<FHIRResponse> DeleteExportAggregateResult(ExportAggregate ea, ILogger log)
+        {
+
+            foreach (var uri in ea.ExportUrlList.Select(x => new Uri(x)))
+            {
+                FHIRResponse currentResponse = await FHIRClient.CallFHIRServer(uri.LocalPath, body: "", "DELETE", log);
+
+                // If any exports are still running wait
+                if (currentResponse.StatusCode != HttpStatusCode.Accepted)
+                {
+                    if (!currentResponse.IsSuccess())
+                    {
+                        log.LogWarning("Child export delete operation returned unsucessful. {Path} {StatusCode} {Body}", uri.LocalPath, currentResponse.StatusCode, currentResponse.Content.ToString());
+                    }
+
+                    return currentResponse;
+                }
+            }
+
+            return new FHIRResponse()
+            {
+                StatusCode = HttpStatusCode.Accepted,
             };
         }
     }
