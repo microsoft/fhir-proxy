@@ -54,6 +54,8 @@ namespace FHIRProxy.preprocessors
 
                     if (pp.ResourceType == "Group")
                     {
+                        log.LogInformation("Starting aggregate group export for group {GroupId}", pp.ResourceId);
+
                         // Handle device export
                         var patientsInGroup = await GetPatientIdsForGroupId(pp.ResourceId, log);
                         var deviceRequestStrings = BuildDeviceExportRequests(patientsInGroup, ci.ObjectId());
