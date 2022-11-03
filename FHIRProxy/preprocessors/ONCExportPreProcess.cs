@@ -70,7 +70,7 @@ namespace FHIRProxy.preprocessors
 
                     if (overrideExportUrls.Count > 0)
                     {
-                        FHIRResponse resp = await ProcessExportAggregate(req.GetEncodedUrl(), overrideExportUrls, req.Host, log);
+                        FHIRResponse resp = await ProcessExportAggregate(req.GetEncodedUrl(), overrideExportUrls, req.Host, req.Headers, log);
                         return new ProxyProcessResult(false, string.Empty, string.Empty, resp);
                     }
                 }
@@ -146,12 +146,12 @@ namespace FHIRProxy.preprocessors
             }
         }
 
-        public async Task<FHIRResponse> ProcessExportAggregate(string requestUrl, List<string> overrideExportUrls, HostString host, ILogger log)
+        public async Task<FHIRResponse> ProcessExportAggregate(string requestUrl, List<string> overrideExportUrls, HostString host, IHeaderDictionary reqHeaders, ILogger log)
         {
             List<string> exportContentLocations = new();
             foreach (var path in overrideExportUrls)
             {
-                FHIRResponse groupResult = await FHIRClient.CallFHIRServer(path, body: "", "GET", log);
+                FHIRResponse groupResult = await FHIRClient.CallFHIRServer(path, body: "", "GET", reqHeaders, log);
 
                 if (!groupResult.IsSuccess())
                 {
