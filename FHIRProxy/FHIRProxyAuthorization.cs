@@ -142,7 +142,7 @@ namespace FHIRProxy
                     {
                         req.Headers.Remove(Utils.AUTH_STATUS_HEADER);
                         req.Headers.Remove(Utils.AUTH_STATUS_MSG_HEADER);
-                        req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Forbidden).ToString());
+                        req.Headers.Add(Utils.AUTH_STATUS_HEADER, ((int)System.Net.HttpStatusCode.Unauthorized).ToString());
                         req.Headers.Add(Utils.AUTH_STATUS_MSG_HEADER, message);
                         goto leave;
                     }
