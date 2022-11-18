@@ -8,6 +8,8 @@ using System.Security.Claims;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using StackExchange.Redis;
+using System.Security.Cryptography;
+
 namespace FHIRProxy
 {
     public class Utils
@@ -179,9 +181,28 @@ namespace FHIRProxy
         public static string GetRemoteIpAddress(HttpRequest req)
         {
             string remoteIpAddress = req.HttpContext.Connection.RemoteIpAddress.MapToIPv4().ToString();
+           
             if (req.Headers.ContainsKey("X-Forwarded-For"))
                 remoteIpAddress = req.Headers["X-Forwarded-For"];
+            else if (req.Headers.ContainsKey("x-forwarded-for"))
+                remoteIpAddress = req.Headers["x-forwarded-for"];
+            string[] splitport = remoteIpAddress.Split(":");
+            remoteIpAddress = splitport[0];
             return remoteIpAddress;
+        }
+        public static string GenerateUUID(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return null;
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var algorithm = SHA256.Create();
+            var hash = algorithm.ComputeHash(bytes);
+            var guid = new byte[16];
+            Array.Copy(hash, 0, guid, 0, 16);
+            return new Guid(guid).ToString();
         }
     }
     

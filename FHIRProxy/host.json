@@ -4,5 +4,12 @@
     "http": {
       "routePrefix": ""
     }
+  },
+  "logging": {
+    "applicationInsights": {
+      "samplingSettings": {
+          "isEnabled": false
+      }
+    }
   }
 }

@@ -29,6 +29,7 @@ namespace FHIRProxy
         {
             try
             {
+                
                 var iss = ADUtils.GetIssuer();
                 var isaad = Utils.GetBoolEnvironmentVariable("FP-OIDC-ISAAD", true);
                 string ct = req.Headers["Content-Type"].FirstOrDefault();
@@ -164,7 +165,7 @@ namespace FHIRProxy
                 FederatedEntity appreg = null;
                 HttpResponseMessage response = null;
                 //Client Assertion Federated Access Token Check
-                if (client_assertion != null)
+                if (client_assertion != null && isaad)
                 {
                     if (!client_assertion_type.Equals(Utils.GetEnvironmentVariable("FP-CLIENTASSERTION-TYPE", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")))
                     {
@@ -286,7 +287,7 @@ namespace FHIRProxy
                    
                     try
                     {
-                        //Client Assertion
+                        //Client Assertion with aad provider
                         if (appreg != null)
                         {
                             orig_token = await ADUtils.ValidateToken((string)obj["access_token"], appreg, log);
@@ -333,13 +334,54 @@ namespace FHIRProxy
                 //Undo AAD Scopes pair down to original request to support SMART Session scoping
                 if (!obj["scope"].IsNullOrEmpty())
                 {
+                    //Check for SMART Session Scope Override
+                   
+
                     if (isaad)
                     {
+
                         string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
                         if (!appiduri.EndsWith("/")) appiduri = appiduri + "/";
                         tokenscope = tokenscope.Replace(appiduri, "");
+                        //Set Scope to SessionScopes if present
+                        if (Utils.GetBoolEnvironmentVariable("FP-SMART-SESSION-SCOPES", false) && appreg==null)
+                        {
+                            ClaimsIdentity id_ci = new ClaimsIdentity(orig_id_token.Claims);
+                            var username = id_ci.SingleClaimValue("preferred_username");
+
+                            var table = Utils.getTable(ProxyConstants.SCOPE_STORE_TABLE);
+                            ScopeEntity se = Utils.getEntity<ScopeEntity>(table, client_id, username);
+                            if (se != null)
+                            {
+                                //Trim off all non-patient context scopes.
+                                string validscopes = tokenscope;
+                                string[] sa = tokenscope.Split(' ');
+                                tokenscope = "";
+                                foreach (string s in sa)
+                                {
+                                    if (!s.StartsWith("patient."))
+                                    {
+                                        if (tokenscope.Length == 0) tokenscope = s;
+                                        else tokenscope = tokenscope + " " + s;
+                                    }
+
+                                }
+                                //Replace with session scopes if valid
+                                string[] sessscopes = se.RequestedScopes.Trim().Replace("patient/", "patient.").Split(" ");
+                                foreach(string t in sessscopes)
+                                {
+                                    if (validscopes.Contains(t)) 
+                                    {
+                                        if (tokenscope.Length == 0) tokenscope = t;
+                                        else tokenscope = tokenscope + " " + t;
+                                    }
+                                }
+                                Utils.deleteEntity(table, se);
+                                
+                            }
+                        }
                     }
-                    
+                   
                 } else
                 {
                     if (orig_id_token != null)
@@ -358,6 +400,7 @@ namespace FHIRProxy
                     
 
                 }
+              
                 //Generate a Server Access Token for fhir-proxy and replace in token call.
                 proxyAccessTokenString = ADUtils.GenerateFHIRProxyAccessToken(orig_token, tokenscope, log, grant_type.ToLower().Equals("client_credentials"));
                 //substitute our access token if created
@@ -369,7 +412,7 @@ namespace FHIRProxy
                     proxy_access_token = handler.ReadJwtToken(proxyAccessTokenString);
                     ClaimsIdentity access_ci = new ClaimsIdentity(proxy_access_token.Claims);
                     string fhiruser = access_ci.fhirUser();
-                    if (access_ci.HasScope("launch.patient") && fhiruser != null && fhiruser.StartsWith("Patient"))
+                    if ((access_ci.HasScope("launch.patient") || access_ci.HasScope("launch")) && fhiruser != null && fhiruser.StartsWith("Patient"))
                     {
 
                         var pt = FHIRProxyAuthorization.GetFHIRIdFromFHIRUser(fhiruser);
@@ -377,15 +420,17 @@ namespace FHIRProxy
                         {
                             obj["patient"] = pt;
                         }
+                        if (access_ci.HasScope("launch"))
+                        {
+                            obj["smart_style_url"] = req.Scheme + "://" + req.Host.Value + "/fhir/.well-known/smart-configuration?smartstyle";
+                            obj["need_patient_banner"] = false;
+                        }
                     }
                     //Replace Scopes back to SMART from Fully Qualified AD Scopes
-                    if (!obj["scope"].IsNullOrEmpty())
-                    {
-                        if (isaad)
-                        {
-                            string appiduri = ADUtils.GetAppIdURI(req.Host.Value);
-                            string sc = obj["scope"].ToString();
-                            sc = sc.Replace(appiduri + "/", "");
+                    if (isaad)
+                    { 
+                        
+                            string sc = (tokenscope==null ? obj["scope"].ToString() : tokenscope);
                             sc = sc.Replace("patient.", "patient/");
                             sc = sc.Replace("user.", "user/");
                             sc = sc.Replace("system.", "system/");
@@ -395,11 +440,8 @@ namespace FHIRProxy
                             if (sc.Contains(" profile")) sc.Replace(" profile", "");
                             if (sc.Contains("profile")) sc.Replace("profile", "");
                             obj["scope"] = sc;
-                        }
-                    } else
-                    {
-                        if (tokenscope != null) obj["scope"] = tokenscope;
-                    }
+                        
+                    } 
                     //To handle optional scope parameters store scope for offline_access claims for aad
                     if (!obj["refresh_token"].IsNullOrEmpty() && orig_id_token !=null && isaad)
                     {

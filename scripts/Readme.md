@@ -249,7 +249,7 @@ SMART-on-FHIR Endpoints are: </br>
 ```Advertisement: https://<your proxy host>/fhir/.well-known/smart-configuration```
 </br>
 
-When you create the service clients and smart clients detailed above Postman enviornments are created that can be used with [client sample call collections](../samples) to demonstrate authorization and accessing fhir services.
+When you create the service clients and smart clients detailed above Postman environments are created that can be used with [client sample call collections](../samples) to demonstrate authorization and accessing fhir services.
 
 # References 
 FHIR-Proxy serves as a middle tier application / access and authorization endpoint. To better understand the difference in these approaches users should review 

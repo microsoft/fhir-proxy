@@ -23,8 +23,8 @@ declare listofprocessors=""
 declare enableprocessors=""
 declare msg=""
 declare num
-options=("FHIRProxy.postprocessors.FHIRCDSSyncAgentPostProcess2" "FHIRProxy.postprocessors.DateSortPostProcessor" "FHIRProxy.postprocessors.ParticipantFilterPostProcess" "FHIRProxy.postprocessors.PublishFHIREventPostProcess" "FHIRProxy.postprocessors.ConsentOptOutFilter" "FHIRProxy.preprocessors.ProfileValidationPreProcess" "FHIRProxy.preprocessors.TransformBundlePreProcess" "FHIRProxy.preprocessors.EverythingPatientPreProcess")
-choices=("" "" "" "" "" "" "" "")
+options=("FHIRProxy.postprocessors.FHIRCDSSyncAgentPostProcess2" "FHIRProxy.postprocessors.ParticipantFilterPostProcess" "FHIRProxy.postprocessors.PublishFHIREventPostProcess" "FHIRProxy.postprocessors.ConsentOptOutFilter" "FHIRProxy.preprocessors.TransformBundlePreProcess" "FHIRProxy.preprocessors.ONCExportPreProcess" "FHIRProxy.postprocessors.ONCExportPostProcess")
+choices=("" "" "" "" "" "" "")
 # Initialize parameters specified from command line
 while getopts ":g:n:i:
 " arg; do
