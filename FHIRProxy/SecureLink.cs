@@ -90,7 +90,7 @@ namespace FHIRProxy
                     }
                     if (string.IsNullOrEmpty(scope))
                     {
-                        scope = "system/*.read";
+                        scope = "system/*.read system/_operations.*";
                     }
                     if (string.IsNullOrEmpty(audiences))
                     {
