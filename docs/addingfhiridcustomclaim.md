@@ -52,7 +52,7 @@ To support SMART Launch, you are required to add a custom claim in the OAuth id_
 ### Add a new SMART Client registration
 Launch Azure Cloud Shell (Bash Environment)  
   
-[![Launch Azure Shell](/images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
+[![Launch Azure Shell](./images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
 
 Clone the repo to your Bash Shell (CLI) environment 
 ```azurecli-interactive

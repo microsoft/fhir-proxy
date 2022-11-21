@@ -11,7 +11,7 @@ This guide will give you fhir-proxy configuration steps for certifying with the 
 ### Launch Azure Cloud Shell (Bash Environment)  
 
   
-[![Launch Azure Shell](../images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
+[![Launch Azure Shell](./images/launchcloudshell.png "Launch Cloud Shell")](https://shell.azure.com/bash?target="_blank")
 
 Clone the repo to your Bash Shell (CLI) environment 
 ```azurecli-interactive
