@@ -1,9 +1,9 @@
 # FHIR Proxy - SMART on FHIR Configuration for ONC g10 Certification
 ### Introduction
-This guide will give you fhir-proxy configuration steps for certifying with the ONC g10 Inferno Test Kit.<br/><br/>
+This guide will give you fhir-proxy configuration steps for certifying with the ONC g10 Inferno Test Kit using Azure Active Directory as the IDP<br/><br/>
 <I>Note: These steps only cover the SMART/OAuth related configurations, appropriate us core data sets and FHIR Server content are not covered.</I> 
 ###  Prerequesites
-1. You must have completed Step 1 of [deploying the fhir-proxy components](../scripts/readme.md) sucessfully 
+1. You must have completed Step 1 of [deploying the fhir-proxy components](../scripts/Readme.md) for Azure Active Directory sucessfully 
 1. You must meet the prerequesites and complete the instructions in the ```Configure fhirUser Custom Claim Policy``` and ```Associate AAD User with FHIR Server Resource``` sections of the [Adding fhirUser as Custom Claim to AAD OAuth Tokens](addingfhiridcustomclaim.md) document.<br/>You do not need to register SMART Applications this will be done as a part of the oncg10 configuration steps
 2. You need to know the KeyVault name used to hold secrets for your fhir-proxy deployment
 3. You need to know the Resource Group and name of your fhir-proxy deployment
