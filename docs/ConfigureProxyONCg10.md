@@ -84,7 +84,7 @@ Your FHIR Server ISS: https://<fhir-proxy-appname>.azurewebsites.net/fhir
 2. Simply Run the 4 Single Patient API test and accept defaulted values from the Standalone Patient App Test
 <br/><I>Note: You must have a loaded a valid ONC test data collection on the FHIR Server for the patient in context to pass.</I>
 ### 7 Multi-Patient API Test
-This test uses a federated identity credential via client_assertion to authenticate.  Azure Active directory supports this flow, however, their encryption limit is 256 bits the ONC requires a 384 bit encrpted token.  To overcome this limitation, the fhir-proxy has implemented a limited service client registration process to support the federated client credentials.
+This test uses federated identity credentials via client_assertion to authenticate.  Azure Active directory supports this flow, however, their encryption limit is 256 bits the ONC requires a 384 bit encrypted token.  To overcome this limitation, the fhir-proxy has implemented a limited service client registration process to support the federated client credentials.
 1. Obtain function app management access key (Note: This should be treated as highly confidential and be protected)<br/>
 	1. Access [Azure Portal](https://portal.azure.com)
 	2. Navigate to your fhir-proxy function app
@@ -117,7 +117,7 @@ This test uses a federated identity credential via client_assertion to authentic
 5. Add the necessary pre and post processing modules for patient export to the fhir-proxy
     1. In your cloud bash shell in the scripts directory execute the following command to configure required ONC pre/post processing modules for the fhir-proxy
        ```
-        ./configmodules.bash -n sto-onctest -g onctester -i $(az account show --query id --output tsv)        
+        ./configmodules.bash -n <fhir-proxy-name> -g <fhir-proxy-resource-group-name> -i $(az account show --query id --output tsv)        
 	   ```
 	2. You will see a menu similar to the following:
 	   ```

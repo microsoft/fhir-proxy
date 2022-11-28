@@ -287,8 +287,8 @@ echo "Creating SMART Client Application "$spname"..."
 			pmuuid=$(cat /proc/sys/kernel/random/uuid)
 			pmenv=$(<./postmantemplate.json)
 			pmscope=${scopes//patient./patient\/}
-			pmscope=${scopes//user./user\/}
-			pmscope=${scopes//system./system\/}
+			pmscope=${pmscope//user./user\/}
+			pmscope=${pmscope//system./system\/}
 			pmscope=${pmscope/launch./launch\/}
 			pmfhirurl="https://"$fphost"/fhir"
 			pmproxyurl="https://"$fphost

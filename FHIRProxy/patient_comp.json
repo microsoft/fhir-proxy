@@ -436,7 +436,7 @@
   },
   {
     "code" : "Provenance",
-    "param" : ["patient"]
+    "param" : ["target"]
   },
   {
     "code" : "Questionnaire"
