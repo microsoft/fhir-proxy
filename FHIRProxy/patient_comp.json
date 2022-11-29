@@ -48,11 +48,11 @@
   },
   {
     "code" : "AuditEvent",
-    "param" : ["patient"]
+    "param" : ["agent"]
   },
   {
     "code" : "Basic",
-    "param" : ["patient",
+    "param" : ["subject",
     "author"]
   },
   {
@@ -73,11 +73,11 @@
   },
   {
     "code" : "CarePlan",
-    "param": [ "subject" ]
+    "param": [ "subject","performer" ]
   },
   {
     "code" : "CareTeam",
-    "param" : ["patient",
+    "param" : ["subject",
     "participant"]
   },
   {
@@ -163,8 +163,7 @@
     "param" : ["patient"]
   },
   {
-      "code": "Device",
-      "param": [ "patient" ]
+      "code": "Device"
   },
   {
     "code" : "DeviceDefinition"
@@ -240,11 +239,11 @@
   },
   {
     "code" : "Flag",
-    "param" : ["patient"]
+    "param" : ["subject","patient"]
   },
   {
     "code" : "Goal",
-    "param" : ["patient"]
+    "param" : ["subject"]
   },
   {
     "code" : "GraphDefinition"
@@ -261,7 +260,7 @@
   },
   {
     "code" : "ImagingStudy",
-    "param" : ["patient"]
+    "param" : ["subject","patient"]
   },
   {
     "code" : "Immunization",
@@ -306,7 +305,7 @@
   },
   {
     "code" : "MeasureReport",
-    "param" : ["patient"]
+    "param" : ["subject","patient"]
   },
   {
     "code" : "Media",
@@ -387,7 +386,7 @@
   },
   {
     "code" : "Observation",
-    "param" : ["subject",
+    "param" : ["subject","patient",
     "performer"]
   },
   {
@@ -430,8 +429,8 @@
   },
   {
     "code" : "Procedure",
-    "param" : ["patient",
-    "performer"]
+    "param" : ["subject",
+    "performer","recorder","asserter"]
   },
   {
     "code" : "Provenance",

@@ -87,19 +87,28 @@ Your FHIR Server ISS: https://<fhir-proxy-appname>.azurewebsites.net/fhir
 This test uses federated identity credentials via client_assertion to authenticate.  Azure Active directory supports this flow, however, their encryption limit is 256 bits the ONC requires a 384 bit encrypted token.  To overcome this limitation, the fhir-proxy has implemented a limited service client registration process to support the federated client credentials.
 1. Follow steps to [configure and enable export](https://learn.microsoft.com/en-us/azure/healthcare-apis/fhir/configure-export-data) on your FHIR Service.
 2. If you are not using MSI for fhir-proxy to access the FHIR Service, the Service Principal (client application) configured to access the FHIR Service must be in a ```FHIR Data Contributor``` or ```FHIR Data Exporter``` role. See [Configure Azure RBAC role for Azure Health Data Services](https://learn.microsoft.com/en-us/azure/healthcare-apis/configure-azure-rbac)
-3. Obtain function app management access key (Note: This should be treated as highly confidential and be protected)<br/>
+3. Specify the FHIR Server export storage account connection string in the ```FP-EXPORT-STORAGEACCT``` application setting on the fhir-proxy:
+    1. Access [Azure Portal](https://portal.azure.com)
+	2. Navigate to the FHIR Service export storage account (specified on export settings of the FHIR Service)
+	3. Select Access Keys under the left hand navigation area.
+	4. Click on the show button of key 1 or key 2 connection string display box
+	5. Click the copy icon at the end of the connection string display box
+	6. In the bash cloud shell enter the following command set the connection string in the ```FP-EXPORT-STORAGEACCT``` application setting on the fhir-proxy
+	```azurecli-interactive
+    az functionapp config appsettings set --name <fhir-proxy-appname>  --resource-group <fhir-proxy-resource-group> --settings FP-EXPORT-STORAGEACCT=<your fhir server export storage account connection string from above>
+	```   
+4. Obtain function app management access key (Note: This should be treated as highly confidential and be protected)<br/>
 	1. Access [Azure Portal](https://portal.azure.com)
 	2. Navigate to your fhir-proxy function app
 	3. Select App Keys under the left hand navigation area.
 	4. Click on the default host key value to reveal the key
 	5. Click on the copy icon
 	6. Securely save this key to use in these steps
-
-4. In your cloud bash shell enter the following command with your values inserted:<br/>
+5. In your cloud bash shell enter the following command with your values inserted:<br/>
    ```
    curl -d '{"name": "ONC Multi Patient Application Test","jwskeyset": "https://inferno.healthit.gov/suites/custom/g10_certification/.well-known/jwks.json"} ' -H "Content-Type: application/json" -X POST https://<fhir-proxy-name>.azurewebsites.net/manage/appregistration?code=<function-access-key>
    ```
-5. You will receive output similar to the following:
+6. You will receive output similar to the following:
    ```
    {
 	"ClientId": "<client_id_guid>",
@@ -115,8 +124,8 @@ This test uses federated identity credentials via client_assertion to authentica
 	"ETag": "W/\"datetime'2022-11-21T15%3A51%3A37.6003364Z'\""
    }
    ```
-6. You will need the client_id and the Scope string provided by the registration, in addition you will need a predetermined Group with at least 2 patient reference member entities. You can query your fhir server for this data.
-7. Add the necessary pre and post processing modules for patient export to the fhir-proxy
+7. You will need the client_id and the Scope string provided by the registration, in addition you will need a predetermined Group with at least 2 patient reference member entities. You can query your fhir server for this data.
+8. Add the necessary pre and post processing modules for patient export to the fhir-proxy
     1. In your cloud bash shell in the scripts directory execute the following command to configure required ONC pre/post processing modules for the fhir-proxy
        ```
         ./configmodules.bash -n <fhir-proxy-name> -g <fhir-proxy-resource-group-name> -i $(az account show --query id --output tsv)        
@@ -139,8 +148,8 @@ This test uses federated identity credentials via client_assertion to authentica
 	4. Enter the option number for the ONCExportPostProcess and press enter
 	5. Press Enter, this will enable the ONC Export process modules
 	<br/><I>Note: This function will overwrite existing proxy module configuration. If you require other proxy modules to be enabled you must enter those as well</I>
-8. Execute the 7 Multi-Patient API Test
-9. When prompted provide the fhir-proxy url (```https://<fhir-proxy-name>.azurewebsites.net/fhir```), the token endpoint (```https://<fhir-proxy-name>.azurewebsites.net/oauth2/token```), the client id, scope string, group resource id and patient ids in the group
+9. Execute the 7 Multi-Patient API Test
+10. When prompted provide the fhir-proxy url (```https://<fhir-proxy-name>.azurewebsites.net/fhir```), the token endpoint (```https://<fhir-proxy-name>.azurewebsites.net/oauth2/token```), the client id, scope string, group resource id and patient ids in the group
 
 ### 9 Additional Test
 
