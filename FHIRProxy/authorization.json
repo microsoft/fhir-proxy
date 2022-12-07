@@ -17,6 +17,10 @@
       "policies": { "unauthenticated_action": "AllowAnonymous" }
     },
     {
+      "path_prefix": "/oauth2/validate",
+      "policies": { "unauthenticated_action": "AllowAnonymous" }
+    },
+    {
       "path_prefix": "/fhir",
       "policies": { "unauthenticated_action": "AllowAnonymous" }
     },
