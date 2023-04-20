@@ -51,6 +51,7 @@ declare resourceGroupLocation=""
 declare storageAccountNameSuffix="store"
 declare storageConnectionString=""
 declare serviceplanSuffix="asp"
+declare deployredis=""
 declare redisAccountNameSuffix="cache"
 declare redisConnectionString=""
 declare redisKey=""
@@ -205,7 +206,8 @@ fi
 
 # set default subscription
 #
-defsubscriptionId=$(az account show --query "id" --out json | sed 's/"//g') 
+defsubscriptionId=$(az account show --query "id" --out tsv)
+ 
 
 echo "Checking Script Execution directory..."
 # Test for correct directory path / destination 
@@ -537,21 +539,21 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	echo "Storing Storage Account Connection String in Key Vault..."
 	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-STORAGEACCT" --value $storageConnectionString)
 		
-	# Create Redis Cache to Support Proxy Modules
-	echo "Creating Redis Cache ["$deployPrefix$redisAccountNameSuffix"]..."
-	stepresult=$(az redis create --subscription $subscriptionId --location $resourceGroupLocation --name $deployPrefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $TAG)
-	
-	echo "Creating Redis Connection String..."
-	redisKey=$(az redis list-keys --subscription $subscriptionId --resource-group $resourceGroupName --name $deployPrefix$redisAccountNameSuffix --query "primaryKey" --out tsv)
-	redisConnectionString=$deployPrefix$redisAccountNameSuffix".redis.cache.windows.net:6380,password="$redisKey",ssl=True,abortConnect=False"
-	
-	echo "Storing Redis Connection String in KeyVault..."
-	stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-REDISCONNECTION" --value $redisConnectionString)
-		
+	# Create Redis Cache to Support Proxy Modules (Default is not deployed)
+	if [[ -n "$deployredis" ]]; then
+		echo "Creating Redis Cache ["$deployPrefix$redisAccountNameSuffix"]..."
+		stepresult=$(az redis create --subscription $subscriptionId --location $resourceGroupLocation --name $deployPrefix$redisAccountNameSuffix --resource-group $resourceGroupName --sku Basic --vm-size c0 --tags $TAG)
+		echo "Creating Redis Connection String..."
+		redisKey=$(az redis list-keys --subscription $subscriptionId --resource-group $resourceGroupName --name $deployPrefix$redisAccountNameSuffix --query "primaryKey" --out tsv)
+		redisConnectionString=$deployPrefix$redisAccountNameSuffix".redis.cache.windows.net:6380,password="$redisKey",ssl=True,abortConnect=False"
+		echo "Storing Redis Connection String in KeyVault..."
+		stepresult=$(az keyvault secret set --vault-name $keyVaultName --name "FP-REDISCONNECTION" --value $redisConnectionString)
+	fi	
 	# Create Proxy function app
 	echo "Creating Secure FHIR Proxy Function App ["$proxyAppName"]..."
-	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 3 --tags $TAG --query defaultHostName --output tsv)
-
+	functionAppHost=$(az functionapp create --subscription $subscriptionId --name $proxyAppName --storage-account $deployPrefix$storageAccountNameSuffix  --plan $deployPrefix$serviceplanSuffix  --resource-group $resourceGroupName --runtime dotnet --os-type Windows --functions-version 4 --tags $TAG --query defaultHostName --output tsv --only-show-errors)
+	stepresult=$(az functionapp config set --net-framework-version v6.0 --name $proxyAppName --resource-group $resourceGroupName)
+	stepresult=$(az functionapp update --name $proxyAppName --resource-group $resourceGroupName --set httpsOnly=true)
 	echo "FHIR-Proxy Function App Host name = "$functionAppHost
 	
 	stepresult=$(az functionapp stop --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName)
@@ -593,13 +595,13 @@ echo "Starting Secure FHIR Proxy App ["$proxyAppName"] deployment..."
 	#stepresult=$(az ad app permission grant --id $spappid --api 00000002-0000-0000-c000-000000000000)
 	
 	echo "Configuring reply urls for app..."
-	stepresult=$(az ad app update --id $spappid --reply-urls $spreplyurls)
+	stepresult=$(az ad app update --id $spappid --web-redirect-uris $spreplyurls)
 	
 	echo "Adding FHIR Custom Roles to Manifest..."
 	stepresult=$(az ad app update --id $spappid --app-roles @${script_dir}/fhirroles.json)
 	
 	echo "Enabling AAD Authorization and Securing the FHIR Proxy"
-	stepresult=$(az webapp auth update --subscription $subscriptionId --resource-group $resourceGroupName --name $proxyAppName --enabled true --action AllowAnonymous --aad-allowed-token-audiences $functionAppHost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss)
+	stepresult=$(az webapp auth-classic update --subscription $subscriptionId --resource-group $resourceGroupName --name $proxyAppName --enabled true --action AllowAnonymous --aad-allowed-token-audiences $functionAppHost --aad-client-id $spappid --aad-client-secret $spsecret --aad-token-issuer-url $tokeniss)
 	
 	echo "Starting fhir proxy function app..."
 	stepresult=$(az functionapp start --name $proxyAppName --subscription $subscriptionId --resource-group $resourceGroupName)

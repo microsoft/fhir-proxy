@@ -97,7 +97,7 @@ namespace FHIRProxy.postprocessors
                 FHIRParsedPath pp = req.parsePath();
                 //Do we need to send on to CDS? Don't send for GET/PATCH, errors, X-MS-FHIRCDSSynAgent Header is present
                 if (req.Method.Equals("GET") || (int)response.StatusCode > 299 ||
-                    req.Method.Equals("PATCH") || req.Headers["X-MS-FHIRCDSSynAgent"] == "true")
+                    req.Headers["X-MS-FHIRCDSSynAgent"] == "true")
                     return new ProxyProcessResult(true, "", "", response);
                 InitQueueClient(log);
                 if (_queueClient == null)

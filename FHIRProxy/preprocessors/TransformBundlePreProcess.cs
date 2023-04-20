@@ -84,7 +84,12 @@ namespace FHIRProxy.preprocessors
                                     string furl = (string)tok["fullUrl"];
                                     if (respentries.Count > 1)
                                     {
-                                        log.LogWarning($"TransformBundleProcess: Entry fullUrl: {furl} Resource query not selective enough: {resource}?{query}");
+                                        var msg = $"Entry fullUrl: {furl} Resource query not selective enough: {resource}?{query}";
+                                        log.LogError(msg);
+                                        FHIRResponse fer = new FHIRResponse();
+                                        fer.StatusCode = System.Net.HttpStatusCode.PreconditionFailed;
+                                        fer.Content = Utils.genOOErrResponse("error", msg);
+                                        return new ProxyProcessResult(false, msg, requestBody,fer);
                                     }
                                     string existingid = "urn:uuid:" + (string)respentries[0]["resource"]["id"];
                                     if (!string.IsNullOrEmpty(furl)) requestBody = requestBody.Replace(furl, existingid);

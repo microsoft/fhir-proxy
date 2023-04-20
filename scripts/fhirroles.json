@@ -8,7 +8,6 @@
 			"displayName": "Resource Writer",
 			"id": "2d1c681b-71e0-4f12-9040-d0f42884be86",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "Writer"
 		},
@@ -21,7 +20,6 @@
 			"displayName": "Resource Reader",
 			"id": "24c50db1-1e11-4273-b6a0-b697f734bcb4",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "Reader"
 		},
@@ -33,7 +31,6 @@
 			"displayName": "DataScientist",
 			"id": "b90c2f1a-6a2c-4d1e-9ee6-d97cd5632307",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "DataScientist"
 		},
@@ -45,7 +42,6 @@
 			"displayName": "RelatedPerson",
 			"id": "75f86d84-27b6-4740-bd3d-4ec763c36144",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "RelatedPerson"
 		},
@@ -57,7 +53,6 @@
 			"displayName": "Patient",
 			"id": "94b4402c-ea4a-43ac-a8f2-85a482e303a9",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "Patient"
 		},
@@ -69,7 +64,6 @@
 			"displayName": "Practitioner",
 			"id": "8796299c-9039-4eb0-a93d-6eda41763238",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "Practitioner"
 		},
@@ -81,7 +75,6 @@
 			"displayName": "Administrator",
 			"id": "ef3fd1c8-82cc-4619-a484-2cbcf97eefc1",
 			"isEnabled": true,
-			"lang": null,
 			"origin": "Application",
 			"value": "Administrator"
 		}

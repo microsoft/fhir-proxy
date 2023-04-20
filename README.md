@@ -1,3 +1,6 @@
+<B>Notice:</b></br>
+Thank you for your interest in our repository. As of <b>April 19, 2023</b>, this repository is no longer being developed or maintained.</br> We recommend that you use the new [Azure Health Data Services Toolkit](https://github.com/microsoft/azure-health-data-services-toolkit)
+
 # Secure FHIR Gateway and Proxy
 
 The Secure FHIR Gateway and Proxy is an Azure Function-based solution that:
