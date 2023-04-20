@@ -84,6 +84,8 @@ namespace FHIRProxy
                             MaxConnectionsPerServer = Utils.GetIntEnvironmentVariable("FP-POOLEDCON-MAXCONNECTIONS", "20")
                         };
                         _fhirClient = new HttpClient(socketsHandler);
+                        var productValue = new ProductInfoHeaderValue("fhir-proxy", "2.0");
+                        _fhirClient.DefaultRequestHeaders.UserAgent.Add(productValue);
                     }
                 }
             }
